@@ -10,4 +10,11 @@ class Player
     @properties = []
     @tile = tile
   end
+
+  def update_property_button_coordinates(x, y, offset)
+    properties.each do |property|
+      property.button.update_coordinates(x, y)
+      y += offset
+    end
+  end
 end

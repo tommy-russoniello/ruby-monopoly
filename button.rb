@@ -1,5 +1,5 @@
 class Button
-  attr_accessor :action
+  attr_accessor :actions
   attr_accessor :center_x
   attr_accessor :center_y
   attr_accessor :color
@@ -13,8 +13,26 @@ class Button
   attr_accessor :x
   attr_accessor :y
 
-  def initialize(x:, y:, height:, width:, color: Gosu::Color::WHITE, hover_color: Gosu::Color.new(255, 219, 219, 219), font: nil, text: nil, font_color: nil, window:, action:)
-    @action = action
+  def initialize(
+    x: 0,
+    y: 0,
+    height:,
+    width:,
+    color: Gosu::Color::WHITE,
+    hover_color: Gosu::Color.new(255, 219, 219, 219),
+    font: nil,
+    text: nil,
+    font_color: nil,
+    window:,
+    actions:
+  )
+    @actions =
+      if actions.is_a?(Array) && actions.all? { |element| element.is_a?(Array) }
+        actions
+      else
+        [actions]
+      end
+
     @center_x = x + (width / 2.0)
     @center_y = y + (height / 2.0)
     @color = color
@@ -36,18 +54,50 @@ class Button
       Gosu.draw_rect(x, y, width, height, color, ZOrder::UI)
     end
 
-    font&.draw_text_rel(text, center_x, center_y, ZOrder::UI, 0.5, 0.5, 1.0, 1.0, (font_color || Gosu::Color::BLACK))
+    font&.draw_text_rel(
+      text,
+      center_x,
+      center_y,
+      ZOrder::UI,
+      0.5,
+      0.5,
+      1.0,
+      1.0,
+      font_color || Gosu::Color::BLACK
+    )
   end
 
-  def perform_action
+  def update_coordinates(new_x = nil, new_y = nil)
+    self.x = new_x if new_x
+    self.y = new_y if new_y
+
+    self.center_x = x + (width / 2.0)
+    self.center_y = y + (height / 2.0)
+  end
+
+  def perform_actions
     puts "\"#{text}\" button clicked"
 
-    if action.is_a?(Proc)
-      action.call
-    elsif action.is_a?(Symbol)
-      window.send(action)
-    else
-      pp "\"#{text}\" button has invalid action"
+    actions.each do |action|
+      if action.is_a?(Array)
+        parameters = action.last
+        action = action.first
+        if action.is_a?(Proc)
+          action.call(parameters)
+        elsif action.is_a?(Symbol)
+          window.send(action, parameters)
+        else
+          pp "\"#{text}\" button has invalid action"
+        end
+      else
+        if action.is_a?(Proc)
+          action.call
+        elsif action.is_a?(Symbol)
+          window.send(action)
+        else
+          pp "\"#{text}\" button has invalid action"
+        end
+      end
     end
   end
 
