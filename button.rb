@@ -12,10 +12,12 @@ class Button
   attr_accessor :window
   attr_accessor :x
   attr_accessor :y
+  attr_accessor :z
 
   def initialize(
     x: 0,
     y: 0,
+    z: ZOrder::MAIN_UI,
     height:,
     width:,
     color: Gosu::Color::WHITE,
@@ -45,20 +47,21 @@ class Button
     @window = window
     @x = x
     @y = y
+    @z = z
   end
 
   def draw(mouse_x = nil, mouse_y = nil)
     if mouse_x && mouse_y && within?(mouse_x, mouse_y)
-      Gosu.draw_rect(x, y, width, height, hover_color, ZOrder::UI)
+      Gosu.draw_rect(x, y, width, height, hover_color, z)
     else
-      Gosu.draw_rect(x, y, width, height, color, ZOrder::UI)
+      Gosu.draw_rect(x, y, width, height, color, z)
     end
 
     font&.draw_text_rel(
       text,
       center_x,
       center_y,
-      ZOrder::UI,
+      z,
       0.5,
       0.5,
       1.0,
@@ -87,7 +90,7 @@ class Button
         elsif action.is_a?(Symbol)
           window.send(action, parameters)
         else
-          pp "\"#{text}\" button has invalid action"
+          pp "\"#{text}\" button has an invalid action"
         end
       else
         if action.is_a?(Proc)
@@ -95,7 +98,7 @@ class Button
         elsif action.is_a?(Symbol)
           window.send(action)
         else
-          pp "\"#{text}\" button has invalid action"
+          pp "\"#{text}\" button has an invalid action"
         end
       end
     end

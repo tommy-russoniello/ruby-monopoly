@@ -12,7 +12,7 @@ require_relative 'tile'
 # Tile image size: 144x237
 
 module ZOrder
-  BACKGROUND, UI = *0..1
+  MAIN_BACKGROUND, MAIN_UI, MENU_BACKGROUND, MENU_UI = *0..3
 end
 
 module Coordinates
@@ -22,6 +22,10 @@ module Coordinates
   BOTTOM_Y = 685
   RIGHT_X = 1200
   LEFT_X = 0
+  INSPECTOR_LEFT_X = 300
+  INSPECTOR_TOP_Y = 150
+  INSPECTOR_RIGHT_X = 900
+  INSPECTOR_BOTTOM_Y = 650
 end
 
 class Monopoly < Gosu::Window
@@ -33,6 +37,8 @@ class Monopoly < Gosu::Window
     self.caption = 'Monopoly'
 
     @go_money_amount = 200
+    @mortgage_percentage = 0.5
+    @mortgage_interest = 0
 
     @fonts = {
       default: Gosu::Font.new(20),
@@ -158,6 +164,28 @@ class Monopoly < Gosu::Window
         font: Gosu::Font.new(20),
         text: 'Back',
         actions: :exit_inspector
+      ),
+      mortgage: Button.new(
+        window: self,
+        x: Coordinates::INSPECTOR_RIGHT_X - 153,
+        y: Coordinates::INSPECTOR_BOTTOM_Y - 38,
+        z: ZOrder::MENU_UI,
+        height: 35,
+        width: 150,
+        font: Gosu::Font.new(20),
+        text: 'Mortgage',
+        actions: :mortgage
+      ),
+      unmortgage: Button.new(
+        window: self,
+        x: Coordinates::INSPECTOR_RIGHT_X - 153,
+        y: Coordinates::INSPECTOR_BOTTOM_Y - 38,
+        z: ZOrder::MENU_UI,
+        height: 35,
+        width: 150,
+        font: Gosu::Font.new(20),
+        text: 'Unmortgage',
+        actions: :unmortgage
       )
     }
 
@@ -172,7 +200,7 @@ class Monopoly < Gosu::Window
 
   def buy
     unless @current_player.money >= @current_tile.purchase_price
-      @messages += ["#{@current_player.name} does not have enough money to purchase this property."]
+      add_message("#{@current_player.name} does not have enough money to purchase this property.")
       return
     end
 
@@ -186,9 +214,9 @@ class Monopoly < Gosu::Window
       35
     )
 
-    @messages += [
+    add_message(
       "#{@current_player.name} bought #{@current_tile.name} for $#{@current_tile.purchase_price}."
-    ]
+    )
 
     update_visible_buttons(:end_turn)
   end
@@ -217,6 +245,10 @@ class Monopoly < Gosu::Window
     update_visible_buttons(:roll_dice)
   end
 
+  def add_message(message)
+    @messages = [message] + @messages
+  end
+
   def draw
     tile_details = [
       "Position: #{@tile_indexes[@current_tile]} / #{@tile_count}"
@@ -227,7 +259,7 @@ class Monopoly < Gosu::Window
       @current_tile.tile_image.draw_from_center(
         Coordinates::CENTER_X - 100,
         Coordinates::CENTER_Y,
-        ZOrder::UI,
+        ZOrder::MENU_UI,
         1,
         1
       )
@@ -236,12 +268,12 @@ class Monopoly < Gosu::Window
         @current_tile.deed_image.draw_from_center(
           Coordinates::CENTER_X + 100,
           Coordinates::CENTER_Y,
-          ZOrder::UI,
+          ZOrder::MENU_UI,
           1,
           1
         )
       else
-        puts("WARNING: NO DEED IMAGE FOR TILE: \"#{@current_tile.name}\"")
+        puts("WARNING: NO DEED IMAGE FOR PROPERTY TILE: \"#{@current_tile.name}\"")
       end
 
       tile_details += [
@@ -254,7 +286,7 @@ class Monopoly < Gosu::Window
       @current_tile.tile_image.draw_from_center(
         Coordinates::CENTER_X,
         Coordinates::CENTER_Y,
-        ZOrder::UI,
+        ZOrder::MENU_UI,
         1,
         1
       )
@@ -267,7 +299,7 @@ class Monopoly < Gosu::Window
         "#{player.name}: #{player.tile.name}",
         Coordinates::CENTER_X,
         Coordinates::TOP_Y + y_differential,
-        ZOrder::UI,
+        ZOrder::MAIN_UI,
         0.5,
         0,
         1,
@@ -282,35 +314,33 @@ class Monopoly < Gosu::Window
       "#{@current_player.name}: $#{@current_player.money}",
       Coordinates::LEFT_X,
       Coordinates::TOP_Y,
-      ZOrder::UI,
+      ZOrder::MAIN_UI,
       2,
       2,
       @colors[:default_text]
     )
 
-    # Dice roll
-    if @die_a
-      @fonts[:default].draw_text_rel(
-        "Dice Roll: #{@die_a}, #{@die_b}",
-        Coordinates::RIGHT_X,
-        Coordinates::TOP_Y,
-        ZOrder::UI,
-        1,
-        0,
-        1,
-        1,
-        @colors[:default_text]
-      )
-    end
+    @fonts[:default].draw_text_rel(
+      "#{mouse_x.round(3)}, #{mouse_y.round(3)}",
+      Coordinates::RIGHT_X,
+      Coordinates::TOP_Y,
+      ZOrder::MAIN_UI,
+      1,
+      0,
+      1,
+      1,
+      @colors[:default_text]
+    )
 
     # Messages
     y_differential = 0
-    @messages.reverse_each do |message|
+    @messages = @messages[0..4]
+    @messages.each do |message|
       @fonts[:default].draw_text_rel(
         message,
         Coordinates::LEFT_X,
         Coordinates::BOTTOM_Y - y_differential,
-        ZOrder::UI,
+        ZOrder::MAIN_UI,
         0,
         1,
         1,
@@ -329,7 +359,8 @@ class Monopoly < Gosu::Window
 
     # Inspector
     if @draw_inspector
-      Gosu.draw_rect(300, 150, 600, 500, Gosu::Color.new(255, 219, 219, 219), ZOrder::BACKGROUND)
+      Gosu.draw_rect(Coordinates::INSPECTOR_LEFT_X, Coordinates::INSPECTOR_TOP_Y, 600, 500,
+        Gosu::Color.new(255, 192, 206, 193), ZOrder::MENU_BACKGROUND)
       current_tile_details_text_color = @colors[:inspector_text]
     end
 
@@ -340,7 +371,7 @@ class Monopoly < Gosu::Window
         detail,
         Coordinates::CENTER_X,
         Coordinates::CENTER_Y + y_differential,
-        ZOrder::UI,
+        ZOrder::MENU_UI,
         0.5,
         0,
         1,
@@ -382,7 +413,7 @@ class Monopoly < Gosu::Window
     case @current_tile
     when CardTile
     when FreeParkingTile
-      @messages += ['whoopdie doo, free parking']
+      add_message('whoopdie doo, free parking')
       update_visible_buttons(:end_turn)
     when GoTile
       update_visible_buttons(:end_turn)
@@ -391,6 +422,12 @@ class Monopoly < Gosu::Window
     when PropertyTile
       if @current_tile.owner
         if @current_tile.owner == @current_player
+          update_visible_buttons(:end_turn)
+        elsif @current_tile.mortgaged?
+          add_message(
+            "No rent is due to #{@current_tile.owner.name} as " \
+            "#{@current_tile.name} is currently mortgaged."
+          )
           update_visible_buttons(:end_turn)
         else
           update_visible_buttons(:pay_rent)
@@ -427,13 +464,14 @@ class Monopoly < Gosu::Window
   def roll_dice
     @die_a = roll_die
     @die_b = roll_die
+    add_message("#{@current_player.name} has rolled #{@die_a + @die_b} (#{@die_a}, #{@die_b})")
     times_passed_go = move(@die_a + @die_b)
     if times_passed_go > 0
       go_money_collected = @go_money_amount * times_passed_go
       extra_string = " #{times_passed_go} times" if times_passed_go > 1
-      @messages += [
+      add_message(
         "#{@current_player.name} has gained $#{go_money_collected} for passing Go#{extra_string}."
-      ]
+      )
       @current_player.money += go_money_collected
     end
 
@@ -451,15 +489,13 @@ class Monopoly < Gosu::Window
     else
       @current_tile.owner.money += rent
       @current_player.money -= @current_tile.rent
-      @messages +=
-        ["#{@current_player.name} payed $#{rent} in rent to #{@current_tile.owner.name}."]
+      add_message("#{@current_player.name} payed $#{rent} in rent to #{@current_tile.owner.name}.")
       update_visible_buttons(:end_turn)
     end
   end
 
-  # TODO: maybe make this just call `end_turn`?
   def eliminate_player
-    @messages += ["#{@current_player.name} is eliminated!"]
+    add_message("#{@current_player.name} is eliminated!")
     @current_player.properties.each do |property|
       property.owner = nil
       property.house_count = 0 if property.is_a?(StreetTile)
@@ -486,13 +522,21 @@ class Monopoly < Gosu::Window
         property.button.color = @colors[:property_button_selected]
         property.button.hover_color = @colors[:property_button_selected_hover]
         @current_tile = property
+
+        new_visible_buttons = %i[exit_inspector]
+        new_visible_buttons += @current_tile.mortgaged? ? %i[unmortgage] : %i[mortgage]
+        update_visible_buttons(*new_visible_buttons)
       end
     else
       @draw_inspector = true
       @current_tile_cache = @current_tile
       @current_tile = property
       cache_visible_buttons
-      update_visible_buttons(:exit_inspector)
+
+      new_visible_buttons = %i[exit_inspector]
+      new_visible_buttons += @current_tile.mortgaged? ? %i[unmortgage] : %i[mortgage]
+      update_visible_buttons(*new_visible_buttons)
+
       @property_button_color_cache = property.button.color
       @property_button_hover_color_cache = property.button.hover_color
       property.button.color = @colors[:property_button_selected]
@@ -509,6 +553,33 @@ class Monopoly < Gosu::Window
     @current_tile = @current_tile_cache
     @current_tile_cache = nil
     pop_visible_buttons_cache
+  end
+
+  def mortgage
+    @current_tile.mortgaged = true
+    mortgage_cost = (@current_tile.purchase_price * @mortgage_percentage).to_i
+    @current_player.money +=mortgage_cost
+    add_message(
+      "#{@current_player.name} mortgaged #{@current_tile.name} for $#{mortgage_cost}."
+    )
+    update_visible_buttons(:exit_inspector, :unmortgage)
+  end
+
+  def unmortgage
+    unmortgage_cost = (@current_tile.purchase_price * @mortgage_percentage).to_i
+    unmortgage_cost += (unmortgage_cost * @mortgage_interest).to_i
+
+    unless @current_player.money >= unmortgage_cost
+      add_message("#{@current_player.name} does not have enough money to unmortgage this property.")
+      return
+    end
+
+    @current_player.money -= unmortgage_cost
+    @current_tile.mortgaged = false
+    add_message(
+      "#{@current_player.name} payed $#{unmortgage_cost} to unmortgage #{@current_tile.name}."
+    )
+    update_visible_buttons(:exit_inspector, :mortgage)
   end
 
   def ctrl_cmd_down?

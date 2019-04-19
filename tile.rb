@@ -26,6 +26,7 @@ end
 class PropertyTile < Tile
   attr_accessor :button
   attr_accessor :deed_image
+  attr_accessor :mortgaged
   attr_accessor :owner
   attr_accessor :purchase_price
 
@@ -48,7 +49,7 @@ class PropertyTile < Tile
   end
 
   def mortgaged?
-    @mortgage
+    @mortgaged
   end
 
   def rent
