@@ -24,6 +24,9 @@ class JailTile < Tile
 end
 
 class PropertyTile < Tile
+  MORTGAGE_INTEREST = 0
+  MORTGAGE_PERCENTAGE = 0.5
+
   attr_accessor :button
   attr_accessor :deed_image
   attr_accessor :mortgaged
@@ -36,7 +39,7 @@ class PropertyTile < Tile
     mortgaged: false,
     name:,
     owner: nil,
-    purchase_price: nil,
+    purchase_price:,
     tile_image: nil
   )
     @button = button
@@ -48,12 +51,20 @@ class PropertyTile < Tile
     @tile_image = tile_image
   end
 
+  def mortgage_cost
+    (purchase_price * PropertyTile::MORTGAGE_PERCENTAGE).to_i
+  end
+
   def mortgaged?
     @mortgaged
   end
 
   def rent
     rent_scale[house_count]
+  end
+
+  def unmortgage_cost
+    (mortgage_cost + (mortgage_cost * PropertyTile::MORTGAGE_INTEREST)).to_i
   end
 end
 

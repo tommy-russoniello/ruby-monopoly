@@ -37,8 +37,6 @@ class Monopoly < Gosu::Window
     self.caption = 'Monopoly'
 
     @go_money_amount = 200
-    @mortgage_percentage = 0.5
-    @mortgage_interest = 0
 
     @fonts = {
       default: Gosu::Font.new(20),
@@ -481,11 +479,19 @@ class Monopoly < Gosu::Window
   def pay_rent
     rent = @current_tile.rent
     if @current_player.money < rent
-      @current_tile.owner.money += @current_player.money
-      @current_player.money = 0
-
-      # TODO: mortgage logic
-      eliminate_player
+      if @current_player.has_assets_for?(rent)
+        add_message(
+          "#{@current_player.name} cannot afford to pay this rent in cash but can afford it " \
+          "by liquidating assets (selling houses and/or mortgaging properties)."
+        )
+      else
+        add_message(
+          "#{@current_player.name} does not have the cash or assets to pay this rent."
+        )
+        @current_tile.owner.money += @current_player.money
+        @current_player.money = 0
+        eliminate_player
+      end
     else
       @current_tile.owner.money += rent
       @current_player.money -= @current_tile.rent
@@ -557,27 +563,24 @@ class Monopoly < Gosu::Window
 
   def mortgage
     @current_tile.mortgaged = true
-    mortgage_cost = (@current_tile.purchase_price * @mortgage_percentage).to_i
-    @current_player.money +=mortgage_cost
+    @current_player.money += @current_tile.mortgage_cost
     add_message(
-      "#{@current_player.name} mortgaged #{@current_tile.name} for $#{mortgage_cost}."
+      "#{@current_player.name} mortgaged #{@current_tile.name} for $#{@current_tile.mortgage_cost}."
     )
     update_visible_buttons(:exit_inspector, :unmortgage)
   end
 
   def unmortgage
-    unmortgage_cost = (@current_tile.purchase_price * @mortgage_percentage).to_i
-    unmortgage_cost += (unmortgage_cost * @mortgage_interest).to_i
-
-    unless @current_player.money >= unmortgage_cost
+    unless @current_player.money >= @current_tile.unmortgage_cost
       add_message("#{@current_player.name} does not have enough money to unmortgage this property.")
       return
     end
 
-    @current_player.money -= unmortgage_cost
+    @current_player.money -= @current_tile.unmortgage_cost
     @current_tile.mortgaged = false
     add_message(
-      "#{@current_player.name} payed $#{unmortgage_cost} to unmortgage #{@current_tile.name}."
+      "#{@current_player.name} payed $#{@current_tile.unmortgage_cost} to " \
+      "unmortgage #{@current_tile.name}."
     )
     update_visible_buttons(:exit_inspector, :mortgage)
   end
