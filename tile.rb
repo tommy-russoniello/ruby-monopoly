@@ -69,11 +69,13 @@ class PropertyTile < Tile
 end
 
 class StreetTile < PropertyTile
+  attr_accessor :color_group
   attr_accessor :house_count
   attr_accessor :rent_scale
 
   def initialize(
     button: nil,
+    color_group:,
     deed_image: nil,
     house_count: 0,
     mortgaged: false,
@@ -93,8 +95,11 @@ class StreetTile < PropertyTile
       tile_image: tile_image
     )
 
+    @color_group = color_group
     @house_count = house_count
     @rent_scale = rent_scale
+
+    @color_group.street_tiles << self
   end
 
   def rent

@@ -3,12 +3,14 @@ class Player
   attr_accessor :name
   attr_accessor :properties
   attr_accessor :tile
+  attr_accessor :window
 
-  def initialize(money: 0, name:, tile:)
+  def initialize(money: 0, name:, tile:, window:)
     @money = money
     @name = name
     @properties = []
     @tile = tile
+    @window = window
   end
 
   def has_assets_for?(amount)
@@ -16,13 +18,16 @@ class Player
   end
 
   def total_asset_liquidation_amount
-    total_mortgage = properties.inject(0) do |sum, property|
-      property.mortgaged? ? sum : sum + property.mortgage_cost
+    building_sell_percentage = window.instance_variable_get(:@building_sell_percentage)
+    money + properties.inject(0) do |sum, property|
+      sum += property.mortgage_cost unless property.mortgaged?
+      if property.is_a?(StreetTile)
+        sum +=
+          (property.house_count * (property.color_group.house_cost * building_sell_percentage)).to_i
+      end
+
+      sum
     end
-
-    # TODO: total value for selling houses
-
-    money + total_mortgage
   end
 
   def update_property_button_coordinates(x, y, offset)

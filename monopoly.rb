@@ -6,6 +6,7 @@ require 'securerandom'
 require_relative 'gosu/image'
 
 require_relative 'button'
+require_relative 'color_group'
 require_relative 'player'
 require_relative 'tile'
 
@@ -37,6 +38,7 @@ class Monopoly < Gosu::Window
     self.caption = 'Monopoly'
 
     @go_money_amount = 200
+    @building_sell_percentage = 0.5
 
     @fonts = {
       default: Gosu::Font.new(20),
@@ -51,6 +53,19 @@ class Monopoly < Gosu::Window
       inspector_text: Gosu::Color::BLACK
     }
 
+    @color_groups = {
+      brown: ColorGroup.new(
+        color: Gosu::Color.new(255, 149, 84, 54),
+        house_cost: 50,
+        name: 'brown'
+      ),
+      light_blue: ColorGroup.new(
+        color: Gosu::Color.new(255, 0, 114, 187),
+        house_cost: 200,
+        name: 'light blue'
+      )
+    }
+
     @tile_count = 0
     @tiles = {}
     @tile_indexes = {}
@@ -60,6 +75,7 @@ class Monopoly < Gosu::Window
         tile_image: Gosu::Image.new("images/tiles/go.jpg")
       ),
       StreetTile.new(
+        color_group: @color_groups[:brown],
         deed_image: Gosu::Image.new("images/deeds/baltic_avenue.jpg"),
         name: 'Baltic Avenue',
         purchase_price: 60,
@@ -71,6 +87,7 @@ class Monopoly < Gosu::Window
         tile_image: Gosu::Image.new("images/tiles/free_parking.jpg")
       ),
       StreetTile.new(
+        color_group: @color_groups[:light_blue],
         deed_image: Gosu::Image.new("images/deeds/boardwalk.jpg"),
         name: 'Boardwalk',
         purchase_price: 400,
@@ -96,8 +113,8 @@ class Monopoly < Gosu::Window
     end
 
     @players = [
-      Player.new(name: 'Tom', money: 200, tile: @tiles[:go]),
-      Player.new(name: 'Jerry', money: 200, tile: @tiles[:go])
+      Player.new(name: 'Tom', money: 200, tile: @tiles[:go], window: self),
+      Player.new(name: 'Jerry', money: 200, tile: @tiles[:go], window: self)
     ]
     @current_player_index = 0
     @current_player = @players.first
@@ -106,7 +123,7 @@ class Monopoly < Gosu::Window
       buy: Button.new(
         window: self,
         x: Coordinates::RIGHT_X - 150,
-        y: Coordinates::BOTTOM_Y - 70,
+        y: Coordinates::BOTTOM_Y - 71,
         height: 35,
         width: 150,
         font: Gosu::Font.new(20),
@@ -184,6 +201,28 @@ class Monopoly < Gosu::Window
         font: Gosu::Font.new(20),
         text: 'Unmortgage',
         actions: :unmortgage
+      ),
+      build_house: Button.new(
+        window: self,
+        x: Coordinates::INSPECTOR_RIGHT_X - 153,
+        y: Coordinates::INSPECTOR_BOTTOM_Y - 110,
+        z: ZOrder::MENU_UI,
+        height: 35,
+        width: 150,
+        font: Gosu::Font.new(20),
+        text: 'Build House',
+        actions: :build_house
+      ),
+      sell_house: Button.new(
+        window: self,
+        x: Coordinates::INSPECTOR_RIGHT_X - 153,
+        y: Coordinates::INSPECTOR_BOTTOM_Y - 74,
+        z: ZOrder::MENU_UI,
+        height: 35,
+        width: 150,
+        font: Gosu::Font.new(20),
+        text: 'Sell House',
+        actions: :sell_house
       )
     }
 
@@ -209,7 +248,7 @@ class Monopoly < Gosu::Window
     @current_player.update_property_button_coordinates(
       Coordinates::LEFT_X,
       Coordinates::TOP_Y + 50,
-      35
+      36
     )
 
     add_message(
@@ -318,6 +357,7 @@ class Monopoly < Gosu::Window
       @colors[:default_text]
     )
 
+    # Mouse coordinates
     @fonts[:default].draw_text_rel(
       "#{mouse_x.round(3)}, #{mouse_y.round(3)}",
       Coordinates::RIGHT_X,
@@ -488,8 +528,13 @@ class Monopoly < Gosu::Window
         add_message(
           "#{@current_player.name} does not have the cash or assets to pay this rent."
         )
-        @current_tile.owner.money += @current_player.money
+        total_asset_liquidation_amount = @current_player.total_asset_liquidation_amount
+        @current_tile.owner.money += total_asset_liquidation_amount
         @current_player.money = 0
+        add_message(
+          "#{@current_player.name} liquidated his remaining assets and payed " \
+          "$#{total_asset_liquidation_amount} to #{@current_tile.owner.name}."
+        )
         eliminate_player
       end
     else
@@ -501,7 +546,10 @@ class Monopoly < Gosu::Window
   end
 
   def eliminate_player
-    add_message("#{@current_player.name} is eliminated!")
+    add_message(
+      "#{@current_player.name} is eliminated! All of #{@current_player.name}'s properties " \
+      "have been reclaimed by the bank."
+    )
     @current_player.properties.each do |property|
       property.owner = nil
       property.house_count = 0 if property.is_a?(StreetTile)
@@ -530,6 +578,7 @@ class Monopoly < Gosu::Window
         @current_tile = property
 
         new_visible_buttons = %i[exit_inspector]
+        new_visible_buttons += %i[build_house sell_house] if @current_tile.is_a?(PropertyTile)
         new_visible_buttons += @current_tile.mortgaged? ? %i[unmortgage] : %i[mortgage]
         update_visible_buttons(*new_visible_buttons)
       end
@@ -540,6 +589,7 @@ class Monopoly < Gosu::Window
       cache_visible_buttons
 
       new_visible_buttons = %i[exit_inspector]
+      new_visible_buttons += %i[build_house sell_house] if @current_tile.is_a?(PropertyTile)
       new_visible_buttons += @current_tile.mortgaged? ? %i[unmortgage] : %i[mortgage]
       update_visible_buttons(*new_visible_buttons)
 
@@ -562,12 +612,19 @@ class Monopoly < Gosu::Window
   end
 
   def mortgage
+    if @current_tile.house_count.positive?
+      add_message("The houses on #{@current_tile.name} must be sold before it can be mortgaged.")
+      return
+    end
+
     @current_tile.mortgaged = true
     @current_player.money += @current_tile.mortgage_cost
     add_message(
       "#{@current_player.name} mortgaged #{@current_tile.name} for $#{@current_tile.mortgage_cost}."
     )
-    update_visible_buttons(:exit_inspector, :unmortgage)
+    new_visible_buttons = %i[exit_inspector unmortgage]
+    new_visible_buttons += %i[build_house sell_house] if @current_tile.is_a?(PropertyTile)
+    update_visible_buttons(*new_visible_buttons)
   end
 
   def unmortgage
@@ -582,7 +639,90 @@ class Monopoly < Gosu::Window
       "#{@current_player.name} payed $#{@current_tile.unmortgage_cost} to " \
       "unmortgage #{@current_tile.name}."
     )
-    update_visible_buttons(:exit_inspector, :mortgage)
+    new_visible_buttons = %i[exit_inspector mortgage]
+    new_visible_buttons += %i[build_house sell_house] if @current_tile.is_a?(PropertyTile)
+    update_visible_buttons(*new_visible_buttons)
+  end
+
+  def build_house
+    if !@current_tile.color_group.monopolized?
+      add_message(
+        "#{@current_player.name} must have a monopoly on the #{@current_tile.color_group.name} " \
+        "color group before building a house on #{@current_tile.name}."
+      )
+      return
+    elsif @current_player.money < @current_tile.color_group.house_cost
+      add_message(
+        "#{@current_player.name} does not have enough money to build a house on " \
+        "#{@current_tile.name}."
+      )
+      return
+    elsif @current_tile.house_count > 4
+      add_message("#{@current_tile.name} cannot have anymore houses built on it.")
+      return
+    elsif @current_tile.mortgaged?
+      add_message("Houses cannot be built on #{@current_tile.name} as it is currently mortgaged.")
+      return
+    end
+
+    related_tiles_with_less_houses = @current_tile.color_group.street_tiles.select do |tile|
+      tile.house_count < @current_tile.house_count
+    end
+
+    unless related_tiles_with_less_houses.empty?
+      if related_tiles_with_less_houses.size == 1
+        add_message("Must build a house on #{related_tiles_with_less_houses.first.name} first.")
+      else
+        last_tile = related_tiles_with_less_houses.pop
+        add_message(
+          "Must build a house on #{related_tiles_with_less_houses.map(&:name).join(', ')} " \
+          "and #{last_tile.name} first."
+        )
+      end
+
+      return
+    end
+
+    house_cost = @current_tile.color_group.house_cost
+    @current_player.money -= house_cost
+    @current_tile.house_count += 1
+
+    add_message(
+      "#{@current_player.name} built a house on #{@current_tile.name} for $#{house_cost}."
+    )
+  end
+
+  def sell_house
+    if @current_tile.house_count < 1
+      add_message("#{@current_tile.name} has no houses on it to sell.")
+      return
+    end
+
+    related_tiles_with_more_houses = @current_tile.color_group.street_tiles.select do |tile|
+      tile.house_count > @current_tile.house_count
+    end
+
+    unless related_tiles_with_more_houses.empty?
+      if related_tiles_with_more_houses.size == 1
+        add_message("Must sell a house from #{related_tiles_with_more_houses.first.name} first.")
+      else
+        last_tile = related_tiles_with_more_houses.pop
+        add_message(
+          "Must sell a house from #{related_tiles_with_more_houses.map(&:name).join(', ')} " \
+          "and #{last_tile.name} first."
+        )
+      end
+
+      return
+    end
+
+    house_sell_price = (@current_tile.color_group.house_cost * @building_sell_percentage).to_i
+    @current_player.money += house_sell_price
+    @current_tile.house_count -= 1
+
+    add_message(
+      "#{@current_player.name} sold a house from #{@current_tile.name} for $#{house_sell_price}."
+    )
   end
 
   def ctrl_cmd_down?
