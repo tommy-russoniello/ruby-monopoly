@@ -1,4 +1,9 @@
 class Button
+  DEFAULT_COLOR = Gosu::Color::WHITE.freeze
+  DEFAULT_HOVER_COLOR = Gosu::Color.new(255, 219, 219, 219).freeze
+  DEFAULT_HEIGHT = 50
+  DEFAULT_WIDTH = 250
+
   attr_accessor :actions
   attr_accessor :center_x
   attr_accessor :center_y
@@ -18,10 +23,10 @@ class Button
     x: 0,
     y: 0,
     z: ZOrder::MAIN_UI,
-    height:,
-    width:,
-    color: Gosu::Color::WHITE,
-    hover_color: Gosu::Color.new(255, 219, 219, 219),
+    height: DEFAULT_HEIGHT,
+    width: DEFAULT_WIDTH,
+    color: DEFAULT_COLOR,
+    hover_color: DEFAULT_HOVER_COLOR,
     font: nil,
     text: nil,
     font_color: nil,

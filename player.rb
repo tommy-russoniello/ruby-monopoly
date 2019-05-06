@@ -23,7 +23,7 @@ class Player
       sum += property.mortgage_cost unless property.mortgaged?
       if property.is_a?(StreetTile)
         sum +=
-          (property.house_count * (property.color_group.house_cost * building_sell_percentage)).to_i
+          (property.house_count * (property.group.house_cost * building_sell_percentage)).to_i
       end
 
       sum
@@ -31,6 +31,9 @@ class Player
   end
 
   def update_property_button_coordinates(x, y, offset)
+    tile_indexes = window.instance_variable_get(:@tile_indexes)
+    properties.sort! { |a, b| tile_indexes[a] <=> tile_indexes[b] }
+
     properties.each do |property|
       property.button.update_coordinates(x, y)
       y += offset

@@ -1,18 +1,31 @@
 module Gosu
   class Image
-    def draw_from_center(x, y, z, scale_x = 1, scale_y = 1, color = 0xff_ffffff, mode = :default)
-      draw(
-        x - ((width * scale_x) / 2.0),
-        y - ((height * scale_y) / 2.0),
-        z,
-        scale_x,
-        scale_y,
-        color,
-        mode
-      )
+    alias _draw draw
+    def draw(
+      x,
+      y,
+      z,
+      scale_x = 1,
+      scale_y = 1,
+      color = 0xff_ffffff,
+      mode = :default,
+      from_center: false,
+      draw_height: nil,
+      draw_width: nil
+    )
+      scale_y = draw_height / height.to_f if draw_height
+      scale_x = draw_width / width.to_f if draw_width
+
+      if from_center
+        x = x - ((width * scale_x) / 2.0)
+        y = y - ((height * scale_y) / 2.0)
+      end
+
+      _draw(x, y, z, scale_x, scale_y, color, mode)
     end
 
-    def draw_rot_from_center(
+    alias _draw_rot draw_rot
+    def draw_rot(
       x,
       y,
       z,
@@ -22,20 +35,20 @@ module Gosu
       scale_x = 1,
       scale_y = 1,
       color = 0xff_ffffff,
-      mode = :default
+      mode = :default,
+      from_center: false,
+      draw_height: nil,
+      draw_width: nil
     )
-      draw_rot(
-        x - ((width * scale_x) / 2.0),
-        y - ((height * scale_y) / 2.0),
-        z,
-        angle,
-        center_x,
-        center_y,
-        scale_x,
-        scale_y,
-        color,
-        mode
-      )
+      scale_y = draw_height / height.to_f if draw_height
+      scale_x = draw_width / width.to_f if draw_width
+
+      if from_center
+        x = x - ((width * scale_x) / 2.0)
+        y = y - ((height * scale_y) / 2.0)
+      end
+
+      _draw_rot(x, y, z, angle, center_x, center_y, scale_x, scale_y, color, mode)
     end
 
     # Make inspecting images quieter

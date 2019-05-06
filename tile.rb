@@ -29,6 +29,7 @@ class PropertyTile < Tile
 
   attr_accessor :button
   attr_accessor :deed_image
+  attr_accessor :group
   attr_accessor :mortgaged
   attr_accessor :owner
   attr_accessor :purchase_price
@@ -36,6 +37,7 @@ class PropertyTile < Tile
   def initialize(
     button: nil,
     deed_image: nil,
+    group: nil,
     mortgaged: false,
     name:,
     owner: nil,
@@ -44,11 +46,14 @@ class PropertyTile < Tile
   )
     @button = button
     @deed_image = deed_image
+    @group = group
     @mortgaged = mortgaged
     @name = name
     @owner = owner
     @purchase_price = purchase_price
     @tile_image = tile_image
+
+    @group.tiles << self
   end
 
   def mortgage_cost
@@ -69,13 +74,14 @@ class PropertyTile < Tile
 end
 
 class StreetTile < PropertyTile
-  attr_accessor :color_group
+  MONOPOLY_RENT_MULTIPLIER = 2
+
   attr_accessor :house_count
   attr_accessor :rent_scale
 
   def initialize(
     button: nil,
-    color_group:,
+    group: nil,
     deed_image: nil,
     house_count: 0,
     mortgaged: false,
@@ -88,6 +94,7 @@ class StreetTile < PropertyTile
     super(
       button: button,
       deed_image: deed_image,
+      group: group,
       mortgaged: mortgaged,
       name: name,
       owner: owner,
@@ -95,15 +102,16 @@ class StreetTile < PropertyTile
       tile_image: tile_image
     )
 
-    @color_group = color_group
     @house_count = house_count
     @rent_scale = rent_scale
-
-    @color_group.street_tiles << self
   end
 
   def rent
-    rent_scale[house_count]
+    if house_count == 0
+      rent_scale[house_count] * (group.monopolized? ? MONOPOLY_RENT_MULTIPLIER : 1)
+    else
+      rent_scale[house_count]
+    end
   end
 end
 
@@ -113,6 +121,7 @@ class RailroadTile < PropertyTile
   def initialize(
     button: nil,
     deed_image: nil,
+    group: nil,
     mortgaged: false,
     name:,
     owner: nil,
@@ -123,6 +132,7 @@ class RailroadTile < PropertyTile
     super(
       button: button,
       deed_image: deed_image,
+      group: group,
       mortgaged: mortgaged,
       name: name,
       owner: owner,
@@ -133,8 +143,8 @@ class RailroadTile < PropertyTile
     @rent_scale = rent_scale
   end
 
-  def rent(railroad_count)
-    rent_scale[railroad_count]
+  def rent
+    rent_scale[group.amount_owned(owner) - 1]
   end
 end
 
@@ -147,6 +157,7 @@ class UtilityTile < PropertyTile
   def initialize(
     button: nil,
     deed_image: nil,
+    group: nil,
     mortgaged: false,
     name:,
     owner: nil,
@@ -157,6 +168,7 @@ class UtilityTile < PropertyTile
     super(
       button: button,
       deed_image: deed_image,
+      group: group,
       mortgaged: mortgaged,
       name: name,
       owner: owner,
