@@ -1,6 +1,7 @@
 require 'gosu'
 require 'byebug'
-require 'active_support/inflector'
+require 'active_support'
+require 'active_support/core_ext/numeric/conversions'
 require 'securerandom'
 
 require_relative 'gosu/image'
@@ -9,8 +10,6 @@ require_relative 'button'
 require_relative 'player'
 require_relative 'tile'
 require_relative 'tile_group'
-
-# Tile image size: 144x237
 
 module ZOrder
   MAIN_BACKGROUND, MAIN_UI, MENU_BACKGROUND, MENU_UI = *0..3
@@ -274,10 +273,6 @@ class Monopoly < Gosu::Window
     update_visible_buttons(:end_turn)
   end
 
-  def update
-
-  end
-
   def update_visible_buttons(*button_names)
     @visible_buttons = button_names.map { |button_name| @buttons[button_name] }
   end
@@ -331,11 +326,18 @@ class Monopoly < Gosu::Window
         draw_width: 288
       )
 
-      tile_details += [
-        @current_tile.owner&.name ? "Owned By #{@current_tile.owner.name}" : 'Unowned',
-        @current_tile.mortgaged? ? 'Mortgaged' : 'Not Mortgaged'
-      ]
+      owner_message =
+        if @current_tile.owner
+          temp_message = "Owned By #{@current_tile.owner.name}"
+          temp_message << " (#{@current_tile.group.amount_owned(@current_tile.owner)})" if
+            @current_tile.group
 
+          temp_message
+        else
+          'Unowned'
+        end
+
+      tile_details += [owner_message, @current_tile.mortgaged? ? 'Mortgaged' : 'Not Mortgaged']
       tile_details += ["#{@current_tile.house_count} Houses"] if @current_tile.is_a?(StreetTile)
     else
       @current_tile.tile_image.draw(
@@ -457,12 +459,18 @@ class Monopoly < Gosu::Window
       handle_click(mouse_x, mouse_y)
     when Gosu::KB_ESCAPE
       close
+
+    # FOR DEVELOPMENT: Print out current state of the instance to STDOUT
     when Gosu::KB_P
       print_state if ctrl_cmd_down?
 
     # FOR DEVELOPMENT: Automatically move exactly 1 tile forward
     when Gosu::KB_N
-      move(1) && land if ctrl_cmd_down?
+      if ctrl_cmd_down?
+        exit_inspector if @draw_inspector
+        move(1)
+        land
+      end
 
     # FOR DEVELOPMENT: Give current player $100
     when Gosu::KB_4
@@ -772,7 +780,7 @@ class Monopoly < Gosu::Window
   end
 
   def format_number(number)
-    number.to_s.reverse.gsub(/(\d{3})(?=\d)/, '\\1,').reverse
+    number.to_s(:delimited)
   end
 
   def ctrl_cmd_down?
