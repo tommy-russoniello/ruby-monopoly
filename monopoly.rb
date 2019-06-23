@@ -2,6 +2,7 @@ require 'gosu'
 require 'byebug'
 require 'active_support'
 require 'active_support/core_ext/numeric/conversions'
+require 'rb-readline'
 require 'securerandom'
 
 require_relative 'gosu/image'
@@ -68,6 +69,7 @@ class Monopoly < Gosu::Window
     }
 
     @railroads_group = TileGroup.new(name: 'Railroads')
+    @utilities_group = TileGroup.new(name: 'Utilities')
 
     @tile_count = 0
     @tiles = {}
@@ -101,6 +103,14 @@ class Monopoly < Gosu::Window
         rent_scale: [25, 50, 100, 200],
         tile_image: Gosu::Image.new("images/tiles/reading_railroad.png")
       ),
+      UtilityTile.new(
+        deed_image: Gosu::Image.new("images/deeds/electric_company.jpg"),
+        group: @utilities_group,
+        name: 'Electric Company',
+        purchase_price: 150,
+        rent_multiplier_scale: [4, 10],
+        tile_image: Gosu::Image.new("images/tiles/electric_company.png")
+      ),
       RailroadTile.new(
         deed_image: Gosu::Image.new("images/deeds/pennsylvania_railroad.jpg"),
         group: @railroads_group,
@@ -112,6 +122,14 @@ class Monopoly < Gosu::Window
       FreeParkingTile.new(
         name: 'Free Parking',
         tile_image: Gosu::Image.new("images/tiles/free_parking.jpg")
+      ),
+      UtilityTile.new(
+        deed_image: Gosu::Image.new("images/deeds/water_works.jpg"),
+        group: @utilities_group,
+        name: 'Water Works',
+        purchase_price: 150,
+        rent_multiplier_scale: [4, 10],
+        tile_image: Gosu::Image.new("images/tiles/water_works.png")
       ),
       StreetTile.new(
         group: @color_groups[:light_blue],
@@ -288,7 +306,6 @@ class Monopoly < Gosu::Window
 
   def end_turn
     @turn += 1
-    @messages = []
     increment_current_player
     update_visible_buttons(:roll_dice)
   end
@@ -500,7 +517,7 @@ class Monopoly < Gosu::Window
       update_visible_buttons(:end_turn)
     when GoToJailTile
     when JailTile
-    when PropertyTile, RailroadTile
+    when PropertyTile, RailroadTile, UtilityTile
       if @current_tile.owner
         if @current_tile.owner == @current_player
           update_visible_buttons(:end_turn)
@@ -511,6 +528,7 @@ class Monopoly < Gosu::Window
           )
           update_visible_buttons(:end_turn)
         else
+          @current_tile.dice_roll = @die_a + @die_b if @current_tile.is_a?(UtilityTile)
           @buttons[:pay_rent].text = "Pay Rent ($#{format_number(@current_tile.rent)})"
           update_visible_buttons(:pay_rent)
         end
@@ -518,7 +536,6 @@ class Monopoly < Gosu::Window
         update_visible_buttons(:buy, :end_turn)
       end
     when TaxTile
-    when UtilityTile
     else
       pp 'WARNING: INVALID TILE TYPE'
     end

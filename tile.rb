@@ -152,6 +152,7 @@ class TaxTile < Tile
 end
 
 class UtilityTile < PropertyTile
+  attr_accessor :dice_roll
   attr_accessor :rent_multiplier_scale
 
   def initialize(
@@ -179,7 +180,7 @@ class UtilityTile < PropertyTile
     @rent_multiplier_scale = rent_multiplier_scale
   end
 
-  def rent(utility_count, dice_roll)
-    rent_multiplier_scale[utility_count] * dice_roll
+  def rent
+    rent_multiplier_scale[group.amount_owned(owner) - 1] * dice_roll
   end
 end
