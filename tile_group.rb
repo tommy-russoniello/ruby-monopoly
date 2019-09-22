@@ -3,18 +3,18 @@ class TileGroup
   attr_reader :tiles
 
   def initialize(name:)
-    @name = name
-    @tiles = []
+    self.name = name
+    self.tiles = []
   end
 
   def amount_owned(player)
     return 0 if player.nil?
 
-    @tiles.count { |tile| tile.owner == player }
+    tiles.count { |tile| tile.owner == player }
   end
 
   def monopolized?
-    owners = @tiles.map(&:owner)
+    owners = tiles.map(&:owner)
     owner = owners.pop
 
     return false if owner.nil?
@@ -28,9 +28,9 @@ class ColorGroup < TileGroup
   attr_accessor :house_cost
 
   def initialize(color:, house_cost:, name:)
-    @color = color
-    @house_cost = house_cost
-    @name = name
-    @tiles = []
+    self.color = color
+    self.house_cost = house_cost
+    self.name = name
+    self.tiles = []
   end
 end

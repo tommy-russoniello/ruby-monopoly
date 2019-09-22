@@ -1,24 +1,30 @@
 class Player
+  attr_accessor :jail_turns
   attr_accessor :money
   attr_accessor :name
   attr_accessor :properties
   attr_accessor :tile
   attr_accessor :window
 
-  def initialize(money: 0, name:, tile:, window:)
-    @money = money
-    @name = name
-    @properties = []
-    @tile = tile
-    @window = window
+  def initialize(jail_turns: 0, money: 0, name:, tile:, window:)
+    self.jail_turns = jail_turns
+    self.money = money
+    self.name = name
+    self.properties = []
+    self.tile = tile
+    self.window = window
   end
 
   def has_assets_for?(amount)
     amount < total_asset_liquidation_amount
   end
 
+  def in_jail?
+    jail_turns.positive?
+  end
+
   def total_asset_liquidation_amount
-    building_sell_percentage = window.instance_variable_get(:@building_sell_percentage)
+    building_sell_percentage = window.building_sell_percentage
     money + properties.inject(0) do |sum, property|
       sum += property.mortgage_cost unless property.mortgaged?
       if property.is_a?(StreetTile)
@@ -31,8 +37,8 @@ class Player
   end
 
   def update_property_button_coordinates(x, y, offset)
-    tile_indexes = window.instance_variable_get(:@tile_indexes)
-    properties.sort! { |a, b| tile_indexes[a] <=> tile_indexes[b] }
+    tile_indexes = window.tile_indexes
+    properties.sort_by! { |property| tile_indexes[property] }
 
     properties.each do |property|
       property.button.update_coordinates(x, y)

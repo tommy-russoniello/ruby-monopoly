@@ -3,8 +3,8 @@ class Tile
   attr_accessor :tile_image
 
   def initialize(name:, tile_image:)
-    @name = name
-    @tile_image = tile_image
+    self.name = name
+    self.tile_image = tile_image
   end
 end
 
@@ -44,16 +44,16 @@ class PropertyTile < Tile
     purchase_price:,
     tile_image: nil
   )
-    @button = button
-    @deed_image = deed_image
-    @group = group
-    @mortgaged = mortgaged
-    @name = name
-    @owner = owner
-    @purchase_price = purchase_price
-    @tile_image = tile_image
+    self.button = button
+    self.deed_image = deed_image
+    self.group = group
+    self.mortgaged = mortgaged
+    self.name = name
+    self.owner = owner
+    self.purchase_price = purchase_price
+    self.tile_image = tile_image
 
-    @group.tiles << self
+    group.tiles << self
   end
 
   def mortgage_cost
@@ -61,7 +61,7 @@ class PropertyTile < Tile
   end
 
   def mortgaged?
-    @mortgaged
+    mortgaged
   end
 
   def rent
@@ -102,8 +102,8 @@ class StreetTile < PropertyTile
       tile_image: tile_image
     )
 
-    @house_count = house_count
-    @rent_scale = rent_scale
+    self.house_count = house_count
+    self.rent_scale = rent_scale
   end
 
   def rent
@@ -140,7 +140,7 @@ class RailroadTile < PropertyTile
       tile_image: tile_image
     )
 
-    @rent_scale = rent_scale
+    self.rent_scale = rent_scale
   end
 
   def rent
@@ -177,7 +177,7 @@ class UtilityTile < PropertyTile
       tile_image: tile_image
     )
 
-    @rent_multiplier_scale = rent_multiplier_scale
+    self.rent_multiplier_scale = rent_multiplier_scale
   end
 
   def rent

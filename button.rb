@@ -33,26 +33,26 @@ class Button
     window:,
     actions:
   )
-    @actions =
+    self.actions =
       if actions.is_a?(Array) && actions.all? { |element| element.is_a?(Array) }
         actions
       else
         [actions]
       end
 
-    @center_x = x + (width / 2.0)
-    @center_y = y + (height / 2.0)
-    @color = color
-    @font = font
-    @font_color = font_color
-    @height = height
-    @hover_color = hover_color
-    @text = text
-    @width = width
-    @window = window
-    @x = x
-    @y = y
-    @z = z
+    self.center_x = x + (width / 2.0)
+    self.center_y = y + (height / 2.0)
+    self.color = color
+    self.font = font
+    self.font_color = font_color
+    self.height = height
+    self.hover_color = hover_color
+    self.text = text
+    self.width = width
+    self.window = window
+    self.x = x
+    self.y = y
+    self.z = z
   end
 
   def draw(mouse_x = nil, mouse_y = nil)
