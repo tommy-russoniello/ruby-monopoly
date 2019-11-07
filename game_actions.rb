@@ -34,7 +34,7 @@ module GameActions
   def collect_go_money(times_passed_go, player: current_player)
     return unless times_passed_go > 0
 
-    go_money_collected = GO_MONEY_AMOUNT * times_passed_go
+    go_money_collected = Monopoly::GO_MONEY_AMOUNT * times_passed_go
     extra_string = " #{times_passed_go} times" if times_passed_go > 1
     add_message(
       "#{player.name} has gained $#{format_number(go_money_collected)} for " \

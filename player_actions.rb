@@ -177,7 +177,7 @@ module PlayerActions
       return
     end
 
-    house_sell_price = (current_tile.group.house_cost * BUILDING_SELL_PERCENTAGE).to_i
+    house_sell_price = (current_tile.group.house_cost * Monopoly::BUILDING_SELL_PERCENTAGE).to_i
     current_player.money += house_sell_price
     current_tile.house_count -= 1
 
