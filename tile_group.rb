@@ -1,6 +1,6 @@
 class TileGroup
   attr_accessor :name
-  attr_reader :tiles
+  attr_accessor :tiles
 
   def initialize(name:)
     self.name = name
@@ -28,9 +28,9 @@ class ColorGroup < TileGroup
   attr_accessor :house_cost
 
   def initialize(color:, house_cost:, name:)
+    super(name: name)
+
     self.color = color
     self.house_cost = house_cost
-    self.name = name
-    self.tiles = []
   end
 end
