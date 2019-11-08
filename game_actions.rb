@@ -106,6 +106,8 @@ module GameActions
         update_visible_buttons(:buy, :end_turn)
       end
     when TaxTile
+      buttons[:pay_tax].text = "Pay Tax ($#{format_number(current_tile.tax_amount)})"
+      update_visible_buttons(:pay_tax)
     else
       pp('WARNING: INVALID TILE TYPE')
     end

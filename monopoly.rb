@@ -58,6 +58,7 @@ class Monopoly < Gosu::Window
   attr_accessor :fonts
   attr_accessor :messages
   attr_accessor :players
+  attr_accessor :previous_current_player_index
   attr_accessor :property_button_color_cache
   attr_accessor :property_button_hover_color_cache
   attr_accessor :railroads_group
@@ -199,6 +200,11 @@ class Monopoly < Gosu::Window
         tile_image: Gosu::Image.new('images/tiles/park_place.png'),
         window: self
       ),
+      TaxTile.new(
+        name: 'Luxury Tax',
+        tax_amount: 75,
+        tile_image: Gosu::Image.new('images/tiles/luxury_tax.jpg')
+      ),
       StreetTile.new(
         group: color_groups[:light_blue],
         deed_image: Gosu::Image.new('images/deeds/boardwalk.jpg'),
@@ -237,6 +243,7 @@ class Monopoly < Gosu::Window
       Player.new(name: 'Marahz', money: 200, tile: tiles[:go], window: self)
     ]
     self.current_player_index = 0
+    self.previous_current_player_index = -1
     self.current_player = players.first
 
     self.buttons = {
@@ -326,6 +333,14 @@ class Monopoly < Gosu::Window
         actions: :pay_rent,
         font: fonts[:default][:type],
         text: 'Pay Rent',
+        window: self,
+        x: Coordinates::RIGHT_X - Button::DEFAULT_WIDTH,
+        y: Coordinates::BOTTOM_Y - Button::DEFAULT_HEIGHT
+      ),
+      pay_tax: Button.new(
+        actions: :pay_tax,
+        font: fonts[:default][:type],
+        text: 'Pay Tax',
         window: self,
         x: Coordinates::RIGHT_X - Button::DEFAULT_WIDTH,
         y: Coordinates::BOTTOM_Y - Button::DEFAULT_HEIGHT

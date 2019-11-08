@@ -190,6 +190,13 @@ class RailroadTile < PropertyTile
 end
 
 class TaxTile < Tile
+  attr_accessor :tax_amount
+
+  def initialize(name:, tax_amount:, tile_image:)
+    super(name: name, tile_image: tile_image)
+
+    self.tax_amount = tax_amount
+  end
 end
 
 class UtilityTile < PropertyTile

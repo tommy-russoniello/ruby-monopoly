@@ -80,12 +80,13 @@ module PlayerActions
   end
 
   def end_turn
-    previous_current_player_index = current_player_index
     increment_current_player
-    if current_player_index <= previous_current_player_index
+    if current_player_index < previous_current_player_index || players.size == 1
       self.turn += 1
       add_message("Turn #{turn}...")
     end
+
+    self.previous_current_player_index = current_player_index
 
     if current_player.in_jail?
       current_player.jail_turns -= 1
@@ -145,6 +146,15 @@ module PlayerActions
       recipient: current_tile.owner
     )
     self.temporary_rent_multiplier = nil
+  end
+
+  def pay_tax
+    charge_money(
+      amount: current_tile.tax_amount,
+      on_bankrupt: :end_turn,
+      on_success: [:update_visible_buttons, :end_turn],
+      player: current_player
+    )
   end
 
   def roll_dice
