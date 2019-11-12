@@ -13,6 +13,10 @@ class Button
   attr_accessor :font_color
   attr_accessor :height
   attr_accessor :hover_color
+  attr_accessor :hover_image
+  attr_accessor :image
+  attr_accessor :image_height
+  attr_accessor :image_width
   attr_reader :text
   attr_accessor :width
   attr_accessor :window
@@ -21,21 +25,26 @@ class Button
   attr_accessor :z
 
   def initialize(
+    actions:,
+    color: DEFAULT_COLOR,
+    font_color: nil,
+    font: nil,
+    height: DEFAULT_HEIGHT,
+    hover_color: DEFAULT_HOVER_COLOR,
+    hover_image: nil,
+    image_height: nil,
+    image_width: nil,
+    image: nil,
+    text: nil,
+    width: DEFAULT_WIDTH,
+    window:,
     x: 0,
     y: 0,
-    z: ZOrder::MAIN_UI,
-    height: DEFAULT_HEIGHT,
-    width: DEFAULT_WIDTH,
-    color: DEFAULT_COLOR,
-    hover_color: DEFAULT_HOVER_COLOR,
-    font: nil,
-    text: nil,
-    font_color: nil,
-    window:,
-    actions:
+    z: ZOrder::MAIN_UI
   )
-    self.actions = window.format_actions(actions)
+    self.window = window
 
+    self.actions = actions
     self.center_x = x + (width / 2.0)
     self.center_y = y + (height / 2.0)
     self.color = color
@@ -43,8 +52,11 @@ class Button
     self.font_color = font_color
     self.height = height
     self.hover_color = hover_color
+    self.hover_image = hover_image
+    self.image = image
+    self.image_height = image_height
+    self.image_width = image_width
     self.width = width
-    self.window = window
     self.x = x
     self.y = y
     self.z = z
@@ -52,29 +64,56 @@ class Button
     self.text = text
   end
 
-  def draw(mouse_x = nil, mouse_y = nil)
-    if mouse_x && mouse_y && within?(mouse_x, mouse_y)
-      Gosu.draw_rect(x, y, width, height, hover_color, z)
-    else
-      Gosu.draw_rect(x, y, width, height, color, z)
-    end
-
-    font&.draw_text_rel(
-      text,
-      center_x,
-      center_y,
-      z,
-      0.5,
-      0.5,
-      1.0,
-      1.0,
-      font_color || Gosu::Color::BLACK
-    )
+  def actions=(value)
+    @actions = window.format_actions(value)
   end
 
-  def update_coordinates(new_x = nil, new_y = nil)
+  def draw(mouse_x = nil, mouse_y = nil)
+    if mouse_x && mouse_y && within?(mouse_x, mouse_y)
+      Gosu.draw_rect(x, y, width, height, hover_color, z) if hover_color
+      hover_image&.draw(
+        center_x,
+        center_y,
+        z,
+        1,
+        1,
+        from_center: true,
+        draw_height: image_height,
+        draw_width: image_width
+      )
+    else
+      Gosu.draw_rect(x, y, width, height, color, z) if color
+      image&.draw(
+        center_x,
+        center_y,
+        z,
+        1,
+        1,
+        from_center: true,
+        draw_height: image_height,
+        draw_width: image_width
+      )
+    end
+
+    if text
+      font&.draw_text_rel(
+        text,
+        center_x,
+        center_y,
+        z,
+        0.5,
+        0.5,
+        1.0,
+        1.0,
+        font_color || Gosu::Color::BLACK
+      )
+    end
+  end
+
+  def update_coordinates(new_x = nil, new_y = nil, new_z = nil)
     self.x = new_x if new_x
     self.y = new_y if new_y
+    self.z = new_z if new_z
 
     self.center_x = x + (width / 2.0)
     self.center_y = y + (height / 2.0)

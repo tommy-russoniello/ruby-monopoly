@@ -3,15 +3,17 @@ class Player
   attr_accessor :jail_turns
   attr_accessor :money
   attr_accessor :name
+  attr_accessor :number
   attr_accessor :properties
   attr_accessor :tile
   attr_accessor :window
 
-  def initialize(jail_turns: 0, money: 0, name:, tile:, window:)
+  def initialize(jail_turns: 0, money: 0, name:, number:, tile:, window:)
     self.cards = []
     self.jail_turns = jail_turns
     self.money = money
     self.name = name
+    self.number = number
     self.properties = []
     self.tile = tile
     self.window = window

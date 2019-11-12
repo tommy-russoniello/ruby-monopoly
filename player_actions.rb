@@ -81,12 +81,12 @@ module PlayerActions
 
   def end_turn
     increment_current_player
-    if current_player_index < previous_current_player_index || players.size == 1
+    if current_player.number <= previous_player_number
       self.turn += 1
       add_message("Turn #{turn}...")
     end
 
-    self.previous_current_player_index = current_player_index
+    self.previous_player_number = current_player.number
 
     if current_player.in_jail?
       current_player.jail_turns -= 1
@@ -106,6 +106,17 @@ module PlayerActions
     else
       update_visible_buttons(:roll_dice_for_move)
     end
+  end
+
+  def exit_game
+    close!
+  end
+
+  def forfeit
+    exit_inspector if draw_inspector?
+    toggle_options_menu if draw_options_menu?
+    eliminate_player(current_player)
+    end_turn
   end
 
   def go_to_jail
@@ -163,6 +174,10 @@ module PlayerActions
     add_message("#{current_player.name} has rolled #{die_a + die_b} (#{die_a}, #{die_b}).")
   end
 
+  def save_game
+    # TODO
+  end
+
   def sell_house
     if current_tile.house_count < 1
       add_message("#{current_tile.name} has no houses on it to sell.")
@@ -195,6 +210,43 @@ module PlayerActions
       "#{current_player.name} sold a house from #{current_tile.name} for " \
       "$#{format_number(house_sell_price)}."
     )
+  end
+
+  def toggle_dialogue_box(actions: nil, button_text: nil)
+    if draw_dialogue_box?
+      toggle_options_menu if draw_options_menu?
+    else
+      dialogue_box_buttons[:action].actions = actions
+      dialogue_box_buttons[:action].actions =
+        [[:toggle_dialogue_box]] + dialogue_box_buttons[:action].actions
+      dialogue_box_buttons[:action].text = button_text
+    end
+
+    self.draw_dialogue_box = !draw_dialogue_box
+  end
+
+  def toggle_options_menu
+    if draw_options_menu?
+      buttons[:options].color = nil
+      buttons[:options].hover_color = nil
+    else
+      bottom_of_options_menu_button_y = buttons[:options].y + buttons[:options].height
+      bottom_of_last_option_button_y =
+        options_menu_buttons.values.last.y + options_menu_buttons.values.last.height
+
+      self.options_menu_bar_paramaters = [
+        options_menu_buttons.values.first.x,
+        options_menu_buttons.values.first.y - 1,
+        buttons[:options].x - options_menu_buttons.values.first.x + buttons[:options].width + 1,
+        bottom_of_last_option_button_y - bottom_of_options_menu_button_y,
+        colors[:inspector_background],
+        ZOrder::MENU_BACKGROUND
+      ]
+      buttons[:options].color = colors[:inspector_background]
+      buttons[:options].hover_color = colors[:inspector_background]
+    end
+
+    self.draw_options_menu = !draw_options_menu
   end
 
   def unmortgage

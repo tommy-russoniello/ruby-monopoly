@@ -1,5 +1,6 @@
 module UserInterface
   DEFAULT_FONT_SIZE = 30
+  DIALOGUE_BOX_BUTTON_GAP = 20
 
   def add_message(message)
     puts(message)
@@ -142,10 +143,19 @@ module UserInterface
       colors[:default_text]
     )
 
+    coordinates_for_buttons = draw_dialogue_box? ? [] : [mouse_x, mouse_y]
+
+    # Options Menu
+    buttons[:options].draw(mouse_x, mouse_y)
+    if draw_options_menu?
+      Gosu.draw_rect(*options_menu_bar_paramaters)
+      options_menu_buttons.each_value { |button| button.draw(*coordinates_for_buttons) }
+    end
+
     # Mouse coordinates
     fonts[:default][:type].draw_text_rel(
       "#{mouse_x.round(3)}, #{mouse_y.round(3)}",
-      Coordinates::RIGHT_X,
+      Coordinates::RIGHT_X * 0.85,
       Coordinates::TOP_Y,
       ZOrder::MAIN_UI,
       1,
@@ -175,10 +185,10 @@ module UserInterface
     end
 
     # Primary buttons
-    visible_buttons.each { |button| button.draw(mouse_x, mouse_y) }
+    visible_buttons.each { |button| button.draw(*coordinates_for_buttons) }
 
     # Property buttons
-    current_player.properties.each { |property| property.button.draw(mouse_x, mouse_y) }
+    current_player.properties.each { |property| property.button.draw(*coordinates_for_buttons) }
 
     # Inspector
     if draw_inspector?
@@ -209,6 +219,42 @@ module UserInterface
       )
       y_differential += fonts[:default][:offset]
     end
+
+    # Dialogue box
+    if draw_dialogue_box?
+      # Background blur
+      Gosu.draw_rect(
+        Coordinates::LEFT_X,
+        Coordinates::TOP_Y,
+        Coordinates::RIGHT_X - Coordinates::LEFT_X,
+        Coordinates::BOTTOM_Y - Coordinates::TOP_Y,
+        colors[:blur],
+        ZOrder::BLUR
+      )
+
+      Gosu.draw_rect(
+        Coordinates::DIALOGUE_BOX_LEFT_X,
+        Coordinates::DIALOGUE_BOX_TOP_Y,
+        Coordinates::DIALOGUE_BOX_RIGHT_X - Coordinates::DIALOGUE_BOX_LEFT_X,
+        Coordinates::DIALOGUE_BOX_BOTTOM_Y - Coordinates::DIALOGUE_BOX_TOP_Y,
+        colors[:dialogue_box_background],
+        ZOrder::DIALOGUE_BACKGROUND
+      )
+
+      fonts[:dialogue][:type].draw_text_rel(
+        'Are You Sure?',
+        Coordinates::CENTER_X,
+        Coordinates::DIALOGUE_BOX_TOP_Y + (Coordinates::DIALOGUE_BOX_HEIGHT / 3),
+        ZOrder::DIALOGUE_UI,
+        0.5,
+        0,
+        1,
+        1,
+        colors[:dialogue_box_text]
+      )
+
+      dialogue_box_buttons.values.each { |button| button.draw(mouse_x, mouse_y) }
+    end
   end
 
   def exit_inspector
@@ -219,6 +265,16 @@ module UserInterface
     self.draw_inspector = false
     pop_current_tile_cache
     pop_visible_buttons_cache
+  end
+
+  def set_options_menu_button_coordinates
+    options_menu_buttons.values.each.with_index do |options_menu_button, index|
+      options_menu_button.update_coordinates(
+        buttons[:options].x - Button::DEFAULT_WIDTH + 10,
+        buttons[:options].y + (index * (Button::DEFAULT_HEIGHT + 1)) + buttons[:options].height + 1,
+        ZOrder::MENU_UI
+      )
+    end
   end
 
   def update_visible_buttons(*button_names)

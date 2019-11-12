@@ -17,20 +17,41 @@ require_relative 'tile_group'
 require_relative 'user_interface'
 
 module Coordinates
-  CENTER_X = 960
-  CENTER_Y = 540
   TOP_Y = 0
   BOTTOM_Y = 1080
-  RIGHT_X = 1920
   LEFT_X = 0
-  INSPECTOR_LEFT_X = 480
+  RIGHT_X = 1920
+  CENTER_X = 960
+  CENTER_Y = 540
+
+  DIALOGUE_BOX_TOP_Y = 390
+  DIALOGUE_BOX_BOTTOM_Y = 690
+  DIALOGUE_BOX_LEFT_X = 660
+  DIALOGUE_BOX_RIGHT_X = 1260
+  DIALOGUE_BOX_HEIGHT = DIALOGUE_BOX_BOTTOM_Y - DIALOGUE_BOX_TOP_Y
+  DIALOGUE_BOX_WIDTH = DIALOGUE_BOX_RIGHT_X - DIALOGUE_BOX_LEFT_X
+
   INSPECTOR_TOP_Y = 275
-  INSPECTOR_RIGHT_X = 1440
   INSPECTOR_BOTTOM_Y = 965
+  INSPECTOR_LEFT_X = 480
+  INSPECTOR_RIGHT_X = 1440
+  INSPECTOR_HEIGHT = INSPECTOR_BOTTOM_Y - INSPECTOR_TOP_Y
+  INSPECTOR_WIDTH = INSPECTOR_RIGHT_X - INSPECTOR_LEFT_X
+
+  BUTTON_1_X = RIGHT_X - Button::DEFAULT_WIDTH
+  BUTTON_1_Y = BOTTOM_Y - Button::DEFAULT_HEIGHT
+  BUTTON_2_X = RIGHT_X - Button::DEFAULT_WIDTH
+  BUTTON_2_Y = BOTTOM_Y - (Button::DEFAULT_HEIGHT * 2 + 1)
 end
 
 module ZOrder
-  MAIN_BACKGROUND, MAIN_UI, MENU_BACKGROUND, MENU_UI = *0..3
+  MAIN_BACKGROUND,
+    MAIN_UI,
+    MENU_BACKGROUND,
+    MENU_UI,
+    BLUR,
+    DIALOGUE_BACKGROUND,
+    DIALOGUE_UI = *0..6
 end
 
 class Monopoly < Gosu::Window
@@ -52,13 +73,18 @@ class Monopoly < Gosu::Window
   attr_accessor :current_player_index
   attr_accessor :current_tile
   attr_accessor :current_tile_cache
+  attr_accessor :dialogue_box_buttons
   attr_accessor :die_a
   attr_accessor :die_b
+  attr_accessor :draw_dialogue_box
   attr_accessor :draw_inspector
+  attr_accessor :draw_options_menu
   attr_accessor :fonts
   attr_accessor :messages
+  attr_accessor :options_menu_buttons
+  attr_accessor :options_menu_bar_paramaters
   attr_accessor :players
-  attr_accessor :previous_current_player_index
+  attr_accessor :previous_player_number
   attr_accessor :property_button_color_cache
   attr_accessor :property_button_hover_color_cache
   attr_accessor :railroads_group
@@ -77,18 +103,25 @@ class Monopoly < Gosu::Window
     self.caption = 'Monopoly'
 
     self.fonts = {
+      dialogue: { type: Gosu::Font.new(50), offset: 55 },
       default: { type: Gosu::Font.new(DEFAULT_FONT_SIZE), offset: 35 },
       title: { type: Gosu::Font.new(50), offset: 55 }
     }
 
     self.colors = {
+      blur: Gosu::Color.new(200, 200, 200, 200),
       default_button: Gosu::Color::WHITE,
       default_button_hover: Gosu::Color.new(255, 219, 219, 219),
+      default_text: Gosu::Color::YELLOW,
+      dialogue_box_background: Gosu::Color::BLACK,
+      dialogue_box_text: Gosu::Color::WHITE,
+      inspector_background: Gosu::Color.new(255, 192, 206, 193),
+      inspector_text: Gosu::Color::BLACK,
+      options_menu_button: Gosu::Color.new(255, 153, 153, 153),
+      options_menu_button_hover: Gosu::Color.new(255, 95, 95, 95),
       property_button_selected: Gosu::Color.new(255, 127, 158, 209),
       property_button_selected_hover: Gosu::Color.new(255, 105, 130, 170),
-      default_text: Gosu::Color::YELLOW,
-      inspector_text: Gosu::Color::BLACK,
-      inspector_background: Gosu::Color.new(255, 192, 206, 193)
+      warning: Gosu::Color.new(255, 214, 19, 19)
     }
 
     self.color_groups = {
@@ -238,13 +271,16 @@ class Monopoly < Gosu::Window
     end
 
     self.players = [
-      Player.new(name: 'Tom', money: 200, tile: tiles[:go], window: self),
-      Player.new(name: 'Jerry', money: 200, tile: tiles[:go], window: self),
-      Player.new(name: 'Marahz', money: 200, tile: tiles[:go], window: self)
+      Player.new(name: 'Tom', number: 1, money: 200, tile: tiles[:go], window: self),
+      Player.new(name: 'Jerry', number: 2, money: 200, tile: tiles[:go], window: self),
+      Player.new(name: 'Marahz', number: 3, money: 200, tile: tiles[:go], window: self)
     ]
     self.current_player_index = 0
-    self.previous_current_player_index = -1
+    self.previous_player_number = -1
     self.current_player = players.first
+
+    dialogue_box_button_width =
+      (Coordinates::DIALOGUE_BOX_WIDTH - (DIALOGUE_BOX_BUTTON_GAP * 3)) / 2
 
     self.buttons = {
       build_house: Button.new(
@@ -261,64 +297,64 @@ class Monopoly < Gosu::Window
         font: fonts[:default][:type],
         text: 'Buy',
         window: self,
-        x: Coordinates::RIGHT_X - Button::DEFAULT_WIDTH,
-        y: Coordinates::BOTTOM_Y - (Button::DEFAULT_HEIGHT * 2 + 1)
+        x: Coordinates::BUTTON_2_X,
+        y: Coordinates::BUTTON_2_Y
       ),
       card_continue: Button.new(
         actions: :use_new_card,
         font: fonts[:default][:type],
         text: 'Continue',
         window: self,
-        x: Coordinates::RIGHT_X - Button::DEFAULT_WIDTH,
-        y: Coordinates::BOTTOM_Y - Button::DEFAULT_HEIGHT
+        x: Coordinates::BUTTON_1_X,
+        y: Coordinates::BUTTON_1_Y
       ),
       consecutive_charge: Button.new(
         actions: [],
         font: fonts[:default][:type],
         text: 'Pay',
         window: self,
-        x: Coordinates::RIGHT_X - Button::DEFAULT_WIDTH,
-        y: Coordinates::BOTTOM_Y - Button::DEFAULT_HEIGHT
+        x: Coordinates::BUTTON_1_X,
+        y: Coordinates::BUTTON_1_Y
       ),
       continue: Button.new(
         actions: :end_turn,
         font: fonts[:default][:type],
         text: 'Continue',
         window: self,
-        x: Coordinates::RIGHT_X - Button::DEFAULT_WIDTH,
-        y: Coordinates::BOTTOM_Y - Button::DEFAULT_HEIGHT
+        x: Coordinates::BUTTON_1_X,
+        y: Coordinates::BUTTON_1_Y
       ),
       draw_card: Button.new(
         actions: :draw_card,
         font: fonts[:default][:type],
         text: 'Draw Card',
         window: self,
-        x: Coordinates::RIGHT_X - Button::DEFAULT_WIDTH,
-        y: Coordinates::BOTTOM_Y - Button::DEFAULT_HEIGHT
+        x: Coordinates::BUTTON_1_X,
+        y: Coordinates::BUTTON_1_Y
       ),
       end_turn: Button.new(
         actions: :end_turn,
         font: fonts[:default][:type],
         text: 'End Turn',
         window: self,
-        x: Coordinates::RIGHT_X - Button::DEFAULT_WIDTH,
-        y: Coordinates::BOTTOM_Y - Button::DEFAULT_HEIGHT
+        x: Coordinates::BUTTON_1_X,
+        y: Coordinates::BUTTON_1_Y
       ),
       exit_inspector: Button.new(
         actions: :exit_inspector,
         font: fonts[:default][:type],
         text: 'Back',
         window: self,
-        x: Coordinates::RIGHT_X - Button::DEFAULT_WIDTH,
-        y: Coordinates::BOTTOM_Y - Button::DEFAULT_HEIGHT
+        x: Coordinates::BUTTON_1_X,
+        y: Coordinates::BUTTON_1_Y
       ),
       go_to_jail: Button.new(
         actions: :go_to_jail,
         font: fonts[:default][:type],
         text: 'Go To Jail',
         window: self,
-        x: Coordinates::RIGHT_X - Button::DEFAULT_WIDTH,
-        y: Coordinates::BOTTOM_Y - Button::DEFAULT_HEIGHT
+        x: Coordinates::BUTTON_1_X,
+        y: Coordinates::BUTTON_1_Y
       ),
       mortgage: Button.new(
         actions: :mortgage,
@@ -329,37 +365,53 @@ class Monopoly < Gosu::Window
         y: Coordinates::INSPECTOR_BOTTOM_Y - (Button::DEFAULT_HEIGHT + 3),
         z: ZOrder::MENU_UI
       ),
+      options: Button.new(
+        actions: :toggle_options_menu,
+        color: nil,
+        font: fonts[:default][:type],
+        height: 50,
+        hover_color: nil,
+        hover_image: Gosu::Image.new('images/user_interface/options_gear_hover.png'),
+        image: Gosu::Image.new('images/user_interface/options_gear.png'),
+        image_height: 45,
+        image_width: 45,
+        width: 50,
+        window: self,
+        x: Coordinates::RIGHT_X - 50,
+        y: Coordinates::TOP_Y,
+        z: ZOrder::MENU_UI
+      ),
       pay_rent: Button.new(
         actions: :pay_rent,
         font: fonts[:default][:type],
         text: 'Pay Rent',
         window: self,
-        x: Coordinates::RIGHT_X - Button::DEFAULT_WIDTH,
-        y: Coordinates::BOTTOM_Y - Button::DEFAULT_HEIGHT
+        x: Coordinates::BUTTON_1_X,
+        y: Coordinates::BUTTON_1_Y
       ),
       pay_tax: Button.new(
         actions: :pay_tax,
         font: fonts[:default][:type],
         text: 'Pay Tax',
         window: self,
-        x: Coordinates::RIGHT_X - Button::DEFAULT_WIDTH,
-        y: Coordinates::BOTTOM_Y - Button::DEFAULT_HEIGHT
+        x: Coordinates::BUTTON_1_X,
+        y: Coordinates::BUTTON_1_Y
       ),
       roll_dice_for_move: Button.new(
         actions: [[:roll_dice], [:move], [:land]],
         font: fonts[:default][:type],
         text: 'Roll Dice',
         window: self,
-        x: Coordinates::RIGHT_X - Button::DEFAULT_WIDTH,
-        y: Coordinates::BOTTOM_Y - Button::DEFAULT_HEIGHT
+        x: Coordinates::BUTTON_1_X,
+        y: Coordinates::BUTTON_1_Y
       ),
       roll_dice_for_rent: Button.new(
         actions: [[:roll_dice], [:land]],
         font: fonts[:default][:type],
         text: 'Roll Dice',
         window: self,
-        x: Coordinates::RIGHT_X - Button::DEFAULT_WIDTH,
-        y: Coordinates::BOTTOM_Y - Button::DEFAULT_HEIGHT
+        x: Coordinates::BUTTON_1_X,
+        y: Coordinates::BUTTON_1_Y
       ),
       sell_house: Button.new(
         actions: :sell_house,
@@ -384,8 +436,60 @@ class Monopoly < Gosu::Window
         font: fonts[:default][:type],
         text: 'Use Get Out Of Jail Free Card',
         window: self,
-        x: Coordinates::RIGHT_X - Button::DEFAULT_WIDTH,
-        y: Coordinates::BOTTOM_Y - (Button::DEFAULT_HEIGHT * 2 + 1)
+        x: Coordinates::BUTTON_2_X,
+        y: Coordinates::BUTTON_2_Y
+      )
+    }
+
+    self.options_menu_buttons = {
+      save: Button.new(
+        actions: :save_game,
+        color: colors[:options_menu_button],
+        font: fonts[:default][:type],
+        hover_color: colors[:options_menu_button_hover],
+        text: 'Save',
+        window: self
+      ),
+      exit: Button.new(
+        actions: [[:toggle_dialogue_box, actions: :exit_game, button_text: 'Exit']],
+        color: colors[:options_menu_button],
+        font: fonts[:default][:type],
+        hover_color: colors[:options_menu_button_hover],
+        text: 'Exit',
+        window: self
+      ),
+      forfeit: Button.new(
+        actions: [[:toggle_dialogue_box, actions: :forfeit, button_text: 'Forfeit']],
+        color: colors[:options_menu_button],
+        font: fonts[:default][:type],
+        hover_color: colors[:warning],
+        text: 'Forfeit',
+        window: self
+      )
+    }
+
+    set_options_menu_button_coordinates
+
+    self.dialogue_box_buttons = {
+      cancel: Button.new(
+        actions: :toggle_dialogue_box,
+        font: fonts[:default][:type],
+        text: 'Cancel',
+        width: dialogue_box_button_width,
+        window: self,
+        x: Coordinates::DIALOGUE_BOX_LEFT_X + DIALOGUE_BOX_BUTTON_GAP,
+        y: Coordinates::DIALOGUE_BOX_BOTTOM_Y - Button::DEFAULT_HEIGHT - 10,
+        z: ZOrder::DIALOGUE_UI
+      ),
+      action: Button.new(
+        actions: :toggle_dialogue_box,
+        font: fonts[:default][:type],
+        text: 'Cancel',
+        width: dialogue_box_button_width,
+        window: self,
+        x: Coordinates::DIALOGUE_BOX_RIGHT_X - DIALOGUE_BOX_BUTTON_GAP - dialogue_box_button_width,
+        y: Coordinates::DIALOGUE_BOX_BOTTOM_Y - Button::DEFAULT_HEIGHT - 10,
+        z: ZOrder::DIALOGUE_UI
       )
     }
 
@@ -482,6 +586,12 @@ class Monopoly < Gosu::Window
     end
   end
 
+  %i[dialogue_box inspector options_menu].each do |value|
+    define_method(:"draw_#{value}?") do
+      send(:"draw_#{value}")
+    end
+  end
+
   def button_down(id)
     case id
     when Gosu::MS_LEFT
@@ -543,10 +653,6 @@ class Monopoly < Gosu::Window
     end
   end
 
-  def draw_inspector?
-    draw_inspector
-  end
-
   def execute_actions(actions)
     actions.each do |action|
       if action.is_a?(Array)
@@ -557,7 +663,7 @@ class Monopoly < Gosu::Window
         elsif action.is_a?(Symbol)
           send(action, *parameters)
         else
-          pp "\"#{text}\" button has an invalid action"
+          puts("invalid action: #{action.inspect}")
         end
       else
         if action.is_a?(Proc)
@@ -565,7 +671,7 @@ class Monopoly < Gosu::Window
         elsif action.is_a?(Symbol)
           send(action)
         else
-          pp "\"#{text}\" button has an invalid action"
+          puts("invalid action: #{action.inspect}")
         end
       end
     end
@@ -584,8 +690,17 @@ class Monopoly < Gosu::Window
   end
 
   def handle_click(x, y)
-    property_buttons = current_player.properties.map { |property| property.button }
-    (visible_buttons + property_buttons).each do |button|
+    buttons_to_check =
+      if draw_dialogue_box?
+        dialogue_box_buttons.values
+      else
+        property_buttons = current_player.properties.map { |property| property.button }
+        options_buttons = [buttons[:options]]
+        options_buttons += options_menu_buttons.values if draw_options_menu?
+        visible_buttons + property_buttons + options_buttons
+      end
+
+    buttons_to_check.each do |button|
       if button.within?(x, y)
         button.perform_actions
         break
