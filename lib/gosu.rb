@@ -1,3 +1,6 @@
+require_relative 'gosu/font'
+require_relative 'gosu/image'
+
 module Gosu
   class << self
     alias _draw_rect draw_rect
