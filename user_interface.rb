@@ -47,14 +47,12 @@ module UserInterface
     # Images
     if current_card && !draw_inspector?
       current_card.image.draw(
-        Coordinates::CENTER_X,
-        Coordinates::CENTER_Y,
-        ZOrder::MENU_UI,
-        1,
-        1,
-        from_center: true,
         draw_height: 245,
-        draw_width: 420
+        draw_width: 420,
+        from_center: true,
+        x: Coordinates::CENTER_X,
+        y: Coordinates::CENTER_Y,
+        z: ZOrder::MENU_UI
       )
     elsif current_tile.is_a?(PropertyTile)
       details = [
@@ -62,25 +60,21 @@ module UserInterface
       ]
 
       current_tile.tile_image.draw(
-        Coordinates::CENTER_X - 150,
-        Coordinates::CENTER_Y,
-        ZOrder::MENU_UI,
-        1,
-        1,
-        from_center: true,
         draw_height: 474,
-        draw_width: 288
+        draw_width: 288,
+        from_center: true,
+        x: Coordinates::CENTER_X - 150,
+        y: Coordinates::CENTER_Y,
+        z: ZOrder::MENU_UI
       )
 
       current_tile.deed_image.draw(
-        Coordinates::CENTER_X + 150,
-        Coordinates::CENTER_Y,
-        ZOrder::MENU_UI,
-        1,
-        1,
-        from_center: true,
         draw_height: 474,
-        draw_width: 288
+        draw_width: 288,
+        from_center: true,
+        x: Coordinates::CENTER_X + 150,
+        y: Coordinates::CENTER_Y,
+        z: ZOrder::MENU_UI
       )
 
       owner_message =
@@ -104,30 +98,26 @@ module UserInterface
       width = current_tile.corner? ? 474 : 288
 
       current_tile.tile_image.draw(
-        Coordinates::CENTER_X,
-        Coordinates::CENTER_Y,
-        ZOrder::MENU_UI,
-        1,
-        1,
-        from_center: true,
         draw_height: 474,
-        draw_width: width
+        draw_width: width,
+        from_center: true,
+        x: Coordinates::CENTER_X,
+        y: Coordinates::CENTER_Y,
+        z: ZOrder::MENU_UI
       )
     end
 
     # Player list
     y_differential = 0
     players.each do |player|
-      fonts[:default][:type].draw_text_rel(
+      fonts[:default][:type].draw_text(
         "#{player.name}: #{player.tile.name}",
-        Coordinates::CENTER_X,
-        Coordinates::TOP_Y + y_differential,
-        ZOrder::MAIN_UI,
-        0.5,
-        0,
-        1,
-        1,
-        colors[:default_text]
+        color: colors[:default_text],
+        rel_x: 0.5,
+        rel_y: 0,
+        x: Coordinates::CENTER_X,
+        y: Coordinates::TOP_Y + y_differential,
+        z: ZOrder::MAIN_UI
       )
       y_differential += fonts[:default][:offset]
     end
@@ -135,12 +125,10 @@ module UserInterface
     # Current player details
     fonts[:title][:type].draw_text(
       "#{current_player.name}: $#{format_number(current_player.money)}",
-      Coordinates::LEFT_X,
-      Coordinates::TOP_Y,
-      ZOrder::MAIN_UI,
-      1,
-      1,
-      colors[:default_text]
+      color: colors[:default_text],
+      x: Coordinates::LEFT_X,
+      y: Coordinates::TOP_Y,
+      z: ZOrder::MAIN_UI
     )
 
     coordinates_for_buttons = draw_dialogue_box? ? [] : [mouse_x, mouse_y]
@@ -148,37 +136,33 @@ module UserInterface
     # Options Menu
     buttons[:options].draw(mouse_x, mouse_y)
     if draw_options_menu?
-      Gosu.draw_rect(*options_menu_bar_paramaters)
+      Gosu.draw_rect(**options_menu_bar_paramaters)
       options_menu_buttons.each_value { |button| button.draw(*coordinates_for_buttons) }
     end
 
     # Mouse coordinates
-    fonts[:default][:type].draw_text_rel(
+    fonts[:default][:type].draw_text(
       "#{mouse_x.round(3)}, #{mouse_y.round(3)}",
-      Coordinates::RIGHT_X * 0.85,
-      Coordinates::TOP_Y,
-      ZOrder::MAIN_UI,
-      1,
-      0,
-      1,
-      1,
-      colors[:default_text]
+      color: colors[:default_text],
+      rel_x: 1,
+      rel_y: 0,
+      x: Coordinates::RIGHT_X * 0.85,
+      y: Coordinates::TOP_Y,
+      z: ZOrder::MAIN_UI
     )
 
     # Messages
     y_differential = 0
     self.messages = messages[0..4]
     messages.each do |message|
-      fonts[:default][:type].draw_text_rel(
+      fonts[:default][:type].draw_text(
         message,
-        Coordinates::LEFT_X,
-        Coordinates::BOTTOM_Y - y_differential,
-        ZOrder::MAIN_UI,
-        0,
-        1,
-        1,
-        1,
-        colors[:default_text]
+        color: colors[:default_text],
+        rel_x: 0,
+        rel_y: 1,
+        x: Coordinates::LEFT_X,
+        y: Coordinates::BOTTOM_Y - y_differential,
+        z: ZOrder::MAIN_UI
       )
 
       y_differential += fonts[:default][:offset]
@@ -193,12 +177,12 @@ module UserInterface
     # Inspector
     if draw_inspector?
       Gosu.draw_rect(
-        Coordinates::INSPECTOR_LEFT_X,
-        Coordinates::INSPECTOR_TOP_Y,
-        Coordinates::INSPECTOR_RIGHT_X - Coordinates::INSPECTOR_LEFT_X,
-        Coordinates::INSPECTOR_BOTTOM_Y - Coordinates::INSPECTOR_TOP_Y,
-        colors[:inspector_background],
-        ZOrder::MENU_BACKGROUND
+        color: colors[:inspector_background],
+        height: Coordinates::INSPECTOR_BOTTOM_Y - Coordinates::INSPECTOR_TOP_Y,
+        width: Coordinates::INSPECTOR_RIGHT_X - Coordinates::INSPECTOR_LEFT_X,
+        x: Coordinates::INSPECTOR_LEFT_X,
+        y: Coordinates::INSPECTOR_TOP_Y,
+        z: ZOrder::MENU_BACKGROUND
       )
       current_details_text_color = colors[:inspector_text]
     end
@@ -206,16 +190,14 @@ module UserInterface
     # Current tile details
     y_differential = 250
     details&.each do |detail|
-      fonts[:default][:type].draw_text_rel(
+      fonts[:default][:type].draw_text(
         detail,
-        Coordinates::CENTER_X,
-        Coordinates::CENTER_Y + y_differential,
-        ZOrder::MENU_UI,
-        0.5,
-        0,
-        1,
-        1,
-        current_details_text_color || colors[:default_text]
+        color: current_details_text_color || colors[:default_text],
+        rel_x: 0.5,
+        rel_y: 0,
+        x: Coordinates::CENTER_X,
+        y: Coordinates::CENTER_Y + y_differential,
+        z: ZOrder::MENU_UI
       )
       y_differential += fonts[:default][:offset]
     end
@@ -224,33 +206,31 @@ module UserInterface
     if draw_dialogue_box?
       # Background blur
       Gosu.draw_rect(
-        Coordinates::LEFT_X,
-        Coordinates::TOP_Y,
-        Coordinates::RIGHT_X - Coordinates::LEFT_X,
-        Coordinates::BOTTOM_Y - Coordinates::TOP_Y,
-        colors[:blur],
-        ZOrder::BLUR
+        color: colors[:blur],
+        height: Coordinates::BOTTOM_Y - Coordinates::TOP_Y,
+        width: Coordinates::RIGHT_X - Coordinates::LEFT_X,
+        x: Coordinates::LEFT_X,
+        y: Coordinates::TOP_Y,
+        z: ZOrder::BLUR
       )
 
       Gosu.draw_rect(
-        Coordinates::DIALOGUE_BOX_LEFT_X,
-        Coordinates::DIALOGUE_BOX_TOP_Y,
-        Coordinates::DIALOGUE_BOX_RIGHT_X - Coordinates::DIALOGUE_BOX_LEFT_X,
-        Coordinates::DIALOGUE_BOX_BOTTOM_Y - Coordinates::DIALOGUE_BOX_TOP_Y,
-        colors[:dialogue_box_background],
-        ZOrder::DIALOGUE_BACKGROUND
+        color: colors[:dialogue_box_background],
+        height: Coordinates::DIALOGUE_BOX_BOTTOM_Y - Coordinates::DIALOGUE_BOX_TOP_Y,
+        width: Coordinates::DIALOGUE_BOX_RIGHT_X - Coordinates::DIALOGUE_BOX_LEFT_X,
+        x: Coordinates::DIALOGUE_BOX_LEFT_X,
+        y: Coordinates::DIALOGUE_BOX_TOP_Y,
+        z: ZOrder::DIALOGUE_BACKGROUND
       )
 
-      fonts[:dialogue][:type].draw_text_rel(
+      fonts[:dialogue][:type].draw_text(
         'Are You Sure?',
-        Coordinates::CENTER_X,
-        Coordinates::DIALOGUE_BOX_TOP_Y + (Coordinates::DIALOGUE_BOX_HEIGHT / 3),
-        ZOrder::DIALOGUE_UI,
-        0.5,
-        0,
-        1,
-        1,
-        colors[:dialogue_box_text]
+        color: colors[:dialogue_box_text],
+        rel_x: 0.5,
+        rel_y: 0,
+        x: Coordinates::CENTER_X,
+        y: Coordinates::DIALOGUE_BOX_TOP_Y + (Coordinates::DIALOGUE_BOX_HEIGHT / 3),
+        z: ZOrder::DIALOGUE_UI
       )
 
       dialogue_box_buttons.values.each { |button| button.draw(mouse_x, mouse_y) }

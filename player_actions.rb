@@ -234,14 +234,14 @@ module PlayerActions
       bottom_of_last_option_button_y =
         options_menu_buttons.values.last.y + options_menu_buttons.values.last.height
 
-      self.options_menu_bar_paramaters = [
-        options_menu_buttons.values.first.x,
-        options_menu_buttons.values.first.y - 1,
-        buttons[:options].x - options_menu_buttons.values.first.x + buttons[:options].width + 1,
-        bottom_of_last_option_button_y - bottom_of_options_menu_button_y,
-        colors[:inspector_background],
-        ZOrder::MENU_BACKGROUND
-      ]
+      self.options_menu_bar_paramaters = {
+        color: colors[:inspector_background],
+        height: bottom_of_last_option_button_y - bottom_of_options_menu_button_y,
+        width: buttons[:options].x - options_menu_buttons.values.first.x + buttons[:options].width + 1,
+        x: options_menu_buttons.values.first.x,
+        y: options_menu_buttons.values.first.y - 1,
+        z: ZOrder::MENU_BACKGROUND
+      }
       buttons[:options].color = colors[:inspector_background]
       buttons[:options].hover_color = colors[:inspector_background]
     end

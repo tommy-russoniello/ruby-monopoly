@@ -5,6 +5,8 @@ require 'active_support/core_ext/numeric/conversions'
 require 'rb-readline'
 require 'securerandom'
 
+require_relative 'gosu'
+require_relative 'gosu/font'
 require_relative 'gosu/image'
 
 require_relative 'button'

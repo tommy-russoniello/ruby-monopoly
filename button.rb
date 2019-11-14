@@ -27,7 +27,7 @@ class Button
   def initialize(
     actions:,
     color: DEFAULT_COLOR,
-    font_color: nil,
+    font_color: Gosu::Color::BLACK,
     font: nil,
     height: DEFAULT_HEIGHT,
     hover_color: DEFAULT_HOVER_COLOR,
@@ -70,42 +70,37 @@ class Button
 
   def draw(mouse_x = nil, mouse_y = nil)
     if mouse_x && mouse_y && within?(mouse_x, mouse_y)
-      Gosu.draw_rect(x, y, width, height, hover_color, z) if hover_color
+      Gosu.draw_rect(color: hover_color, height: height, width: width, x: x, y: y, z: z) if
+        hover_color
       hover_image&.draw(
-        center_x,
-        center_y,
-        z,
-        1,
-        1,
-        from_center: true,
         draw_height: image_height,
-        draw_width: image_width
+        draw_width: image_width,
+        from_center: true,
+        x: center_x,
+        y: center_y,
+        z: z
       )
     else
-      Gosu.draw_rect(x, y, width, height, color, z) if color
+      Gosu.draw_rect(color: color, height: height, width: width, x: x, y: y, z: z) if color
       image&.draw(
-        center_x,
-        center_y,
-        z,
-        1,
-        1,
-        from_center: true,
         draw_height: image_height,
-        draw_width: image_width
+        draw_width: image_width,
+        from_center: true,
+        x: center_x,
+        y: center_y,
+        z: z
       )
     end
 
     if text
-      font&.draw_text_rel(
+      font&.draw_text(
         text,
-        center_x,
-        center_y,
-        z,
-        0.5,
-        0.5,
-        1.0,
-        1.0,
-        font_color || Gosu::Color::BLACK
+        color: font_color,
+        rel_x: 0.5,
+        rel_y: 0.5,
+        x: center_x,
+        y: center_y,
+        z: z
       )
     end
   end
