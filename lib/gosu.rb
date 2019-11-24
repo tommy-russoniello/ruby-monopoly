@@ -1,3 +1,4 @@
+require_relative 'gosu/animation'
 require_relative 'gosu/font'
 require_relative 'gosu/image'
 

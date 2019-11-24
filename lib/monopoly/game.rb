@@ -676,5 +676,9 @@ module Monopoly
       puts('--------------------------')
       puts
     end
+
+    def ticks_for_seconds(seconds)
+      seconds * 60
+    end
   end
 end

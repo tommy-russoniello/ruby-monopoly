@@ -81,6 +81,7 @@ module Monopoly
           y: center_y,
           z: z
         )
+        image&.tick
       else
         Gosu.draw_rect(color: color, height: height, width: width, x: x, y: y, z: z) if color
         image&.draw(
@@ -91,6 +92,7 @@ module Monopoly
           y: center_y,
           z: z
         )
+        hover_image&.tick
       end
 
       if text
@@ -106,17 +108,21 @@ module Monopoly
       end
     end
 
-    def update_coordinates(new_x = nil, new_y = nil, new_z = nil)
-      self.x = new_x if new_x
-      self.y = new_y if new_y
-      self.z = new_z if new_z
-
-      self.center_x = x + (width / 2.0)
-      self.center_y = y + (height / 2.0)
-    end
-
     def perform_actions
       game.execute_actions(actions)
+    end
+
+    def perform_image_animation(animation_type, animation_args)
+      animation_args = animation_args.merge(
+        draw_height: image_height,
+        draw_width: image_width,
+        x: center_x,
+        y: center_y,
+        z: z
+      )
+
+      hover_image&.perform_animation(animation_type, **animation_args)
+      image&.perform_animation(animation_type, **animation_args)
     end
 
     def text=(value)
@@ -147,6 +153,15 @@ module Monopoly
       end
 
       text
+    end
+
+    def update_coordinates(new_x = nil, new_y = nil, new_z = nil)
+      self.x = new_x if new_x
+      self.y = new_y if new_y
+      self.z = new_z if new_z
+
+      self.center_x = x + (width / 2.0)
+      self.center_y = y + (height / 2.0)
     end
 
     def within?(_x, _y)

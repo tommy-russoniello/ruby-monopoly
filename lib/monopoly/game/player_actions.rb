@@ -236,25 +236,32 @@ module Monopoly
       end
 
       def toggle_options_menu
+        options_button = buttons[:options]
         if draw_options_menu?
-          buttons[:options].color = nil
-          buttons[:options].hover_color = nil
+          options_button.color = nil
+          options_button.hover_color = nil
+
+          options_button.perform_image_animation(:spin, length: ticks_for_seconds(0.25),
+            times: 0.25)
         else
-          bottom_of_options_menu_button_y = buttons[:options].y + buttons[:options].height
+          bottom_of_options_menu_button_y = options_button.y + options_button.height
           bottom_of_last_option_button_y =
             options_menu_buttons.values.last.y + options_menu_buttons.values.last.height
 
           self.options_menu_bar_paramaters = {
             color: colors[:inspector_background],
             height: bottom_of_last_option_button_y - bottom_of_options_menu_button_y,
-            width: buttons[:options].x - options_menu_buttons.values.first.x +
-              buttons[:options].width + 1,
+            width:
+              options_button.x - options_menu_buttons.values.first.x + options_button.width + 1,
             x: options_menu_buttons.values.first.x,
             y: options_menu_buttons.values.first.y - 1,
             z: ZOrder::MENU_BACKGROUND
           }
-          buttons[:options].color = colors[:inspector_background]
-          buttons[:options].hover_color = colors[:inspector_background]
+          options_button.color = colors[:inspector_background]
+          options_button.hover_color = colors[:inspector_background]
+
+          options_button.perform_image_animation(:spin, counterclockwise: true,
+            length: ticks_for_seconds(0.25), times: 0.25)
         end
 
         self.draw_options_menu = !draw_options_menu

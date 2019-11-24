@@ -1,5 +1,6 @@
 require 'active_support'
 require 'active_support/core_ext/numeric/conversions'
+require 'active_support/core_ext/string/inflections'
 require 'byebug'
 require 'gosu'
 require 'rb-readline'
