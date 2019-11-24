@@ -262,9 +262,10 @@ module Monopoly
       def set_options_menu_button_coordinates
         options_menu_buttons.values.each.with_index do |options_menu_button, index|
           options_menu_button.update_coordinates(
-            buttons[:options].x - Button::DEFAULT_WIDTH + 10,
-            buttons[:options].y + (index * (Button::DEFAULT_HEIGHT + 1)) + buttons[:options].height + 1,
-            ZOrder::MENU_UI
+            x: buttons[:options].x - Button::DEFAULT_WIDTH + 10,
+            y: buttons[:options].y + (index * (Button::DEFAULT_HEIGHT + 1)) +
+              buttons[:options].height + 1,
+            z: ZOrder::MENU_UI
           )
         end
       end

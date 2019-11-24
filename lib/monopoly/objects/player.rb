@@ -44,7 +44,7 @@ module Monopoly
       properties.sort_by! { |property| game.tile_indexes[property] }
 
       properties.each do |property|
-        property.button.update_coordinates(x, y)
+        property.button.update_coordinates(x: x, y: y)
         y += offset
       end
     end
