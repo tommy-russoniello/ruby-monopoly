@@ -46,6 +46,16 @@ module Monopoly
       end
 
       def draw
+        # Background
+        Gosu.draw_rect(
+          color: colors[:main_background],
+          height: Coordinates::BOTTOM_Y - Coordinates::TOP_Y,
+          width: Coordinates::RIGHT_X - Coordinates::LEFT_X,
+          x: Coordinates::LEFT_X,
+          y: Coordinates::TOP_Y,
+          z: ZOrder::MAIN_BACKGROUND
+        )
+
         # Images
         if current_card && !draw_inspector?
           current_card.image.draw(
