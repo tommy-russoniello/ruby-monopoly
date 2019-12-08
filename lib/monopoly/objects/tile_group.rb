@@ -1,9 +1,11 @@
 module Monopoly
   class TileGroup
+    attr_accessor :image
     attr_accessor :name
     attr_accessor :tiles
 
-    def initialize(name:)
+    def initialize(image:, name:)
+      self.image = image
       self.name = name
       self.tiles = []
     end
@@ -28,8 +30,8 @@ module Monopoly
     attr_accessor :color
     attr_accessor :house_cost
 
-    def initialize(color:, house_cost:, name:)
-      super(name: name)
+    def initialize(color:, house_cost:, image:, name:)
+      super(image: image, name: name)
 
       self.color = color
       self.house_cost = house_cost

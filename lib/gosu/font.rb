@@ -15,5 +15,14 @@ module Gosu
     )
       draw_text_rel(text, x, y, z, rel_x, rel_y, scale_x, scale_y, color, mode)
     end
+
+    def truncate_text(text:, trailing_text: nil, width:)
+      length = (1..text.length).to_a.reverse.bsearch do |length|
+        text_width(text[0...length]) < width
+      end
+
+      length ||= 0
+      text[0...length] + (trailing_text || '')
+    end
   end
 end

@@ -3,17 +3,20 @@ module Monopoly
     attr_accessor :game
     attr_accessor :image
     attr_accessor :player
+    attr_accessor :triggered
     attr_accessor :type
 
     def initialize(game:, image:, player: nil, type:)
       self.game = game
       self.image = image
       self.player = player
+      self.triggered = false
       self.type = type
     end
 
     def clear_transient_attributes
       self.player = nil
+      self.triggered = false
     end
 
     def continue_button_text
@@ -39,15 +42,15 @@ module Monopoly
     def continue_button_text
       if every_other_player
         if amount.negative?
-          "Pay $#{game.format_number(-amount)} To Every Player"
+          "Pay #{game.format_money(-amount)} To Every Player"
         else
-          "Collect $#{game.format_number(amount)} From Every Player"
+          "Collect #{game.format_money(amount)} From Every Player"
         end
       else
         if amount.negative?
-          "Pay $#{game.format_number(-amount)}"
+          "Pay #{game.format_money(-amount)}"
         else
-          "Collect $#{game.format_number(amount)}"
+          "Collect #{game.format_money(amount)}"
         end
       end
     end
@@ -196,7 +199,7 @@ module Monopoly
     end
 
     def continue_button_text
-      "Pay $#{game.format_number(total_cost)}"
+      "Pay #{game.format_money(total_cost)}"
     end
 
     def perform_action

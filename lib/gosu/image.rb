@@ -17,8 +17,12 @@ module Gosu
     )
       return draw_from_animation if animation
 
-      scale_y = draw_height / height.to_f if draw_height
-      scale_x = draw_width / width.to_f if draw_width
+      if draw_height
+        scale_y = draw_height / height.to_f
+        scale_x = draw_width ? draw_width / width.to_f : scale_y
+      elsif draw_width
+        scale_x = scale_y = draw_width / width.to_f
+      end
 
       if from_center
         x = x - ((width * scale_x) / 2.0)

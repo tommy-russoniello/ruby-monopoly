@@ -103,7 +103,7 @@ module Monopoly
     private
 
     def _rent
-      rent_scale[house_count]
+      0
     end
   end
 
@@ -142,13 +142,25 @@ module Monopoly
       self.rent_scale = rent_scale
     end
 
+    def base_rent_with_color_group
+      rent_scale.first * MONOPOLY_RENT_MULTIPLIER
+    end
+
+    def rent_with_houses(houses)
+      rent_scale[houses]
+    end
+
     private
 
     def _rent
       if house_count == 0
-        rent_scale[house_count] * (group.monopolized? ? MONOPOLY_RENT_MULTIPLIER : 1)
+        if group.monopolized?
+          base_rent_with_color_group
+        else
+          rent_with_houses(0)
+        end
       else
-        rent_scale[house_count]
+        rent_with_houses(house_count)
       end
     end
   end
