@@ -10,7 +10,7 @@ module Monopoly
           if player.has_assets_for?(amount)
             add_message(
               "#{current_player.name} cannot afford to pay #{recipient_name} " \
-              "$#{format_number(amount)} in cash but can afford it by liquidating " \
+              "#{format_money(amount)} in cash but can afford it by liquidating " \
               "assets (selling houses and/or mortgaging properties)."
             )
           else
@@ -20,7 +20,7 @@ module Monopoly
             player.money = 0
             add_message(
               "#{player.name} liquidated their remaining assets and payed " \
-              "$#{format_number(total_asset_liquidation_amount)} to #{recipient_name}."
+              "#{format_money(total_asset_liquidation_amount)} to #{recipient_name}."
             )
             eliminate_player(player)
             execute_actions(format_actions(on_bankrupt)) if on_bankrupt
@@ -28,7 +28,7 @@ module Monopoly
         else
           recipient.money += amount if recipient
           player.money -= amount
-          add_message("#{player.name} payed $#{format_number(amount)} to #{recipient_name}.")
+          add_message("#{player.name} payed #{format_money(amount)} to #{recipient_name}.")
           execute_actions(format_actions(on_success)) if on_success
         end
       end
@@ -39,7 +39,7 @@ module Monopoly
         go_money_collected = GO_MONEY_AMOUNT * times_passed_go
         extra_string = " #{times_passed_go} times" if times_passed_go > 1
         add_message(
-          "#{player.name} has gained $#{format_number(go_money_collected)} for " \
+          "#{player.name} has gained #{format_money(go_money_collected)} for " \
           "passing Go#{extra_string}."
         )
         player.money += go_money_collected
@@ -73,10 +73,12 @@ module Monopoly
       def increment_current_player
         self.current_player_index = (current_player_index + 1) % players.size
         self.current_player = players[current_player_index]
-        self.current_tile = current_player.tile
+        self.current_tile = self.focused_tile = current_player.tile
+        set_visible_tile_menu_buttons
       end
 
       def land
+        set_visible_tile_menu_buttons
         case current_tile
         when CardTile
           update_visible_buttons(:draw_card)
@@ -101,14 +103,14 @@ module Monopoly
               update_visible_buttons(:end_turn)
             else
               current_tile.dice_roll = die_a + die_b if current_tile.is_a?(UtilityTile)
-              buttons[:pay_rent].text = "Pay Rent ($#{format_number(current_tile.rent)})"
+              buttons[:pay_rent].text = "Pay Rent (#{format_money(current_tile.rent)})"
               update_visible_buttons(:pay_rent)
             end
           else
-            update_visible_buttons(:buy, :end_turn)
+            update_visible_buttons(:end_turn)
           end
         when TaxTile
-          buttons[:pay_tax].text = "Pay Tax ($#{format_number(current_tile.tax_amount)})"
+          buttons[:pay_tax].text = "Pay Tax (#{format_money(current_tile.tax_amount)})"
           update_visible_buttons(:pay_tax)
         else
           pp('WARNING: INVALID TILE TYPE')
@@ -119,7 +121,7 @@ module Monopoly
         new_index = tile_indexes[current_tile] + spaces
         times_passed_go = new_index / tile_count
         new_tile = tiles[new_index % tile_count]
-        self.current_tile = new_tile if player == current_player
+        self.current_tile = self.focused_tile = new_tile if player == current_player
         player.tile = new_tile
         collect_go_money(times_passed_go, player: player) if collect
         times_passed_go
@@ -131,12 +133,14 @@ module Monopoly
       end
 
       def return_new_card(actions: nil, new_visible_buttons: [])
+        toggle_card_menu if drawing_card_menu?
         current_card.clear_transient_attributes
         cards[current_card.type] << current_card
         self.current_card = nil
         execute_actions(format_actions(actions)) if actions
         return unless new_visible_buttons
 
+        set_visible_tile_menu_buttons
         new_visible_buttons = [:end_turn] if new_visible_buttons.empty?
         update_visible_buttons(*new_visible_buttons)
       end
@@ -200,7 +204,7 @@ module Monopoly
         charge = charges.first
         self.current_player = charge[:player]
         buttons[:consecutive_charge].text =
-          "Pay $#{format_number(charge[:amount])} to #{charge[:recipient].name}"
+          "Pay #{format_money(charge[:amount])} to #{charge[:recipient].name}"
         buttons[:consecutive_charge].actions =
           [[:process_consecutive_charge, charges, actions, on_current_player_eliminated]]
         update_visible_buttons(:consecutive_charge)

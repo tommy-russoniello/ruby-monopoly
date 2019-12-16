@@ -1,9 +1,11 @@
 module Monopoly
   class Tile
+    attr_accessor :icon
     attr_accessor :name
     attr_accessor :tile_image
 
-    def initialize(name:, tile_image:)
+    def initialize(icon: nil, name:, tile_image:)
+      self.icon = icon
       self.name = name
       self.tile_image = tile_image
     end
@@ -16,8 +18,8 @@ module Monopoly
   class CardTile < Tile
     attr_accessor :card_type
 
-    def initialize(card_type:, name:, tile_image:)
-      super(name: name, tile_image: tile_image)
+    def initialize(card_type:, icon: nil, name:, tile_image:)
+      super(icon: icon, name: name, tile_image: tile_image)
 
       self.card_type = card_type
     end
@@ -65,13 +67,14 @@ module Monopoly
       deed_image: nil,
       game:,
       group: nil,
+      icon: nil,
       mortgaged: false,
       name:,
       owner: nil,
       purchase_price:,
       tile_image: nil
     )
-      super(name: name, tile_image: tile_image)
+      super(icon: icon, name: name, tile_image: tile_image)
 
       self.button = button
       self.deed_image = deed_image
@@ -103,7 +106,7 @@ module Monopoly
     private
 
     def _rent
-      rent_scale[house_count]
+      0
     end
   end
 
@@ -119,6 +122,7 @@ module Monopoly
       game:,
       group: nil,
       house_count: 0,
+      icon: nil,
       mortgaged: false,
       name:,
       owner: nil,
@@ -131,6 +135,7 @@ module Monopoly
         deed_image: deed_image,
         game: game,
         group: group,
+        icon: icon,
         mortgaged: mortgaged,
         name: name,
         owner: owner,
@@ -142,13 +147,21 @@ module Monopoly
       self.rent_scale = rent_scale
     end
 
+    def base_rent_with_color_group
+      rent_scale.first * MONOPOLY_RENT_MULTIPLIER
+    end
+
+    def rent_with_houses(houses)
+      rent_scale[houses]
+    end
+
     private
 
     def _rent
-      if house_count == 0
-        rent_scale[house_count] * (group.monopolized? ? MONOPOLY_RENT_MULTIPLIER : 1)
+      if house_count == 0 && group.monopolized?
+        base_rent_with_color_group
       else
-        rent_scale[house_count]
+        rent_with_houses(house_count)
       end
     end
   end
@@ -161,6 +174,7 @@ module Monopoly
       deed_image: nil,
       game:,
       group: nil,
+      icon: nil,
       mortgaged: false,
       name:,
       owner: nil,
@@ -173,6 +187,7 @@ module Monopoly
         deed_image: deed_image,
         game: game,
         group: group,
+        icon: icon,
         mortgaged: mortgaged,
         name: name,
         owner: owner,
@@ -183,18 +198,22 @@ module Monopoly
       self.rent_scale = rent_scale
     end
 
+    def rent_with_railroads(railroads)
+      rent_scale[railroads - 1]
+    end
+
     private
 
     def _rent
-      rent_scale[group.amount_owned(owner) - 1]
+      rent_with_railroads(group.amount_owned(owner))
     end
   end
 
   class TaxTile < Tile
     attr_accessor :tax_amount
 
-    def initialize(name:, tax_amount:, tile_image:)
-      super(name: name, tile_image: tile_image)
+    def initialize(name:, icon: nil, tax_amount:, tile_image:)
+      super(icon: icon, name: name, tile_image: tile_image)
 
       self.tax_amount = tax_amount
     end
@@ -209,6 +228,7 @@ module Monopoly
       deed_image: nil,
       game:,
       group: nil,
+      icon: nil,
       mortgaged: false,
       name:,
       owner: nil,
@@ -221,6 +241,7 @@ module Monopoly
         deed_image: deed_image,
         game: game,
         group: group,
+        icon: icon,
         mortgaged: mortgaged,
         name: name,
         owner: owner,

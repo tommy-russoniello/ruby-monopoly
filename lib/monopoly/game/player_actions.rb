@@ -1,31 +1,40 @@
 module Monopoly
   class Game < Gosu::Window
     module PlayerActions
-      def build_house
-        if !current_tile.group.monopolized?
+      def back_to_current_tile
+        self.focused_tile = current_tile
+        toggle_card_menu if drawing_card_menu?
+        set_visible_tile_menu_buttons
+      end
+
+      def build_house(tile = focused_tile)
+        if !tile.is_a?(StreetTile) || tile.owner != current_player
+          add_message('Invalid tile to build house on.')
+        end
+
+        if !tile.group.monopolized?
           add_message(
-            "#{current_player.name} must have a monopoly on the #{current_tile.group.name} " \
-            "color group before building a house on #{current_tile.name}."
+            "#{current_player.name} must have a monopoly on the #{tile.group.singular_name} " \
+            "color group before building a house on #{tile.name}."
           )
           return
-        elsif current_player.money < current_tile.group.house_cost
+        elsif current_player.money < tile.group.house_cost
           add_message(
-            "#{current_player.name} does not have enough money to build a house on " \
-            "#{current_tile.name}."
+            "#{current_player.name} does not have enough money to build a house on #{tile.name}."
           )
           return
-        elsif current_tile.house_count > 4
-          add_message("#{current_tile.name} cannot have anymore houses built on it.")
+        elsif tile.house_count >= MAX_HOUSE_COUNT
+          add_message("#{tile.name} cannot have anymore houses built on it.")
           return
-        elsif current_tile.mortgaged?
+        elsif tile.mortgaged?
           add_message(
-            "Houses cannot be built on #{current_tile.name} as it is currently mortgaged."
+            "Houses cannot be built on #{tile.name} as it is currently mortgaged."
           )
           return
         end
 
-        related_tiles_with_less_houses = current_tile.group.tiles.select do |tile|
-          tile.house_count < current_tile.house_count
+        related_tiles_with_less_houses = tile.group.tiles.select do |related_tile|
+          related_tile.house_count < tile.house_count
         end
 
         unless related_tiles_with_less_houses.empty?
@@ -42,13 +51,16 @@ module Monopoly
           return
         end
 
-        house_cost = current_tile.group.house_cost
+        house_cost = tile.group.house_cost
         current_player.money -= house_cost
-        current_tile.house_count += 1
+        tile.house_count += 1
+
+        set_visible_tile_menu_buttons
+        set_visible_group_menu_buttons if drawing_group_menu?
 
         add_message(
-          "#{current_player.name} built a house on #{current_tile.name} for " \
-          "$#{format_number(house_cost)}."
+          "#{current_player.name} built a house on #{tile.name} for " \
+          "#{format_money(house_cost)}."
         )
       end
 
@@ -72,17 +84,19 @@ module Monopoly
 
         add_message(
           "#{current_player.name} bought #{current_tile.name} for " \
-          "$#{format_number(current_tile.purchase_price)}."
+          "#{format_money(current_tile.purchase_price)}."
         )
 
+        set_visible_tile_menu_buttons
         update_visible_buttons(:end_turn)
       end
 
       def draw_card
         self.current_card = cards[current_tile.card_type].shift
         current_card.player = current_player
-        buttons[:card_continue].text = current_card.continue_button_text
-        update_visible_buttons(:card_continue)
+        card_menu_buttons[:continue].text = current_card.continue_button_text
+        toggle_card_menu
+        update_visible_buttons
       end
 
       def end_turn
@@ -110,6 +124,7 @@ module Monopoly
 
           update_visible_buttons(*new_visible_buttons)
         else
+          set_visible_tile_menu_buttons
           update_visible_buttons(:roll_dice_for_move)
         end
       end
@@ -119,42 +134,44 @@ module Monopoly
       end
 
       def forfeit
-        exit_inspector if draw_inspector?
-        toggle_options_menu if draw_options_menu?
+        toggle_deed_menu if drawing_deed_menu?
+        toggle_group_menu if drawing_group_menu?
+        toggle_options_menu if drawing_options_menu?
+        return_new_card if current_card
         eliminate_player(current_player)
         end_turn
       end
 
       def go_to_jail
         send_player_to_jail(current_player)
-        self.current_tile = tiles[:jail]
+        self.current_tile = self.focused_tile = tiles[:jail]
         new_visible_buttons = %i[end_turn]
         new_visible_buttons << :use_get_out_of_jail_free_card if
           current_player.cards.any? { |card| card.is_a?(GetOutOfJailFreeCard) }
+        set_visible_tile_menu_buttons
         update_visible_buttons(*new_visible_buttons)
       end
 
-      def mortgage
-        new_visible_buttons = %i[exit_inspector unmortgage]
-        if current_tile.is_a?(StreetTile)
-          if current_tile.is_a?(StreetTile) && current_tile.house_count.positive?
-            add_message(
-              "The houses on #{current_tile.name} must be sold before it can be mortgaged."
-            )
-            return
-          end
-
-          new_visible_buttons += %i[build_house sell_house]
+      def mortgage(tile = focused_tile)
+        if !tile.is_a?(PropertyTile) || tile.owner != current_player
+          add_message('Invalid tile to mortgage.')
         end
 
-        current_tile.mortgaged = true
-        current_player.money += current_tile.mortgage_cost
+        if tile.is_a?(StreetTile)
+          if tile.is_a?(StreetTile) && tile.house_count.positive?
+            add_message("The houses on #{tile.name} must be sold before it can be mortgaged.")
+            return
+          end
+        end
+
+        tile.mortgaged = true
+        current_player.money += tile.mortgage_cost
         add_message(
-          "#{current_player.name} mortgaged #{current_tile.name} for " \
-          "$#{format_number(current_tile.mortgage_cost)}."
+          "#{current_player.name} mortgaged #{tile.name} for #{format_money(tile.mortgage_cost)}."
         )
 
-        update_visible_buttons(*new_visible_buttons)
+        set_visible_tile_menu_buttons
+        set_visible_group_menu_buttons if drawing_group_menu?
       end
 
       def pay_rent
@@ -186,14 +203,18 @@ module Monopoly
         # TODO
       end
 
-      def sell_house
-        if current_tile.house_count < 1
-          add_message("#{current_tile.name} has no houses on it to sell.")
+      def sell_house(tile = focused_tile)
+        if !tile.is_a?(StreetTile) || tile.owner != current_player
+          add_message('Invalid tile to sell house from.')
+        end
+
+        if tile.house_count < 1
+          add_message("#{tile.name} has no houses on it to sell.")
           return
         end
 
-        related_tiles_with_more_houses = current_tile.group.tiles.select do |tile|
-          tile.house_count > current_tile.house_count
+        related_tiles_with_more_houses = tile.group.tiles.select do |related_tile|
+          related_tile.house_count > tile.house_count
         end
 
         unless related_tiles_with_more_houses.empty?
@@ -212,19 +233,38 @@ module Monopoly
           return
         end
 
-        house_sell_price = (current_tile.group.house_cost * BUILDING_SELL_PERCENTAGE).to_i
+        house_sell_price = (tile.group.house_cost * BUILDING_SELL_PERCENTAGE).to_i
         current_player.money += house_sell_price
-        current_tile.house_count -= 1
+        tile.house_count -= 1
+
+        set_visible_tile_menu_buttons
+        set_visible_group_menu_buttons if drawing_group_menu?
 
         add_message(
-          "#{current_player.name} sold a house from #{current_tile.name} for " \
-          "$#{format_number(house_sell_price)}."
+          "#{current_player.name} sold a house from #{tile.name} for " \
+          "#{format_money(house_sell_price)}."
         )
       end
 
+      def toggle_card_menu
+        set_visible_card_menu_buttons unless drawing_card_menu?
+
+        self.drawing_card_menu = !drawing_card_menu
+      end
+
+      def toggle_deed_menu
+        if drawing_deed_menu?
+          self.deed_rent_line_index = 1
+        else
+          set_visible_deed_menu_buttons
+        end
+
+        self.drawing_deed_menu = !drawing_deed_menu
+      end
+
       def toggle_dialogue_box(actions: nil, button_text: nil)
-        if draw_dialogue_box?
-          toggle_options_menu if draw_options_menu?
+        if drawing_dialogue_box?
+          toggle_options_menu if drawing_options_menu?
         else
           dialogue_box_buttons[:action].actions = actions
           dialogue_box_buttons[:action].actions =
@@ -232,12 +272,23 @@ module Monopoly
           dialogue_box_buttons[:action].text = button_text
         end
 
-        self.draw_dialogue_box = !draw_dialogue_box
+        self.drawing_dialogue_box = !drawing_dialogue_box
+      end
+
+      def toggle_group_menu
+        if drawing_group_menu?
+          self.group_menu_tiles.items = []
+        else
+          self.group_menu_tiles.items = focused_tile.group.tiles
+          set_visible_group_menu_buttons
+        end
+
+        self.drawing_group_menu = !drawing_group_menu
       end
 
       def toggle_options_menu
         options_button = buttons[:options]
-        if draw_options_menu?
+        if drawing_options_menu?
           options_button.color = nil
           options_button.hover_color = nil
 
@@ -249,41 +300,44 @@ module Monopoly
             options_menu_buttons.values.last.y + options_menu_buttons.values.last.height
 
           self.options_menu_bar_paramaters = {
-            color: colors[:inspector_background],
+            color: colors[:options_menu_background],
             height: bottom_of_last_option_button_y - bottom_of_options_menu_button_y,
             width:
               options_button.x - options_menu_buttons.values.first.x + options_button.width + 1,
             x: options_menu_buttons.values.first.x,
             y: options_menu_buttons.values.first.y - 1,
-            z: ZOrder::MENU_BACKGROUND
+            z: ZOrder::MENU_UI
           }
-          options_button.color = colors[:inspector_background]
-          options_button.hover_color = colors[:inspector_background]
+          options_button.color = colors[:options_menu_background]
+          options_button.hover_color = colors[:options_menu_background]
 
           options_button.perform_image_animation(:spin, counterclockwise: true,
             length: ticks_for_seconds(0.25), times: 0.25)
         end
 
-        self.draw_options_menu = !draw_options_menu
+        self.drawing_options_menu = !drawing_options_menu
       end
 
-      def unmortgage
-        unless current_player.money >= current_tile.unmortgage_cost
+      def unmortgage(tile = focused_tile)
+        if !tile.is_a?(PropertyTile) || tile.owner != current_player
+          add_message('Invalid tile to unmortgage.')
+        end
+
+        unless current_player.money >= tile.unmortgage_cost
           add_message(
             "#{current_player.name} does not have enough money to unmortgage this property."
           )
           return
         end
 
-        current_player.money -= current_tile.unmortgage_cost
-        current_tile.mortgaged = false
+        current_player.money -= tile.unmortgage_cost
+        tile.mortgaged = false
         add_message(
-          "#{current_player.name} payed $#{format_number(current_tile.unmortgage_cost)} to " \
-          "unmortgage #{current_tile.name}."
+          "#{current_player.name} payed #{format_money(tile.unmortgage_cost)} to " \
+          "unmortgage #{tile.name}."
         )
-        new_visible_buttons = %i[exit_inspector mortgage]
-        new_visible_buttons += %i[build_house sell_house] if current_tile.is_a?(StreetTile)
-        update_visible_buttons(*new_visible_buttons)
+        set_visible_group_menu_buttons if drawing_group_menu?
+        set_visible_tile_menu_buttons
       end
 
       def use_get_out_of_jail_free_card
@@ -302,8 +356,11 @@ module Monopoly
         if current_card.keepable?
           current_player.cards << current_card
           self.current_card = nil
+          toggle_card_menu
           update_visible_buttons(:end_turn)
         else
+          current_card.triggered = true
+          set_visible_card_menu_buttons
           current_card.perform_action
         end
       end

@@ -8,8 +8,9 @@ module Monopoly
     attr_accessor :number
     attr_accessor :properties
     attr_accessor :tile
+    attr_accessor :token_image
 
-    def initialize(game:, jail_turns: 0, money: 0, name:, number:, tile:)
+    def initialize(game:, jail_turns: 0, money: 0, name:, number:, tile:, token_image:)
       self.cards = []
       self.game = game
       self.jail_turns = jail_turns
@@ -18,6 +19,7 @@ module Monopoly
       self.number = number
       self.properties = []
       self.tile = tile
+      self.token_image = token_image
     end
 
     def has_assets_for?(amount)
