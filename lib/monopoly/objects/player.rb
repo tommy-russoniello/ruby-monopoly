@@ -34,20 +34,11 @@ module Monopoly
       money + properties.inject(0) do |sum, property|
         sum += property.mortgage_cost unless property.mortgaged?
         if property.is_a?(StreetTile)
-          house_worth = (property.group.house_cost * game.class::BUILDING_SELL_PERCENTAGE).to_i
+          house_worth = (property.group.house_cost * game.building_sell_percentage).to_i
           sum += property.house_count * house_worth
         end
 
         sum
-      end
-    end
-
-    def update_property_button_coordinates(x, y, offset)
-      properties.sort_by! { |property| game.tile_indexes[property] }
-
-      properties.each do |property|
-        property.button.update_coordinates(x: x, y: y)
-        y += offset
       end
     end
   end

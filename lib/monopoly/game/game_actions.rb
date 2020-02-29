@@ -36,13 +36,15 @@ module Monopoly
       def collect_go_money(times_passed_go, player: current_player)
         return unless times_passed_go > 0
 
-        go_money_collected = GO_MONEY_AMOUNT * times_passed_go
+        go_money_collected = go_money_amount * times_passed_go
         extra_string = " #{times_passed_go} times" if times_passed_go > 1
         add_message(
           "#{player.name} has gained #{format_money(go_money_collected)} for " \
           "passing Go#{extra_string}."
         )
         player.money += go_money_collected
+
+        set_visible_player_menu_buttons
       end
 
       def eliminate_player(player = current_player)
@@ -74,10 +76,14 @@ module Monopoly
         self.current_player_index = (current_player_index + 1) % players.size
         self.current_player = players[current_player_index]
         self.current_tile = self.focused_tile = current_player.tile
+        self.current_player_landed = false
+
         set_visible_tile_menu_buttons
+        set_visible_player_menu_buttons(refresh: true)
       end
 
       def land
+        self.current_player_landed = true
         set_visible_tile_menu_buttons
         case current_tile
         when CardTile
@@ -141,6 +147,7 @@ module Monopoly
         return unless new_visible_buttons
 
         set_visible_tile_menu_buttons
+        set_visible_player_menu_buttons
         new_visible_buttons = [:end_turn] if new_visible_buttons.empty?
         update_visible_buttons(*new_visible_buttons)
       end
@@ -152,7 +159,7 @@ module Monopoly
       def send_player_to_jail(player)
         add_message("#{player.name} has gone to jail!")
         player.tile = tiles[:jail]
-        player.jail_turns = JAIL_TIME
+        player.jail_turns = jail_time
       end
 
       private
@@ -207,6 +214,7 @@ module Monopoly
           "Pay #{format_money(charge[:amount])} to #{charge[:recipient].name}"
         buttons[:consecutive_charge].actions =
           [[:process_consecutive_charge, charges, actions, on_current_player_eliminated]]
+        set_visible_player_menu_buttons
         update_visible_buttons(:consecutive_charge)
       end
     end

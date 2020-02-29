@@ -23,7 +23,7 @@ module Monopoly
             "#{current_player.name} does not have enough money to build a house on #{tile.name}."
           )
           return
-        elsif tile.house_count >= MAX_HOUSE_COUNT
+        elsif tile.house_count >= max_house_count
           add_message("#{tile.name} cannot have anymore houses built on it.")
           return
         elsif tile.mortgaged?
@@ -56,6 +56,7 @@ module Monopoly
         tile.house_count += 1
 
         set_visible_tile_menu_buttons
+        set_visible_player_menu_buttons
         set_visible_group_menu_buttons if drawing_group_menu?
 
         add_message(
@@ -75,12 +76,7 @@ module Monopoly
         current_player.money -= current_tile.purchase_price
         current_tile.owner = current_player
         current_player.properties += [current_tile]
-
-        current_player.update_property_button_coordinates(
-          Coordinates::LEFT_X,
-          Coordinates::TOP_Y + fonts[:title][:offset],
-          Button::DEFAULT_HEIGHT + 1
-        )
+        current_player.properties.sort_by! { |tile| tile_indexes[tile] }
 
         add_message(
           "#{current_player.name} bought #{current_tile.name} for " \
@@ -88,6 +84,7 @@ module Monopoly
         )
 
         set_visible_tile_menu_buttons
+        set_visible_player_menu_buttons
         update_visible_buttons(:end_turn)
       end
 
@@ -122,9 +119,10 @@ module Monopoly
             add_message("#{current_player.name} is out of jail.")
           end
 
+          set_visible_tile_menu_buttons
+          set_visible_player_menu_buttons
           update_visible_buttons(*new_visible_buttons)
         else
-          set_visible_tile_menu_buttons
           update_visible_buttons(:roll_dice_for_move)
         end
       end
@@ -149,6 +147,7 @@ module Monopoly
         new_visible_buttons << :use_get_out_of_jail_free_card if
           current_player.cards.any? { |card| card.is_a?(GetOutOfJailFreeCard) }
         set_visible_tile_menu_buttons
+        set_visible_player_menu_buttons
         update_visible_buttons(*new_visible_buttons)
       end
 
@@ -171,6 +170,7 @@ module Monopoly
         )
 
         set_visible_tile_menu_buttons
+        set_visible_player_menu_buttons
         set_visible_group_menu_buttons if drawing_group_menu?
       end
 
@@ -182,6 +182,8 @@ module Monopoly
           recipient: current_tile.owner
         )
         self.temporary_rent_multiplier = nil
+
+        set_visible_player_menu_buttons
       end
 
       def pay_tax
@@ -191,6 +193,8 @@ module Monopoly
           on_success: [:update_visible_buttons, :end_turn],
           player: current_player
         )
+
+        set_visible_player_menu_buttons
       end
 
       def roll_dice
@@ -233,11 +237,12 @@ module Monopoly
           return
         end
 
-        house_sell_price = (tile.group.house_cost * BUILDING_SELL_PERCENTAGE).to_i
+        house_sell_price = (tile.group.house_cost * building_sell_percentage).to_i
         current_player.money += house_sell_price
         tile.house_count -= 1
 
         set_visible_tile_menu_buttons
+        set_visible_player_menu_buttons
         set_visible_group_menu_buttons if drawing_group_menu?
 
         add_message(
@@ -275,11 +280,11 @@ module Monopoly
         self.drawing_dialogue_box = !drawing_dialogue_box
       end
 
-      def toggle_group_menu
+      def toggle_group_menu(tiles = nil)
         if drawing_group_menu?
           self.group_menu_tiles.items = []
         else
-          self.group_menu_tiles.items = focused_tile.group.tiles
+          self.group_menu_tiles.items = (tiles || focused_tile.group.tiles)
           set_visible_group_menu_buttons
         end
 
@@ -306,7 +311,7 @@ module Monopoly
               options_button.x - options_menu_buttons.values.first.x + options_button.width + 1,
             x: options_menu_buttons.values.first.x,
             y: options_menu_buttons.values.first.y - 1,
-            z: ZOrder::MENU_UI
+            z: ZOrder::POP_UP_MENU_UI
           }
           options_button.color = colors[:options_menu_background]
           options_button.hover_color = colors[:options_menu_background]
@@ -336,8 +341,10 @@ module Monopoly
           "#{current_player.name} payed #{format_money(tile.unmortgage_cost)} to " \
           "unmortgage #{tile.name}."
         )
+
         set_visible_group_menu_buttons if drawing_group_menu?
         set_visible_tile_menu_buttons
+        set_visible_player_menu_buttons
       end
 
       def use_get_out_of_jail_free_card
@@ -349,6 +356,8 @@ module Monopoly
         current_player.cards -= [card]
         cards[card.type] << card
 
+        set_visible_player_menu_buttons
+
         update_visible_buttons(:end_turn)
       end
 
@@ -357,10 +366,10 @@ module Monopoly
           current_player.cards << current_card
           self.current_card = nil
           toggle_card_menu
+          set_visible_player_menu_buttons
           update_visible_buttons(:end_turn)
         else
           current_card.triggered = true
-          set_visible_card_menu_buttons
           current_card.perform_action
         end
       end

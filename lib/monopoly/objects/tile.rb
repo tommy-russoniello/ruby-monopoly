@@ -54,7 +54,6 @@ module Monopoly
     MORTGAGE_PERCENTAGE = 0.5
     RENT_MULTIPLIER = 1
 
-    attr_accessor :button
     attr_accessor :deed_image
     attr_accessor :game
     attr_accessor :group
@@ -63,7 +62,6 @@ module Monopoly
     attr_accessor :purchase_price
 
     def initialize(
-      button: nil,
       deed_image: nil,
       game:,
       group: nil,
@@ -76,7 +74,6 @@ module Monopoly
     )
       super(icon: icon, name: name, tile_image: tile_image)
 
-      self.button = button
       self.deed_image = deed_image
       self.game = game
       self.group = group
@@ -117,7 +114,6 @@ module Monopoly
     attr_accessor :rent_scale
 
     def initialize(
-      button: nil,
       deed_image: nil,
       game:,
       group: nil,
@@ -131,7 +127,6 @@ module Monopoly
       tile_image: nil
     )
       super(
-        button: button,
         deed_image: deed_image,
         game: game,
         group: group,
@@ -170,7 +165,6 @@ module Monopoly
     attr_accessor :rent_scale
 
     def initialize(
-      button: nil,
       deed_image: nil,
       game:,
       group: nil,
@@ -183,7 +177,6 @@ module Monopoly
       tile_image: nil
     )
       super(
-        button: button,
         deed_image: deed_image,
         game: game,
         group: group,
@@ -224,7 +217,6 @@ module Monopoly
     attr_accessor :rent_multiplier_scale
 
     def initialize(
-      button: nil,
       deed_image: nil,
       game:,
       group: nil,
@@ -237,7 +229,6 @@ module Monopoly
       tile_image: nil
     )
       super(
-        button: button,
         deed_image: deed_image,
         game: game,
         group: group,
