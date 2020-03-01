@@ -1,5 +1,3 @@
-require_relative 'gosu/animation'
-require_relative 'gosu/animation/spin_animation'
 require_relative 'gosu/circle'
 require_relative 'gosu/font'
 require_relative 'gosu/image'

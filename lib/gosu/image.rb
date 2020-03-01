@@ -1,7 +1,5 @@
 module Gosu
   class Image
-    attr_accessor :animation
-
     alias _draw draw
     def draw(
       color: 0xff_ffffff,
@@ -15,8 +13,6 @@ module Gosu
       y:,
       z:
     )
-      return draw_from_animation if animation
-
       if draw_height
         scale_y = draw_height / height.to_f
         scale_x = draw_width ? draw_width / width.to_f : scale_y
@@ -56,50 +52,6 @@ module Gosu
     # Make inspecting images quieter
     def inspect
       to_s
-    end
-
-    def perform_animation(animation_type, **args)
-      animation_class = Gosu.const_get("#{animation_type}_animation".camelize)
-
-      args[:scale_y] = args[:draw_height] / height.to_f if args[:draw_height]
-      args[:scale_x] = args[:draw_width] / width.to_f if args[:draw_width]
-
-      args[:angle] = 0 unless args.key?(:angle)
-      args[:center_x] = 0.5 unless args.key?(:center_x)
-      args[:center_y] = 0.5 unless args.key?(:center_y)
-      args[:color] = 0xff_ffffff unless args.key?(:color)
-      args.delete(:draw_height)
-      args.delete(:draw_width)
-      args[:mode] = :default unless args.key?(:mode)
-      args[:scale_x] = 1 unless args.key?(:scale_x)
-      args[:scale_y] = 1 unless args.key?(:scale_y)
-
-      self.animation = animation_class.new(args)
-    end
-
-    def tick
-      return unless animation
-
-      self.animation = nil unless animation.tick
-    end
-
-    protected
-
-    def draw_from_animation
-      _draw_rot(
-        animation.x,
-        animation.y,
-        animation.z,
-        animation.angle,
-        animation.center_x,
-        animation.center_y,
-        animation.scale_x,
-        animation.scale_y,
-        animation.color,
-        animation.mode
-      )
-
-      tick
     end
   end
 end

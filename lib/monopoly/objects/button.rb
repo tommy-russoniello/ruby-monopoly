@@ -377,7 +377,7 @@ module Monopoly
       @border_color = value
       if border_color
         self.border_circle =
-          Gosu::Image.new(Gosu::Circle.new(color: border_color, radius: radius + border_width))
+          Image.new(Gosu::Circle.new(color: border_color, radius: radius + border_width))
       end
 
       border_color
@@ -386,7 +386,7 @@ module Monopoly
     def border_hover_color=(value)
       @border_hover_color = value
       if border_hover_color
-        self.border_hover_circle = Gosu::Image.new(
+        self.border_hover_circle = Image.new(
           Gosu::Circle.new(color: border_hover_color, radius: radius + border_width)
         )
       end
@@ -403,13 +403,13 @@ module Monopoly
 
     def color=(value)
       @color = value
-      self.circle = Gosu::Image.new(Gosu::Circle.new(color: color, radius: radius)) if color
+      self.circle = Image.new(Gosu::Circle.new(color: color, radius: radius)) if color
       color
     end
 
     def hover_color=(value)
       @hover_color = value
-      self.hover_circle = Gosu::Image.new(Gosu::Circle.new(color: hover_color, radius: radius)) if
+      self.hover_circle = Image.new(Gosu::Circle.new(color: hover_color, radius: radius)) if
         hover_color
       hover_color
     end

@@ -42,6 +42,7 @@ module Monopoly
     attr_accessor :group_menu_alt_button_positions
     attr_accessor :group_menu_buttons
     attr_accessor :group_menu_tiles
+    attr_accessor :images
     attr_accessor :messages
     attr_accessor :options_menu_buttons
     attr_accessor :options_menu_bar_paramaters
@@ -74,16 +75,6 @@ module Monopoly
       super(RESOLUTION_WIDTH, RESOLUTION_HEIGHT, fullscreen: ARGV.include?('-f'))
 
       self.caption = 'Monopoly'
-
-      monopoly_font = 'media/fonts/JosefinSans-Regular.ttf'
-      self.fonts = {
-        deed: { type: Gosu::Font.new(28, name: monopoly_font), offset: 35 },
-        deed_name: { type: Gosu::Font.new(30, name: monopoly_font), offset: 35 },
-        dialogue: { type: Gosu::Font.new(50), offset: 55 },
-        default: { type: Gosu::Font.new(DEFAULT_FONT_SIZE), offset: 35 },
-        house_count: { type: Gosu::Font.new(45), offset: 50 },
-        title: { type: Gosu::Font.new(55), offset: 55 }
-      }
 
       self.colors = {
         blur: Gosu::Color.new(200, 200, 200, 200),
@@ -119,17 +110,62 @@ module Monopoly
         warning: Gosu::Color.new(255, 214, 19, 19)
       }
 
+      monopoly_font = 'media/fonts/JosefinSans-Regular.ttf'
+      self.fonts = {
+        deed: { type: Gosu::Font.new(28, name: monopoly_font), offset: 35 },
+        deed_name: { type: Gosu::Font.new(30, name: monopoly_font), offset: 35 },
+        dialogue: { type: Gosu::Font.new(50), offset: 55 },
+        default: { type: Gosu::Font.new(DEFAULT_FONT_SIZE), offset: 35 },
+        house_count: { type: Gosu::Font.new(45), offset: 50 },
+        title: { type: Gosu::Font.new(55), offset: 55 }
+      }
+
+      self.images = {
+        all_properties: 'user_interface/all_properties.png',
+        arrow_down: 'user_interface/arrow_down.png',
+        arrow_down_hover: 'user_interface/arrow_down_hover.png',
+        arrow_left: 'user_interface/arrow_left.png',
+        arrow_left_hover: 'user_interface/arrow_left_hover.png',
+        arrow_right: 'user_interface/arrow_right.png',
+        arrow_right_hover: 'user_interface/arrow_right_hover.png',
+        arrow_up: 'user_interface/arrow_up.png',
+        arrow_up_hover: 'user_interface/arrow_up_hover.png',
+        back: 'user_interface/back.png',
+        blank_deed: 'user_interface/blank_deed.png',
+        blank_street_tile: 'user_interface/blank_street_tile.png',
+        build_house: 'user_interface/build_house.png',
+        build_house_hover: 'user_interface/build_house_hover.png',
+        buy: 'user_interface/buy.png',
+        house: 'user_interface/house.png',
+        jail_cell: 'user_interface/jail_cell.png',
+        key: 'user_interface/key.png',
+        mortgage: 'user_interface/mortgage.png',
+        mortgage_hover: 'user_interface/mortgage_hover.png',
+        mortgage_lock: 'user_interface/mortgage_lock.png',
+        no_key: 'user_interface/no_key.png',
+        options_gear: 'user_interface/options_gear.png',
+        options_gear_hover: 'user_interface/options_gear_hover.png',
+        sell_house: 'user_interface/sell_house.png',
+        sell_house_hover: 'user_interface/sell_house_hover.png',
+        train: 'user_interface/train.png',
+        unmortgage: 'user_interface/unmortgage.png',
+        unmortgage_hover: 'user_interface/unmortgage_hover.png',
+        wrench: 'user_interface/wrench.png',
+        x: 'user_interface/x.png',
+        x_hover: 'user_interface/x_hover.png'
+      }.map { |name, path| [name, Gosu::Image.new("media/images/#{path}")] }.to_h
+
       self.color_groups = {
         brown: ColorGroup.new(
           color: Gosu::Color.new(255, 149, 84, 54),
-          image: Gosu::Image.new('media/images/user_interface/blank_street_tile.png'),
+          image: Image.new(images[:blank_street_tile]),
           house_cost: 50,
           plural_name: 'Browns',
           singular_name: 'Brown'
         ),
         light_blue: ColorGroup.new(
           color: Gosu::Color.new(255, 0, 114, 187),
-          image: Gosu::Image.new('media/images/user_interface/blank_street_tile.png'),
+          image: Image.new(images[:blank_street_tile]),
           house_cost: 200,
           plural_name: 'Light Blues',
           singular_name: 'Light Blue'
@@ -138,7 +174,7 @@ module Monopoly
 
       self.railroad_groups = {
         railroads: TileGroup.new(
-          image: Gosu::Image.new('media/images/user_interface/train.png'),
+          image: Image.new(images[:train]),
           plural_name: 'Railroads',
           singular_name: 'Railroad'
         )
@@ -146,7 +182,7 @@ module Monopoly
 
       self.utility_groups = {
         utilities: TileGroup.new(
-          image: Gosu::Image.new('media/images/user_interface/wrench.png'),
+          image: Image.new(images[:wrench]),
           plural_name: 'Utilities',
           singular_name: 'Utility'
         )
@@ -158,7 +194,7 @@ module Monopoly
       [
         GoTile.new(
           name: 'Go',
-          tile_image: Gosu::Image.new('media/images/tiles/go.jpg')
+          tile_image: Image.new('media/images/tiles/go.jpg')
         ),
         StreetTile.new(
           game: self,
@@ -166,7 +202,7 @@ module Monopoly
           name: 'Mediterranean Avenue',
           purchase_price: 60,
           rent_scale: [2, 10, 30, 90, 160, 250],
-          tile_image: Gosu::Image.new('media/images/tiles/mediterranean_avenue.png')
+          tile_image: Image.new('media/images/tiles/mediterranean_avenue.png')
         ),
         StreetTile.new(
           game: self,
@@ -174,7 +210,7 @@ module Monopoly
           name: 'Baltic Avenue',
           purchase_price: 60,
           rent_scale: [4, 20, 60, 180, 320, 450],
-          tile_image: Gosu::Image.new('media/images/tiles/baltic_avenue.png')
+          tile_image: Image.new('media/images/tiles/baltic_avenue.png')
         ),
         RailroadTile.new(
           game: self,
@@ -182,25 +218,25 @@ module Monopoly
           name: 'Reading Railroad',
           purchase_price: 200,
           rent_scale: [25, 50, 100, 200],
-          tile_image: Gosu::Image.new('media/images/tiles/reading_railroad.png')
+          tile_image: Image.new('media/images/tiles/reading_railroad.png')
         ),
         CardTile.new(
           card_type: :chance,
           name: 'Chance',
-          tile_image: Gosu::Image.new('media/images/tiles/chance_1.jpg')
+          tile_image: Image.new('media/images/tiles/chance_1.jpg')
         ),
         JailTile.new(
           name: 'Jail',
-          tile_image: Gosu::Image.new('media/images/tiles/jail.jpg')
+          tile_image: Image.new('media/images/tiles/jail.jpg')
         ),
         UtilityTile.new(
           game: self,
           group: utility_groups[:utilities],
-          icon: Gosu::Image.new('media/images/tiles/icons/electric_company.png'),
+          icon: Image.new('media/images/tiles/icons/electric_company.png'),
           name: 'Electric Company',
           purchase_price: 150,
           rent_multiplier_scale: [4, 10],
-          tile_image: Gosu::Image.new('media/images/tiles/electric_company.png')
+          tile_image: Image.new('media/images/tiles/electric_company.png')
         ),
         RailroadTile.new(
          game: self,
@@ -208,16 +244,16 @@ module Monopoly
          name: 'Pennsylvania Railroad',
          purchase_price: 200,
          rent_scale: [25, 50, 100, 200],
-         tile_image: Gosu::Image.new('media/images/tiles/pennsylvania_railroad.png')
+         tile_image: Image.new('media/images/tiles/pennsylvania_railroad.png')
        ),
         CardTile.new(
           card_type: :community_chest,
           name: 'Community Chest',
-          tile_image: Gosu::Image.new('media/images/tiles/community_chest.jpg')
+          tile_image: Image.new('media/images/tiles/community_chest.jpg')
         ),
         FreeParkingTile.new(
           name: 'Free Parking',
-          tile_image: Gosu::Image.new('media/images/tiles/free_parking.jpg')
+          tile_image: Image.new('media/images/tiles/free_parking.jpg')
         ),
         RailroadTile.new(
           game: self,
@@ -225,20 +261,20 @@ module Monopoly
           name: 'B. & O. Railroad',
           purchase_price: 200,
           rent_scale: [25, 50, 100, 200],
-          tile_image: Gosu::Image.new('media/images/tiles/b_o_railroad.png')
+          tile_image: Image.new('media/images/tiles/b_o_railroad.png')
         ),
         UtilityTile.new(
           game: self,
           group: utility_groups[:utilities],
-          icon: Gosu::Image.new('media/images/tiles/icons/water_works.png'),
+          icon: Image.new('media/images/tiles/icons/water_works.png'),
           name: 'Water Works',
           purchase_price: 150,
           rent_multiplier_scale: [4, 10],
-          tile_image: Gosu::Image.new('media/images/tiles/water_works.png')
+          tile_image: Image.new('media/images/tiles/water_works.png')
         ),
         GoToJailTile.new(
           name: 'Go To Jail',
-          tile_image: Gosu::Image.new('media/images/tiles/gotojail.jpg')
+          tile_image: Image.new('media/images/tiles/gotojail.jpg')
         ),
         RailroadTile.new(
           game: self,
@@ -246,7 +282,7 @@ module Monopoly
           name: 'Short Line',
           purchase_price: 200,
           rent_scale: [25, 50, 100, 200],
-          tile_image: Gosu::Image.new('media/images/tiles/short_line.png')
+          tile_image: Image.new('media/images/tiles/short_line.png')
         ),
         StreetTile.new(
           game: self,
@@ -254,12 +290,12 @@ module Monopoly
           name: 'Park Place',
           purchase_price: 350,
           rent_scale: [35, 175, 500, 1100, 1300, 1500],
-          tile_image: Gosu::Image.new('media/images/tiles/park_place.png')
+          tile_image: Image.new('media/images/tiles/park_place.png')
         ),
         TaxTile.new(
           name: 'Luxury Tax',
           tax_amount: 75,
-          tile_image: Gosu::Image.new('media/images/tiles/luxury_tax.jpg')
+          tile_image: Image.new('media/images/tiles/luxury_tax.jpg')
         ),
         StreetTile.new(
           game: self,
@@ -267,7 +303,7 @@ module Monopoly
           name: 'Boardwalk',
           purchase_price: 400,
           rent_scale: [50, 200, 600, 1400, 1700, 2000],
-          tile_image: Gosu::Image.new('media/images/tiles/boardwalk.png')
+          tile_image: Image.new('media/images/tiles/boardwalk.png')
         )
       ].each.with_index do |tile, index|
         self.tile_count += 1
@@ -289,7 +325,7 @@ module Monopoly
           number: 1,
           money: 200,
           tile: tiles[:go],
-          token_image: Gosu::Image.new('media/images/tokens/iron.png')
+          token_image: Image.new('media/images/tokens/iron.png')
         ),
         Player.new(
           game: self,
@@ -297,7 +333,7 @@ module Monopoly
           number: 2,
           money: 200,
           tile: tiles[:go],
-          token_image: Gosu::Image.new('media/images/tokens/thimble.png')
+          token_image: Image.new('media/images/tokens/thimble.png')
         ),
         Player.new(
           game: self,
@@ -305,7 +341,7 @@ module Monopoly
           number: 3,
           money: 200,
           tile: tiles[:go],
-          token_image: Gosu::Image.new('media/images/tokens/top_hat.png')
+          token_image: Image.new('media/images/tokens/top_hat.png')
         )
       ]
       self.current_player_index = 0
@@ -362,10 +398,10 @@ module Monopoly
           game: self,
           height: 50,
           hover_color: nil,
-          hover_image: Gosu::Image.new('media/images/user_interface/options_gear_hover.png'),
+          hover_image: Image.new(images[:options_gear_hover]),
           image_height: 45,
           image_width: 45,
-          image: Gosu::Image.new('media/images/user_interface/options_gear.png'),
+          image: Image.new(images[:options_gear]),
           width: 50,
           x: Coordinates::RIGHT_X - 50,
           y: Coordinates::TOP_Y,
@@ -471,8 +507,8 @@ module Monopoly
         game: self,
         height: DEFAULT_TILE_BUTTON_HEIGHT,
         hover_color: nil,
-        hover_image: Gosu::Image.new('media/images/user_interface/house.png'),
-        image: Gosu::Image.new('media/images/user_interface/house.png'),
+        hover_image: Image.new(images[:house]),
+        image: Image.new(images[:house]),
         image_height: DEFAULT_TILE_BUTTON_HEIGHT,
         image_width: DEFAULT_TILE_BUTTON_HEIGHT * 1.1,
         width: DEFAULT_TILE_BUTTON_HEIGHT * 1.1,
@@ -481,13 +517,13 @@ module Monopoly
       }
       build_house_button_options = {
         actions: :build_house,
-        hover_image: Gosu::Image.new('media/images/user_interface/build_house_hover.png'),
-        image: Gosu::Image.new('media/images/user_interface/build_house.png')
+        hover_image: Image.new(images[:build_house_hover]),
+        image: Image.new(images[:build_house])
       }
       sell_house_button_options = {
         actions: :sell_house,
-        hover_image: Gosu::Image.new('media/images/user_interface/sell_house_hover.png'),
-        image: Gosu::Image.new('media/images/user_interface/sell_house.png')
+        hover_image: Image.new(images[:sell_house_hover]),
+        image: Image.new(images[:sell_house])
       }
 
       house_button_offset = house_button_options[:image_height] + TILE_BUTTON_GAP
@@ -521,8 +557,8 @@ module Monopoly
           color: colors[:tile_button],
           game: self,
           hover_color: colors[:neutral_blue],
-          hover_image: Gosu::Image.new('media/images/user_interface/back.png'),
-          image: Gosu::Image.new('media/images/user_interface/back.png'),
+          hover_image: Image.new(images[:back]),
+          image: Image.new(images[:back]),
           image_height: 42,
           radius: 30,
           x: Coordinates::BACK_TO_CURRENT_TILE_BUTTON_X,
@@ -536,8 +572,8 @@ module Monopoly
           game: self,
           height: DEFAULT_TILE_BUTTON_HEIGHT * 0.35,
           hover_color: nil,
-          hover_image: Gosu::Image.new('media/images/user_interface/arrow_up_hover.png'),
-          image: Gosu::Image.new('media/images/user_interface/arrow_up.png'),
+          hover_image: Image.new(images[:arrow_up_hover]),
+          image: Image.new(images[:arrow_up]),
           image_height: DEFAULT_TILE_BUTTON_HEIGHT * 0.35,
           width: DEFAULT_TILE_BUTTON_HEIGHT,
           x: Coordinates::FIRST_HOUSE_BUTTON_X,
@@ -549,8 +585,8 @@ module Monopoly
           color: colors[:tile_button],
           game: self,
           hover_color: colors[:positive_green],
-          hover_image: Gosu::Image.new('media/images/user_interface/buy.png'),
-          image: Gosu::Image.new('media/images/user_interface/buy.png'),
+          hover_image: Image.new(images[:buy]),
+          image: Image.new(images[:buy]),
           image_height: TOKEN_HEIGHT,
           radius: DEFAULT_TILE_BUTTON_HEIGHT / 2,
           x: Coordinates::BUY_BUTTON_X,
@@ -566,8 +602,8 @@ module Monopoly
           game: self,
           height: DEFAULT_TILE_BUTTON_HEIGHT,
           hover_color: nil,
-          hover_image: Gosu::Image.new('media/images/user_interface/house.png'),
-          image: Gosu::Image.new('media/images/user_interface/house.png'),
+          hover_image: Image.new(images[:house]),
+          image: Image.new(images[:house]),
           image_height: DEFAULT_TILE_BUTTON_HEIGHT,
           text_relative_position_y: 0.4,
           width: DEFAULT_TILE_BUTTON_HEIGHT,
@@ -578,15 +614,15 @@ module Monopoly
         mortgage: Button.new(
           mortgage_lock_button_options.merge(
             actions: :mortgage,
-            hover_image: Gosu::Image.new('media/images/user_interface/mortgage_hover.png'),
-            image: Gosu::Image.new('media/images/user_interface/mortgage.png')
+            hover_image: Image.new(images[:mortgage_hover]),
+            image: Image.new(images[:mortgage])
           )
         ),
         mortgage_lock: Button.new(
           mortgage_lock_button_options.merge(
             actions: nil,
-            hover_image: Gosu::Image.new('media/images/user_interface/mortgage_lock.png'),
-            image: Gosu::Image.new('media/images/user_interface/mortgage_lock.png')
+            hover_image: Image.new(images[:mortgage_lock]),
+            image: Image.new(images[:mortgage_lock])
           )
         ),
         owner: CircularButton.new(
@@ -604,8 +640,8 @@ module Monopoly
           game: self,
           height: DEFAULT_TILE_BUTTON_HEIGHT * 0.35,
           hover_color: nil,
-          hover_image: Gosu::Image.new('media/images/user_interface/arrow_down_hover.png'),
-          image: Gosu::Image.new('media/images/user_interface/arrow_down.png'),
+          hover_image: Image.new(images[:arrow_down_hover]),
+          image: Image.new(images[:arrow_down]),
           image_height: DEFAULT_TILE_BUTTON_HEIGHT * 0.35,
           width: DEFAULT_TILE_BUTTON_HEIGHT,
           x: Coordinates::FIRST_HOUSE_BUTTON_X,
@@ -627,8 +663,8 @@ module Monopoly
           color: colors[:tile_button],
           game: self,
           hover_color: colors[:tile_button_hover],
-          hover_image: Gosu::Image.new('media/images/user_interface/blank_deed.png'),
-          image: Gosu::Image.new('media/images/user_interface/blank_deed.png'),
+          hover_image: Image.new(images[:blank_deed]),
+          image: Image.new(images[:blank_deed]),
           image_height: 70,
           radius: DEFAULT_TILE_BUTTON_HEIGHT / 2,
           x: Coordinates::BUY_BUTTON_X,
@@ -649,8 +685,8 @@ module Monopoly
         unmortgage: Button.new(
           mortgage_lock_button_options.merge(
             actions: :unmortgage,
-            hover_image: Gosu::Image.new('media/images/user_interface/unmortgage_hover.png'),
-            image: Gosu::Image.new('media/images/user_interface/unmortgage.png')
+            hover_image: Image.new(images[:unmortgage_hover]),
+            image: Image.new(images[:unmortgage])
           )
         )
       }
@@ -684,8 +720,8 @@ module Monopoly
           game: self,
           height: 40,
           hover_color: nil,
-          hover_image: Gosu::Image.new('media/images/user_interface/x_hover.png'),
-          image: Gosu::Image.new('media/images/user_interface/x.png'),
+          hover_image: Image.new(images[:x_hover]),
+          image: Image.new(images[:x]),
           image_height: 40,
           width: 40,
           x: Coordinates::GROUP_MENU_LEFT_X + Coordinates::GROUP_MENU_BORDER_WIDTH + 5,
@@ -702,8 +738,8 @@ module Monopoly
           color: colors[:tile_button],
           game: self,
           hover_color: colors[:tile_button],
-          hover_image: Gosu::Image.new('media/images/user_interface/arrow_left_hover.png'),
-          image: Gosu::Image.new('media/images/user_interface/arrow_left.png'),
+          hover_image: Image.new(images[:arrow_left_hover]),
+          image: Image.new(images[:arrow_left]),
           image_height: 40,
           radius: 30,
           x: Coordinates::GROUP_MENU_LEFT_X + arrow_button_x_offset,
@@ -721,8 +757,8 @@ module Monopoly
           color: colors[:tile_button],
           game: self,
           hover_color: colors[:tile_button],
-          hover_image: Gosu::Image.new('media/images/user_interface/arrow_right_hover.png'),
-          image: Gosu::Image.new('media/images/user_interface/arrow_right.png'),
+          hover_image: Image.new(images[:arrow_right_hover]),
+          image: Image.new(images[:arrow_right]),
           image_height: 40,
           radius: 30,
           x: Coordinates::GROUP_MENU_RIGHT_X - arrow_button_x_offset,
@@ -743,8 +779,8 @@ module Monopoly
               game: self,
               height: DEFAULT_TILE_BUTTON_HEIGHT * 0.25,
               hover_color: nil,
-              hover_image: Gosu::Image.new('media/images/user_interface/arrow_up_hover.png'),
-              image: Gosu::Image.new('media/images/user_interface/arrow_up.png'),
+              hover_image: Image.new(images[:arrow_up_hover]),
+              image: Image.new(images[:arrow_up]),
               image_height: DEFAULT_TILE_BUTTON_HEIGHT * 0.25,
               width: DEFAULT_TILE_BUTTON_HEIGHT,
               x: x + group_menu_sub_button_edge,
@@ -759,8 +795,8 @@ module Monopoly
               game: self,
               height: DEFAULT_TILE_BUTTON_HEIGHT,
               hover_color: nil,
-              hover_image: Gosu::Image.new('media/images/user_interface/house.png'),
-              image: Gosu::Image.new('media/images/user_interface/house.png'),
+              hover_image: Image.new(images[:house]),
+              image: Image.new(images[:house]),
               image_height: DEFAULT_TILE_BUTTON_HEIGHT,
               text_relative_position_y: 0.4,
               width: DEFAULT_TILE_BUTTON_HEIGHT,
@@ -776,8 +812,8 @@ module Monopoly
               game: self,
               height: DEFAULT_TILE_BUTTON_HEIGHT * 0.45,
               hover_color: nil,
-              hover_image: Gosu::Image.new('media/images/user_interface/house.png'),
-              image: Gosu::Image.new('media/images/user_interface/house.png'),
+              hover_image: Image.new(images[:house]),
+              image: Image.new(images[:house]),
               image_height: DEFAULT_TILE_BUTTON_HEIGHT * 0.45,
               text_relative_position_y: 0.4,
               width: DEFAULT_TILE_BUTTON_HEIGHT * 0.45,
@@ -802,8 +838,8 @@ module Monopoly
               game: self,
               height: DEFAULT_TILE_BUTTON_HEIGHT,
               hover_color: nil,
-              hover_image: Gosu::Image.new('media/images/user_interface/mortgage_hover.png'),
-              image: Gosu::Image.new('media/images/user_interface/mortgage.png'),
+              hover_image: Image.new(images[:mortgage_hover]),
+              image: Image.new(images[:mortgage]),
               image_height: DEFAULT_TILE_BUTTON_HEIGHT,
               image_width: 70,
               width: 70,
@@ -818,8 +854,8 @@ module Monopoly
               game: self,
               height: DEFAULT_TILE_BUTTON_HEIGHT,
               hover_color: nil,
-              hover_image: Gosu::Image.new('media/images/user_interface/mortgage_lock.png'),
-              image: Gosu::Image.new('media/images/user_interface/mortgage_lock.png'),
+              hover_image: Image.new(images[:mortgage_lock]),
+              image: Image.new(images[:mortgage_lock]),
               image_height: DEFAULT_TILE_BUTTON_HEIGHT,
               image_width: 70,
               width: 70,
@@ -834,8 +870,8 @@ module Monopoly
               game: self,
               height: DEFAULT_TILE_BUTTON_HEIGHT * 0.25,
               hover_color: nil,
-              hover_image: Gosu::Image.new('media/images/user_interface/arrow_down_hover.png'),
-              image: Gosu::Image.new('media/images/user_interface/arrow_down.png'),
+              hover_image: Image.new(images[:arrow_down_hover]),
+              image: Image.new(images[:arrow_down]),
               image_height: DEFAULT_TILE_BUTTON_HEIGHT * 0.25,
               width: DEFAULT_TILE_BUTTON_HEIGHT,
               x: x + group_menu_sub_button_edge,
@@ -855,8 +891,8 @@ module Monopoly
               game: self,
               height: DEFAULT_TILE_BUTTON_HEIGHT,
               hover_color: nil,
-              hover_image: Gosu::Image.new('media/images/user_interface/unmortgage_hover.png'),
-              image: Gosu::Image.new('media/images/user_interface/unmortgage.png'),
+              hover_image: Image.new(images[:unmortgage_hover]),
+              image: Image.new(images[:unmortgage]),
               image_height: DEFAULT_TILE_BUTTON_HEIGHT,
               image_width: 70,
               width: 70,
@@ -876,8 +912,8 @@ module Monopoly
           game: self,
           height: 40,
           hover_color: nil,
-          hover_image: Gosu::Image.new('media/images/user_interface/x_hover.png'),
-          image: Gosu::Image.new('media/images/user_interface/x.png'),
+          hover_image: Image.new(images[:x_hover]),
+          image: Image.new(images[:x]),
           image_height: 40,
           width: 40,
           x: Coordinates::DEED_MENU_LEFT_X + Coordinates::DEED_MENU_BORDER_WIDTH + 5,
@@ -895,8 +931,8 @@ module Monopoly
           game: self,
           height: fonts[:deed][:offset],
           hover_color: nil,
-          hover_image: Gosu::Image.new('media/images/user_interface/arrow_down_hover.png'),
-          image: Gosu::Image.new('media/images/user_interface/arrow_down.png'),
+          hover_image: Image.new(images[:arrow_down_hover]),
+          image: Image.new(images[:arrow_down]),
           image_height: fonts[:deed][:offset],
           width: Coordinates::DEED_WIDTH * 0.75,
           x: Coordinates::CENTER_X - Coordinates::DEED_WIDTH * 0.4,
@@ -914,8 +950,8 @@ module Monopoly
           game: self,
           height: fonts[:deed][:offset],
           hover_color: nil,
-          hover_image: Gosu::Image.new('media/images/user_interface/arrow_up_hover.png'),
-          image: Gosu::Image.new('media/images/user_interface/arrow_up.png'),
+          hover_image: Image.new(images[:arrow_up_hover]),
+          image: Image.new(images[:arrow_up]),
           image_height: fonts[:deed][:offset],
           width: Coordinates::DEED_WIDTH * 0.75,
           x: Coordinates::CENTER_X - Coordinates::DEED_WIDTH * 0.4,
@@ -930,8 +966,8 @@ module Monopoly
           color: colors[:tile_button],
           game: self,
           hover_color: colors[:neutral_blue],
-          hover_image: Gosu::Image.new('media/images/user_interface/back.png'),
-          image: Gosu::Image.new('media/images/user_interface/back.png'),
+          hover_image: Image.new(images[:back]),
+          image: Image.new(images[:back]),
           image_height: 42,
           radius: 30,
           x: Coordinates::CENTER_X + (Coordinates::CARD_WIDTH / 2) - 30,
@@ -959,8 +995,8 @@ module Monopoly
           color: colors[:tile_button],
           game: self,
           hover_color: colors[:tile_button_hover],
-          hover_image: Gosu::Image.new('media/images/user_interface/all_properties.png'),
-          image: Gosu::Image.new('media/images/user_interface/all_properties.png'),
+          hover_image: Image.new(images[:all_properties]),
+          image: Image.new(images[:all_properties]),
           image_height: PLAYER_MENU_BUTTON_HEIGHT * 1.25,
           radius: PLAYER_MENU_BUTTON_HEIGHT,
           x: (Coordinates::PLAYER_MENU_LEFT_X + Coordinates::PLAYER_MENU_RIGHT_X) / 2,
@@ -1009,8 +1045,8 @@ module Monopoly
           game: self,
           height: PLAYER_MENU_BUTTON_HEIGHT,
           hover_color: nil,
-          hover_image: Gosu::Image.new('media/images/user_interface/arrow_left_hover.png'),
-          image: Gosu::Image.new('media/images/user_interface/arrow_left.png'),
+          hover_image: Image.new(images[:arrow_left_hover]),
+          image: Image.new(images[:arrow_left]),
           image_width: PLAYER_MENU_BUTTON_HEIGHT * 0.25,
           width: PLAYER_MENU_BUTTON_HEIGHT * 0.25,
           x: Coordinates::PLAYER_MENU_LEFT_X + player_menu_button_gap,
@@ -1029,8 +1065,8 @@ module Monopoly
           game: self,
           height: PLAYER_MENU_BUTTON_HEIGHT,
           hover_color: nil,
-          hover_image: Gosu::Image.new('media/images/user_interface/arrow_right_hover.png'),
-          image: Gosu::Image.new('media/images/user_interface/arrow_right.png'),
+          hover_image: Image.new(images[:arrow_right_hover]),
+          image: Image.new(images[:arrow_right]),
           image_width: PLAYER_MENU_BUTTON_HEIGHT * 0.25,
           width: PLAYER_MENU_BUTTON_HEIGHT * 0.25,
           x: Coordinates::PLAYER_MENU_RIGHT_X - PLAYER_MENU_RIGHT_BORDER_WIDTH -
@@ -1044,8 +1080,8 @@ module Monopoly
           color: nil,
           game: self,
           hover_color: colors[:tile_button],
-          hover_image: Gosu::Image.new('media/images/user_interface/key.png'),
-          image: Gosu::Image.new('media/images/user_interface/key.png'),
+          hover_image: Image.new(images[:key]),
+          image: Image.new(images[:key]),
           image_height: (PLAYER_MENU_ROUNDED_CORNER_RADIUS * 2) * 0.7,
           radius: PLAYER_MENU_ROUNDED_CORNER_RADIUS,
           x: Coordinates::PLAYER_MENU_RIGHT_X - (PLAYER_MENU_ROUNDED_CORNER_RADIUS * 3),
@@ -1074,8 +1110,8 @@ module Monopoly
           color: nil,
           game: self,
           hover_color: colors[:tile_button],
-          hover_image: Gosu::Image.new('media/images/user_interface/mortgage_lock.png'),
-          image: Gosu::Image.new('media/images/user_interface/mortgage_lock.png'),
+          hover_image: Image.new(images[:mortgage_lock]),
+          image: Image.new(images[:mortgage_lock]),
           image_height: (PLAYER_MENU_ROUNDED_CORNER_RADIUS * 2) * 0.7,
           radius: PLAYER_MENU_ROUNDED_CORNER_RADIUS,
           x: Coordinates::PLAYER_MENU_RIGHT_X - PLAYER_MENU_ROUNDED_CORNER_RADIUS,
@@ -1088,8 +1124,8 @@ module Monopoly
           color: nil,
           game: self,
           hover_color: nil,
-          hover_image: Gosu::Image.new('media/images/user_interface/no_key.png'),
-          image: Gosu::Image.new('media/images/user_interface/no_key.png'),
+          hover_image: Image.new(images[:no_key]),
+          image: Image.new(images[:no_key]),
           image_height: (PLAYER_MENU_ROUNDED_CORNER_RADIUS * 2) * 0.7,
           radius: PLAYER_MENU_ROUNDED_CORNER_RADIUS,
           x: Coordinates::PLAYER_MENU_RIGHT_X - (PLAYER_MENU_ROUNDED_CORNER_RADIUS * 3) ,
@@ -1102,8 +1138,8 @@ module Monopoly
           color: nil,
           game: self,
           hover_color: nil,
-          hover_image: Gosu::Image.new('media/images/user_interface/mortgage.png'),
-          image: Gosu::Image.new('media/images/user_interface/mortgage.png'),
+          hover_image: Image.new(images[:mortgage]),
+          image: Image.new(images[:mortgage]),
           image_height: (PLAYER_MENU_ROUNDED_CORNER_RADIUS * 2) * 0.7,
           radius: PLAYER_MENU_ROUNDED_CORNER_RADIUS,
           x: Coordinates::PLAYER_MENU_RIGHT_X - PLAYER_MENU_ROUNDED_CORNER_RADIUS,
@@ -1169,8 +1205,8 @@ module Monopoly
           game: self,
           height: PLAYER_MENU_BUTTON_HEIGHT * 2,
           hover_color: nil,
-          hover_image: Gosu::Image.new('media/images/user_interface/arrow_left_hover.png'),
-          image: Gosu::Image.new('media/images/user_interface/arrow_left.png'),
+          hover_image: Image.new(images[:arrow_left_hover]),
+          image: Image.new(images[:arrow_left]),
           image_width: PLAYER_MENU_BUTTON_HEIGHT * 0.5,
           width: PLAYER_MENU_BUTTON_HEIGHT * 0.5,
           x: Coordinates::PLAYER_MENU_LEFT_X + (PLAYER_MENU_BUTTON_HEIGHT * 0.5),
@@ -1189,8 +1225,8 @@ module Monopoly
           game: self,
           height: PLAYER_MENU_BUTTON_HEIGHT * 2,
           hover_color: nil,
-          hover_image: Gosu::Image.new('media/images/user_interface/arrow_right_hover.png'),
-          image: Gosu::Image.new('media/images/user_interface/arrow_right.png'),
+          hover_image: Image.new(images[:arrow_right_hover]),
+          image: Image.new(images[:arrow_right]),
           image_width: PLAYER_MENU_BUTTON_HEIGHT * 0.5,
           width: PLAYER_MENU_BUTTON_HEIGHT * 0.5,
           x: Coordinates::PLAYER_MENU_LEFT_X + (PLAYER_MENU_BUTTON_HEIGHT * 3) +
@@ -1228,8 +1264,8 @@ module Monopoly
           game: self,
           height: PLAYER_MENU_BUTTON_HEIGHT * 2,
           hover_color: nil,
-          hover_image: Gosu::Image.new('media/images/user_interface/arrow_left_hover.png'),
-          image: Gosu::Image.new('media/images/user_interface/arrow_left.png'),
+          hover_image: Image.new(images[:arrow_left_hover]),
+          image: Image.new(images[:arrow_left]),
           image_width: PLAYER_MENU_BUTTON_HEIGHT * 0.5,
           width: PLAYER_MENU_BUTTON_HEIGHT * 0.5,
           x: Coordinates::PLAYER_MENU_RIGHT_X - (PLAYER_MENU_BUTTON_HEIGHT * 3.5) -
@@ -1249,8 +1285,8 @@ module Monopoly
           game: self,
           height: PLAYER_MENU_BUTTON_HEIGHT * 2,
           hover_color: nil,
-          hover_image: Gosu::Image.new('media/images/user_interface/arrow_right_hover.png'),
-          image: Gosu::Image.new('media/images/user_interface/arrow_right.png'),
+          hover_image: Image.new(images[:arrow_right_hover]),
+          image: Image.new(images[:arrow_right]),
           image_width: PLAYER_MENU_BUTTON_HEIGHT * 0.5,
           width: PLAYER_MENU_BUTTON_HEIGHT * 0.5,
           x: Coordinates::PLAYER_MENU_RIGHT_X - (PLAYER_MENU_BUTTON_HEIGHT * 1),
@@ -1266,8 +1302,8 @@ module Monopoly
         game: self,
         radius: PLAYER_MENU_BUTTON_HEIGHT / 2,
         hover_color: colors[:pop_up_menu_background_light],
-        hover_image: Gosu::Image.new('media/images/user_interface/jail_cell.png'),
-        image: Gosu::Image.new('media/images/user_interface/jail_cell.png'),
+        hover_image: Image.new(images[:jail_cell]),
+        image: Image.new(images[:jail_cell]),
         image_height: PLAYER_MENU_BUTTON_HEIGHT * 0.6,
         x: Coordinates::PLAYER_MENU_RIGHT_X - PLAYER_MENU_ROUNDED_CORNER_RADIUS,
         y: Coordinates::PLAYER_MENU_TOP_Y + PLAYER_MENU_ROUNDED_CORNER_RADIUS,
@@ -1321,7 +1357,7 @@ module Monopoly
           y: Coordinates::PLAYER_MENU_TOP_Y + PLAYER_MENU_ROUNDED_CORNER_RADIUS,
           z: ZOrder::MENU_BACKGROUND
         },
-        rounded_corner_circle: Gosu::Image.new(
+        rounded_corner_circle: Image.new(
           Gosu::Circle.new(
             color: colors[:pop_up_menu_border],
             radius: PLAYER_MENU_ROUNDED_CORNER_RADIUS
@@ -1349,18 +1385,18 @@ module Monopoly
             amount: -50,
             every_other_player: true,
             game: self,
-            image: Gosu::Image.new('media/images/cards/chairman_of_the_board.jpg'),
+            image: Image.new('media/images/cards/chairman_of_the_board.jpg'),
             type: :chance
           ),
           MoveCard.new(
             game: self,
-            image: Gosu::Image.new('media/images/cards/go_back_3_spaces.jpg'),
+            image: Image.new('media/images/cards/go_back_3_spaces.jpg'),
             move_value: -3,
             type: :chance
           ),
           MoveCard.new(
             game: self,
-            image: Gosu::Image.new('media/images/cards/nearest_utility.jpg'),
+            image: Image.new('media/images/cards/nearest_utility.jpg'),
             move_value: UtilityTile,
             rent_multiplier: 10,
             type: :chance
@@ -1368,18 +1404,18 @@ module Monopoly
           MoneyCard.new(
             amount: -15,
             game: self,
-            image: Gosu::Image.new('media/images/cards/poor_tax.jpg'),
+            image: Image.new('media/images/cards/poor_tax.jpg'),
             type: :chance
           ),
           GetOutOfJailFreeCard.new(
             game: self,
-            image: Gosu::Image.new('media/images/cards/get_out_of_jail_free.jpg'),
+            image: Image.new('media/images/cards/get_out_of_jail_free.jpg'),
             type: :chance
           ),
           MoveCard.new(
             game: self,
             go_money: true,
-            image: Gosu::Image.new('media/images/cards/advance_to_boardwalk.jpg'),
+            image: Image.new('media/images/cards/advance_to_boardwalk.jpg'),
             move_value: tiles[:boardwalk],
             type: :chance
           )
@@ -1389,24 +1425,24 @@ module Monopoly
             amount: 50,
             every_other_player: true,
             game: self,
-            image: Gosu::Image.new('media/images/cards/opera.jpg'),
+            image: Image.new('media/images/cards/opera.jpg'),
             type: :community_chest
           ),
           GoToJailCard.new(
             game: self,
-            image: Gosu::Image.new('media/images/cards/go_to_jail_community_chest.jpg'),
+            image: Image.new('media/images/cards/go_to_jail_community_chest.jpg'),
             type: :community_chest
           ),
           PropertyRepairCard.new(
             cost_per_house: 40,
             game: self,
-            image: Gosu::Image.new('media/images/cards/street_repairs.jpg'),
+            image: Image.new('media/images/cards/street_repairs.jpg'),
             type: :community_chest
           ),
           MoneyCard.new(
             amount: 25,
             game: self,
-            image: Gosu::Image.new('media/images/cards/receive_for_services.jpg'),
+            image: Image.new('media/images/cards/receive_for_services.jpg'),
             type: :community_chest
           )
         ]

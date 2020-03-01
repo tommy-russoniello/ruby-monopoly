@@ -1,4 +1,4 @@
-module Gosu
+module Monopoly
   class SpinAnimation < Animation
     attr_accessor :angle_delta
 

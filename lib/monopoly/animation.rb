@@ -1,4 +1,4 @@
-module Gosu
+module Monopoly
   class Animation
     attr_accessor :angle
     attr_accessor :center_x
