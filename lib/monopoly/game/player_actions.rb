@@ -370,6 +370,7 @@ module Monopoly
           update_visible_buttons(:end_turn)
         else
           current_card.triggered = true
+          set_visible_card_menu_buttons
           current_card.perform_action
         end
       end
