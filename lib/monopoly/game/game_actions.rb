@@ -66,9 +66,11 @@ module Monopoly
 
         player.cards = []
         players.delete(player)
-        if player == current_player
+        if player == (current_player_cache || current_player)
           self.current_player_index =
             current_player_index == 0 ? players.size - 1 : current_player_index - 1
+        else
+          set_visible_player_menu_buttons(refresh: true)
         end
       end
 

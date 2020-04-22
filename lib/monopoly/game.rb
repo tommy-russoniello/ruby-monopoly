@@ -44,6 +44,7 @@ module Monopoly
     attr_accessor :group_menu_tiles
     attr_accessor :images
     attr_accessor :messages
+    attr_accessor :next_players
     attr_accessor :options_menu_buttons
     attr_accessor :options_menu_bar_paramaters
     attr_accessor :player_menu_buttons
@@ -495,7 +496,8 @@ module Monopoly
           game: self,
           text: 'Cancel',
           width: dialogue_box_button_width,
-          x: Coordinates::DIALOGUE_BOX_RIGHT_X - DIALOGUE_BOX_BUTTON_GAP - dialogue_box_button_width,
+          x: Coordinates::DIALOGUE_BOX_RIGHT_X - DIALOGUE_BOX_BUTTON_GAP -
+            dialogue_box_button_width,
           y: Coordinates::DIALOGUE_BOX_BOTTOM_Y - Button::DEFAULT_HEIGHT - 10,
           z: ZOrder::DIALOGUE_UI
         )
@@ -936,7 +938,8 @@ module Monopoly
           image_height: fonts[:deed][:offset],
           width: Coordinates::DEED_WIDTH * 0.75,
           x: Coordinates::CENTER_X - Coordinates::DEED_WIDTH * 0.4,
-          y: Coordinates::CENTER_Y - (Coordinates::DEED_HEIGHT * 0.125) + (fonts[:deed][:offset] * 5),
+          y: Coordinates::CENTER_Y - (Coordinates::DEED_HEIGHT * 0.125) +
+            (fonts[:deed][:offset] * 5),
           z: ZOrder::POP_UP_MENU_UI
         ),
         up: Button.new(
@@ -955,7 +958,8 @@ module Monopoly
           image_height: fonts[:deed][:offset],
           width: Coordinates::DEED_WIDTH * 0.75,
           x: Coordinates::CENTER_X - Coordinates::DEED_WIDTH * 0.4,
-          y: Coordinates::CENTER_Y - (Coordinates::DEED_HEIGHT * 0.125) + (fonts[:deed][:offset] * 2),
+          y: Coordinates::CENTER_Y - (Coordinates::DEED_HEIGHT * 0.125) +
+            (fonts[:deed][:offset] * 2),
           z: ZOrder::POP_UP_MENU_UI
         )
       }
@@ -989,6 +993,9 @@ module Monopoly
       color_group_offset = PLAYER_MENU_BUTTON_HEIGHT + player_menu_button_gap
       color_group_initial_x = Coordinates::PLAYER_MENU_LEFT_X + color_group_offset
       color_group_color_height = PLAYER_MENU_BUTTON_HEIGHT * 0.2
+      next_players_x_offset = DEFAULT_TILE_BUTTON_HEIGHT + TILE_BUTTON_GAP
+      next_players_initial_x = Coordinates::PLAYER_MENU_RIGHT_X +
+        (DEFAULT_TILE_BUTTON_HEIGHT * 0.75) + TILE_BUTTON_GAP
       self.player_menu_buttons = {
         all_properties: CircularButton.new(
           actions: proc { toggle_group_menu(current_player.properties) },
@@ -1117,6 +1124,58 @@ module Monopoly
           x: Coordinates::PLAYER_MENU_RIGHT_X - PLAYER_MENU_ROUNDED_CORNER_RADIUS,
           y: Coordinates::PLAYER_MENU_TOP_Y + (PLAYER_MENU_ROUNDED_CORNER_RADIUS * 2) +
             (DEFAULT_TILE_BUTTON_HEIGHT / 2) + DEFAULT_TILE_BUTTON_BORDER_WIDTH,
+          z: ZOrder::MENU_UI
+        ),
+        next_players: (0...4).map do |number|
+          CircularButton.new(
+            actions: nil,
+            color: colors[:tile_button],
+            game: self,
+            hover_color: colors[:tile_button_hover],
+            radius: DEFAULT_TILE_BUTTON_HEIGHT / 2,
+            x: next_players_initial_x + (next_players_x_offset * number),
+            y: Coordinates::PLAYER_MENU_BOTTOM_Y - TILE_BUTTON_GAP -
+              (DEFAULT_TILE_BUTTON_HEIGHT / 2),
+            z: ZOrder::MENU_UI
+          )
+        end,
+        next_players_left: Button.new(
+          actions: [
+            proc do
+              next_players.shift_back
+              set_visible_player_menu_buttons if drawing_player_menu?
+            end
+          ],
+          color: nil,
+          game: self,
+          height: DEFAULT_TILE_BUTTON_HEIGHT,
+          hover_color: nil,
+          hover_image: Image.new(images[:arrow_left_hover]),
+          image: Image.new(images[:arrow_left]),
+          image_width: DEFAULT_TILE_BUTTON_HEIGHT * 0.25,
+          width: DEFAULT_TILE_BUTTON_HEIGHT * 0.25,
+          x: next_players_initial_x - (DEFAULT_TILE_BUTTON_HEIGHT * 0.75) - (TILE_BUTTON_GAP / 2),
+          y: Coordinates::PLAYER_MENU_BOTTOM_Y - TILE_BUTTON_GAP - DEFAULT_TILE_BUTTON_HEIGHT,
+          z: ZOrder::MENU_UI
+        ),
+        next_players_right: Button.new(
+          actions: [
+            proc do
+              next_players.shift_forward
+              set_visible_player_menu_buttons if drawing_player_menu?
+            end
+          ],
+          color: nil,
+          game: self,
+          height: DEFAULT_TILE_BUTTON_HEIGHT,
+          hover_color: nil,
+          hover_image: Image.new(images[:arrow_right_hover]),
+          image: Image.new(images[:arrow_right]),
+          image_width: DEFAULT_TILE_BUTTON_HEIGHT * 0.25,
+          width: DEFAULT_TILE_BUTTON_HEIGHT * 0.25,
+          x: next_players_initial_x + (next_players_x_offset * 3) +
+            (DEFAULT_TILE_BUTTON_HEIGHT / 2) + (TILE_BUTTON_GAP / 2),
+          y: Coordinates::PLAYER_MENU_BOTTOM_Y - TILE_BUTTON_GAP - DEFAULT_TILE_BUTTON_HEIGHT,
           z: ZOrder::MENU_UI
         ),
         no_get_out_of_jail_free: CircularButton.new(
@@ -1322,7 +1381,6 @@ module Monopoly
 
       player_menu_buttons[:jail_turns] = CircularButton.new(jail_turns_button_params)
 
-
       jail_bar_gap = player_menu_button_gap * 0.4
       jail_bar_params = {
         color: colors[:jail],
@@ -1471,6 +1529,7 @@ module Monopoly
       self.player_menu_utility_groups =
         ScrollingList.new(items: utility_groups.values, view_size: 1)
       self.drawing_player_menu = true
+      self.next_players = ScrollingList.new(items: players[1..-1], view_size: 4)
       self.visible_buttons = [buttons[:roll_dice_for_move]]
       self.visible_card_menu_buttons = []
       self.visible_deed_menu_buttons = []

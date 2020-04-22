@@ -443,6 +443,9 @@ module Monopoly
         if refresh
           [player_menu_color_groups, player_menu_railroad_groups, player_menu_utility_groups]
             .each { |group_set| group_set.items = group_set.all_items }
+
+          self.next_players.items =
+            players[current_player_index + 1..-1] + players[0...current_player_index]
         end
 
         %i[railroad utility].each do |type|
@@ -491,6 +494,21 @@ module Monopoly
             "#{color_group.amount_owned(current_player)}/#{color_group.tiles.count}"
 
           self.visible_player_menu_buttons += buttons.values
+        end
+
+        visible_player_menu_buttons << player_menu_buttons[:next_players_left] if
+          next_players.previous?
+        visible_player_menu_buttons << player_menu_buttons[:next_players_right] if
+          next_players.next?
+
+        next_players.items.each.with_index do |player, index|
+          button = player_menu_buttons[:next_players][index]
+
+          button.hover_image = player.token_image
+          button.image = player.token_image
+          button.maximize_image_in_square(TOKEN_HEIGHT)
+
+          visible_player_menu_buttons << button
         end
       end
 
