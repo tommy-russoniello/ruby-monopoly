@@ -34,6 +34,7 @@ module Monopoly
     attr_accessor :drawing_dialogue_box
     attr_accessor :drawing_group_menu
     attr_accessor :drawing_options_menu
+    attr_accessor :drawing_player_inspector
     attr_accessor :drawing_player_menu
     attr_accessor :draw_mouse_x
     attr_accessor :draw_mouse_y
@@ -43,10 +44,16 @@ module Monopoly
     attr_accessor :group_menu_buttons
     attr_accessor :group_menu_tiles
     attr_accessor :images
+    attr_accessor :inspected_player
     attr_accessor :messages
     attr_accessor :next_players
     attr_accessor :options_menu_buttons
     attr_accessor :options_menu_bar_paramaters
+    attr_accessor :player_inspector_buttons
+    attr_accessor :player_inspector_color_groups
+    attr_accessor :player_inspector_data
+    attr_accessor :player_inspector_railroad_groups
+    attr_accessor :player_inspector_utility_groups
     attr_accessor :player_menu_buttons
     attr_accessor :player_menu_data
     attr_accessor :player_menu_color_groups
@@ -69,6 +76,7 @@ module Monopoly
     attr_accessor :visible_card_menu_buttons
     attr_accessor :visible_deed_menu_buttons
     attr_accessor :visible_group_menu_buttons
+    attr_accessor :visible_player_inspector_buttons
     attr_accessor :visible_player_menu_buttons
     attr_accessor :visible_tile_menu_buttons
 
@@ -95,6 +103,7 @@ module Monopoly
         monopoly_button_background: Gosu::Color.new(100, 54, 165, 56),
         monopoly_button_background_hover: Gosu::Color.new(100, 42, 133, 44),
         neutral_blue: Gosu::Color.new(255, 36, 72, 130),
+        neutral_yellow: Gosu::Color.new(255, 198, 201, 0),
         options_menu_background: Gosu::Color.new(255, 14, 58, 61),
         options_menu_button: Gosu::Color.new(255, 153, 153, 153),
         options_menu_button_hover: Gosu::Color.new(255, 95, 95, 95),
@@ -113,6 +122,7 @@ module Monopoly
 
       monopoly_font = 'media/fonts/JosefinSans-Regular.ttf'
       self.fonts = {
+        big_title: { type: Gosu::Font.new(80), offset: 80 },
         deed: { type: Gosu::Font.new(28, name: monopoly_font), offset: 35 },
         deed_name: { type: Gosu::Font.new(30, name: monopoly_font), offset: 35 },
         dialogue: { type: Gosu::Font.new(50), offset: 55 },
@@ -132,20 +142,24 @@ module Monopoly
         arrow_up: 'user_interface/arrow_up.png',
         arrow_up_hover: 'user_interface/arrow_up_hover.png',
         back: 'user_interface/back.png',
+        bar_graph: 'user_interface/bar_graph.png',
         blank_deed: 'user_interface/blank_deed.png',
         blank_street_tile: 'user_interface/blank_street_tile.png',
         build_house: 'user_interface/build_house.png',
         build_house_hover: 'user_interface/build_house_hover.png',
-        buy: 'user_interface/buy.png',
+        dollar_sign: 'user_interface/dollar_sign.png',
+        handshake: 'user_interface/handshake.png',
         house: 'user_interface/house.png',
         jail_cell: 'user_interface/jail_cell.png',
         key: 'user_interface/key.png',
+        message: 'user_interface/message.png',
         mortgage: 'user_interface/mortgage.png',
         mortgage_hover: 'user_interface/mortgage_hover.png',
         mortgage_lock: 'user_interface/mortgage_lock.png',
         no_key: 'user_interface/no_key.png',
         options_gear: 'user_interface/options_gear.png',
         options_gear_hover: 'user_interface/options_gear_hover.png',
+        pinpoint: 'user_interface/pinpoint.png',
         sell_house: 'user_interface/sell_house.png',
         sell_house_hover: 'user_interface/sell_house_hover.png',
         train: 'user_interface/train.png',
@@ -587,8 +601,8 @@ module Monopoly
           color: colors[:tile_button],
           game: self,
           hover_color: colors[:positive_green],
-          hover_image: Image.new(images[:buy]),
-          image: Image.new(images[:buy]),
+          hover_image: Image.new(images[:dollar_sign]),
+          image: Image.new(images[:dollar_sign]),
           image_height: TOKEN_HEIGHT,
           radius: DEFAULT_TILE_BUTTON_HEIGHT / 2,
           x: Coordinates::BUY_BUTTON_X,
@@ -628,8 +642,14 @@ module Monopoly
           )
         ),
         owner: CircularButton.new(
-          actions: nil,
+          actions: proc do
+            return unless focused_tile.owner
+
+            self.inspected_player = focused_tile.owner
+            toggle_player_inspector
+          end,
           game: self,
+          hover_color: colors[:tile_button_hover],
           radius: DEFAULT_TILE_BUTTON_HEIGHT / 2,
           x: Coordinates::TILE_OWNER_TOKEN_X,
           y: Coordinates::TILE_OWNER_TOKEN_Y,
@@ -824,10 +844,15 @@ module Monopoly
               z: group_menu_tile_button_options[:z]
             ),
             owner: CircularButton.new(
-              actions: nil,
+              actions: proc do
+                index = number
+                index -= 1 if group_menu_tiles.all_items.size <= 2
+                self.inspected_player = group_menu_tiles.items[index].owner
+                toggle_player_inspector
+              end,
               color: colors[:tile_button],
               game: self,
-              hover_color: colors[:tile_button],
+              hover_color: colors[:tile_button_hover],
               radius: DEFAULT_TILE_BUTTON_HEIGHT / 2,
               x: x + group_menu_sub_button_edge + DEFAULT_TILE_BUTTON_HEIGHT + TILE_BUTTON_GAP +
                 (DEFAULT_TILE_BUTTON_HEIGHT / 2),
@@ -989,6 +1014,459 @@ module Monopoly
         )
       }
 
+      player_inspector_button_height = DEFAULT_TILE_BUTTON_HEIGHT * 0.75
+      player_inspector_button_gap = DEFAULT_TILE_BUTTON_HEIGHT * 0.1
+      player_inspector_color_group_offset = player_inspector_button_height +
+        player_inspector_button_gap
+      player_inspector_color_group_initial_x = Coordinates::PLAYER_INSPECTOR_LEFT_X +
+        (player_inspector_color_group_offset * 1.2)
+      player_inspector_color_group_color_height = player_inspector_button_height * 0.2
+      player_inspector_close_button_height = 40
+      player_inspector_close_button_y_offset = Coordinates::PLAYER_INSPECTOR_TOP_Y +
+        Coordinates::PLAYER_INSPECTOR_BORDER_WIDTH + player_inspector_close_button_height +
+        (player_inspector_button_gap * 1.5)
+      player_inspector_left_button_x = Coordinates::PLAYER_INSPECTOR_LEFT_X +
+        Coordinates::PLAYER_INSPECTOR_BORDER_WIDTH + (player_inspector_button_gap / 2)
+      player_inspector_text_width = Coordinates::PLAYER_INSPECTOR_WIDTH -
+        (Coordinates::PLAYER_INSPECTOR_BORDER_WIDTH * 2) - (DEFAULT_TILE_BUTTON_HEIGHT * 2) -
+        (player_inspector_button_gap * 3)
+      player_inspector_money_text_width_difference = (player_inspector_button_height / 2) +
+        player_inspector_button_gap
+      self.player_inspector_buttons = {
+        all_properties: CircularButton.new(
+          actions: proc { toggle_group_menu(inspected_player.properties) },
+          color: colors[:tile_button],
+          game: self,
+          hover_color: colors[:tile_button_hover],
+          hover_image: Image.new(images[:all_properties]),
+          image: Image.new(images[:all_properties]),
+          image_height: player_inspector_button_height * 1.25,
+          radius: player_inspector_button_height,
+          x: (Coordinates::PLAYER_INSPECTOR_LEFT_X + Coordinates::PLAYER_INSPECTOR_RIGHT_X) / 2,
+          y: player_inspector_close_button_y_offset +
+            (player_inspector_button_height + player_inspector_button_gap) * 3 +
+            player_inspector_button_height,
+          z: ZOrder::POP_UP_MENU_UI
+        ),
+        close: Button.new(
+          actions: :toggle_player_inspector,
+          color: nil,
+          game: self,
+          height: player_inspector_close_button_height,
+          hover_color: nil,
+          hover_image: Image.new(images[:x_hover]),
+          image: Image.new(images[:x]),
+          image_height: player_inspector_close_button_height,
+          width: player_inspector_close_button_height,
+          x: player_inspector_left_button_x,
+          y: Coordinates::PLAYER_INSPECTOR_TOP_Y + Coordinates::PLAYER_INSPECTOR_BORDER_WIDTH +
+            (player_inspector_button_gap / 2),
+          z: ZOrder::POP_UP_MENU_UI
+        ),
+        color_groups: (0...8).map do |number|
+          color_y = player_inspector_close_button_y_offset +
+            (player_inspector_button_height + player_inspector_button_gap) * 5 +
+            player_inspector_button_height
+          count_y = player_inspector_close_button_y_offset +
+            (player_inspector_button_height + player_inspector_button_gap) * 4 +
+            (player_inspector_button_height * 1.5)
+
+          {
+            color: Button.new(
+              actions: nil,
+              color: nil,
+              game: self,
+              height: player_inspector_color_group_color_height,
+              hover_color: nil,
+              width: player_inspector_button_height,
+              x: player_inspector_color_group_initial_x +
+                (number * player_inspector_color_group_offset) -
+                (player_inspector_button_height / 2),
+              y: color_y,
+              z: ZOrder::POP_UP_MENU_UI
+            ),
+            count: CircularButton.new(
+              actions:
+                proc { toggle_group_menu(player_inspector_color_groups.items[number].tiles) },
+              color: colors[:tile_button],
+              font: fonts[:default][:type],
+              font_color: colors[:clickable_text],
+              font_hover_color: colors[:clickable_text_hover],
+              game: self,
+              hover_color: colors[:tile_button_hover],
+              radius: player_inspector_button_height / 2,
+              x: player_inspector_color_group_initial_x +
+                (number * player_inspector_color_group_offset),
+              y: count_y,
+              z: ZOrder::POP_UP_MENU_UI
+            )
+          }
+        end,
+        color_groups_left: Button.new(
+          actions: [
+            proc do
+              player_inspector_color_groups.shift_back
+              set_visible_player_inspector_buttons if drawing_player_inspector?
+            end
+          ],
+          color: nil,
+          game: self,
+          height: player_inspector_button_height,
+          hover_color: nil,
+          hover_image: Image.new(images[:arrow_left_hover]),
+          image: Image.new(images[:arrow_left]),
+          image_width: player_inspector_button_height * 0.25,
+          width: player_inspector_button_height * 0.25,
+          x: Coordinates::PLAYER_INSPECTOR_LEFT_X + (player_inspector_button_gap * 2) +
+            Coordinates::PLAYER_INSPECTOR_BORDER_WIDTH,
+          y: player_inspector_close_button_y_offset +
+            (player_inspector_button_height + player_inspector_button_gap) * 4 +
+            player_inspector_button_height,
+          z: ZOrder::POP_UP_MENU_UI
+        ),
+        color_groups_right: Button.new(
+          actions: [
+            proc do
+              player_inspector_color_groups.shift_forward
+              set_visible_player_inspector_buttons if drawing_player_inspector?
+            end
+          ],
+          color: nil,
+          game: self,
+          height: player_inspector_button_height,
+          hover_color: nil,
+          hover_image: Image.new(images[:arrow_right_hover]),
+          image: Image.new(images[:arrow_right]),
+          image_width: player_inspector_button_height * 0.25,
+          width: player_inspector_button_height * 0.25,
+          x: Coordinates::PLAYER_INSPECTOR_RIGHT_X - Coordinates::PLAYER_INSPECTOR_BORDER_WIDTH -
+            (player_inspector_button_gap * 2) - (player_inspector_button_height * 0.25),
+          y: player_inspector_close_button_y_offset +
+            (player_inspector_button_height + player_inspector_button_gap) * 4 +
+            player_inspector_button_height,
+          z: ZOrder::POP_UP_MENU_UI
+        ),
+        currently_on: Button.new(
+          actions: nil,
+          color: nil,
+          font: fonts[:title][:type],
+          font_color: colors[:clickable_text],
+          game: self,
+          height: player_inspector_button_height,
+          hover_color: nil,
+          hover_image: Image.new(images[:pinpoint]),
+          image: Image.new(images[:pinpoint]),
+          image_height: player_inspector_button_height * 0.7,
+          image_position_x: 0.05,
+          text_position_x: 0.125,
+          text_relative_position_x: 0,
+          text_relative_width: 0.875,
+          width: player_inspector_text_width,
+          x: player_inspector_left_button_x,
+          y: player_inspector_close_button_y_offset + player_inspector_button_height +
+            player_inspector_button_gap,
+          z: ZOrder::POP_UP_MENU_UI
+        ),
+        get_out_of_jail_free: CircularButton.new(
+          actions: nil,
+          color: nil,
+          game: self,
+          hover_color: nil,
+          hover_image: Image.new(images[:key]),
+          image: Image.new(images[:key]),
+          image_height: player_inspector_button_height * 0.7,
+          radius: player_inspector_button_height / 2,
+          x: player_inspector_left_button_x + player_inspector_text_width +
+            player_inspector_button_gap + player_inspector_button_height,
+          y: player_inspector_close_button_y_offset + (player_inspector_button_height +
+            player_inspector_button_gap) * 2 + (player_inspector_button_height / 2),
+          z: ZOrder::POP_UP_MENU_UI
+        ),
+        jail_turns: CircularButton.new(
+          actions: nil,
+          color: colors[:pop_up_menu_background_light],
+          font: fonts[:house_count][:type],
+          font_color: colors[:default_text],
+          game: self,
+          radius: player_inspector_button_height / 2,
+          hover_color: colors[:pop_up_menu_background_light],
+          hover_image: Image.new(images[:jail_cell]),
+          image: Image.new(images[:jail_cell]),
+          image_height: player_inspector_button_height * 0.6,
+          x: player_inspector_left_button_x + player_inspector_text_width,
+          y: player_inspector_close_button_y_offset +
+            (player_inspector_button_height + player_inspector_button_gap) * 2 +
+            (player_inspector_button_height / 2),
+          z: ZOrder::POP_UP_MENU_UI
+        ),
+        message: CircularButton.new(
+          actions: nil,
+          color: colors[:tile_button],
+          game: self,
+          hover_color: colors[:neutral_blue],
+          hover_image: Image.new(images[:message]),
+          image: Image.new(images[:message]),
+          image_height: (player_inspector_button_height * 0.75),
+          radius: player_inspector_button_height,
+          x: Coordinates::PLAYER_INSPECTOR_LEFT_X + (player_inspector_button_height * 2) +
+            player_inspector_button_gap,
+          y: player_inspector_close_button_y_offset +
+            (player_inspector_button_height + player_inspector_button_gap) * 6 +
+            player_inspector_button_height + player_inspector_color_group_color_height +
+            (Coordinates::PLAYER_INSPECTOR_BORDER_WIDTH * 2) + (player_inspector_button_gap * 1.5),
+          z: ZOrder::POP_UP_MENU_UI
+        ),
+        money: Button.new(
+          actions: nil,
+          color: nil,
+          font: fonts[:title][:type],
+          font_color: colors[:clickable_text],
+          game: self,
+          height: player_inspector_button_height,
+          hover_color: nil,
+          hover_image: Image.new(images[:dollar_sign]),
+          image: Image.new(images[:dollar_sign]),
+          image_height: player_inspector_button_height * 0.7,
+          image_position_x: 0.05 +
+            (0.05 * player_inspector_money_text_width_difference / player_inspector_text_width),
+          text_position_x: 0.125 +
+            (0.125 * player_inspector_money_text_width_difference / player_inspector_text_width),
+          text_relative_position_x: 0,
+          text_relative_width: 1 - 0.125 -
+            (0.125 * player_inspector_money_text_width_difference / player_inspector_text_width),
+          width: player_inspector_text_width - player_inspector_money_text_width_difference,
+          x: player_inspector_left_button_x,
+          y: player_inspector_close_button_y_offset + (player_inspector_button_height +
+            player_inspector_button_gap) * 2,
+          z: ZOrder::POP_UP_MENU_UI
+        ),
+        mortgaged_properties: CircularButton.new(
+          actions: proc { toggle_group_menu(inspected_player.properties.select(&:mortgaged?)) },
+          color: nil,
+          game: self,
+          hover_color: colors[:tile_button],
+          hover_image: Image.new(images[:mortgage_lock]),
+          image: Image.new(images[:mortgage_lock]),
+          image_height: player_inspector_button_height * 0.7,
+          radius: player_inspector_button_height / 2,
+          x: player_inspector_left_button_x + player_inspector_text_width +
+            (player_inspector_button_gap * 2) + (player_inspector_button_height * 2),
+          y: player_inspector_close_button_y_offset + (player_inspector_button_height +
+            player_inspector_button_gap) * 2 + (player_inspector_button_height / 2),
+          z: ZOrder::POP_UP_MENU_UI
+        ),
+        no_get_out_of_jail_free: CircularButton.new(
+          actions: nil,
+          color: nil,
+          game: self,
+          hover_color: nil,
+          hover_image: Image.new(images[:no_key]),
+          image: Image.new(images[:no_key]),
+          image_height: player_inspector_button_height * 0.7,
+          radius: player_inspector_button_height / 2,
+          x: player_inspector_left_button_x + player_inspector_text_width +
+            player_inspector_button_gap + player_inspector_button_height,
+          y: player_inspector_close_button_y_offset + (player_inspector_button_height +
+            player_inspector_button_gap) * 2 + (player_inspector_button_height / 2),
+          z: ZOrder::POP_UP_MENU_UI
+        ),
+        no_mortgaged_properties: CircularButton.new(
+          actions: nil,
+          color: nil,
+          game: self,
+          hover_color: nil,
+          hover_image: Image.new(images[:mortgage]),
+          image: Image.new(images[:mortgage]),
+          image_height: player_inspector_button_height * 0.7,
+          radius: player_inspector_button_height / 2,
+          x: player_inspector_left_button_x + player_inspector_text_width +
+            (player_inspector_button_gap * 2) + (player_inspector_button_height * 2),
+          y: player_inspector_close_button_y_offset + (player_inspector_button_height +
+            player_inspector_button_gap) * 2 + (player_inspector_button_height / 2),
+          z: ZOrder::POP_UP_MENU_UI
+        ),
+        player_name: Button.new(
+          actions: nil,
+          color: nil,
+          font: fonts[:big_title][:type],
+          font_color: colors[:clickable_text],
+          game: self,
+          height: player_inspector_button_height,
+          hover_color: nil,
+          width: player_inspector_text_width,
+          x: player_inspector_left_button_x,
+          y: player_inspector_close_button_y_offset,
+          z: ZOrder::POP_UP_MENU_UI
+        ),
+        player_token: CircularButton.new(
+          actions: nil,
+          border_color: colors[:pop_up_menu_border],
+          border_hover_color: colors[:pop_up_menu_border],
+          border_width: DEFAULT_TILE_BUTTON_BORDER_WIDTH,
+          color: colors[:pop_up_menu_background_light],
+          game: self,
+          hover_color: colors[:pop_up_menu_background_light],
+          radius: DEFAULT_TILE_BUTTON_HEIGHT,
+          x: Coordinates::PLAYER_INSPECTOR_RIGHT_X - Coordinates::PLAYER_INSPECTOR_BORDER_WIDTH -
+            DEFAULT_TILE_BUTTON_HEIGHT - player_inspector_button_gap,
+          y: Coordinates::PLAYER_INSPECTOR_TOP_Y + Coordinates::PLAYER_INSPECTOR_BORDER_WIDTH +
+            DEFAULT_TILE_BUTTON_HEIGHT + player_inspector_button_gap,
+          z: ZOrder::POP_UP_MENU_UI
+        ),
+        railroad_group: CircularButton.new(
+          actions: proc { toggle_group_menu(player_inspector_railroad_groups.items.first.tiles) },
+          color: colors[:tile_button],
+          font: fonts[:default][:type],
+          font_color: colors[:clickable_text],
+          font_hover_color: colors[:clickable_text_hover],
+          game: self,
+          hover_color: colors[:tile_button_hover],
+          image_height: player_inspector_button_height * 0.75,
+          image_position_y: 0.35,
+          radius: player_inspector_button_height,
+          text_position_y: 0.75,
+          x: Coordinates::PLAYER_INSPECTOR_LEFT_X + (player_inspector_button_height * 2) +
+            player_inspector_button_gap,
+          y: player_inspector_close_button_y_offset + (player_inspector_button_height +
+            player_inspector_button_gap) * 3 + player_inspector_button_height,
+          z: ZOrder::POP_UP_MENU_UI
+        ),
+        railroad_group_left: Button.new(
+          actions: [
+            proc do
+              player_inspector_railroad_groups.shift_back
+              set_visible_player_inspector_buttons if drawing_player_inspector?
+            end
+          ],
+          color: nil,
+          game: self,
+          height: player_inspector_button_height * 2,
+          hover_color: nil,
+          hover_image: Image.new(images[:arrow_left_hover]),
+          image: Image.new(images[:arrow_left]),
+          image_width: player_inspector_button_height / 2,
+          width: player_inspector_button_height / 2,
+          x: Coordinates::PLAYER_INSPECTOR_LEFT_X + (player_inspector_button_height / 2),
+          y: player_inspector_close_button_y_offset + (player_inspector_button_height +
+            player_inspector_button_gap) * 3,
+          z: ZOrder::POP_UP_MENU_UI
+        ),
+        railroad_group_right: Button.new(
+          actions: [
+            proc do
+              player_inspector_railroad_groups.shift_forward
+              set_visible_player_inspector_buttons if drawing_player_inspector?
+            end
+          ],
+          color: nil,
+          game: self,
+          height: player_inspector_button_height * 2,
+          hover_color: nil,
+          hover_image: Image.new(images[:arrow_right_hover]),
+          image: Image.new(images[:arrow_right]),
+          image_width: player_inspector_button_height * 0.5,
+          width: player_inspector_button_height * 0.5,
+          x: Coordinates::PLAYER_INSPECTOR_LEFT_X + (player_inspector_button_height * 3) +
+            (player_inspector_button_gap * 2),
+          y: player_inspector_close_button_y_offset + (player_inspector_button_height +
+            player_inspector_button_gap) * 3,
+          z: ZOrder::POP_UP_MENU_UI
+        ),
+        stats: CircularButton.new(
+          actions: nil,
+          color: colors[:tile_button],
+          game: self,
+          hover_color: colors[:positive_green],
+          hover_image: Image.new(images[:bar_graph]),
+          image: Image.new(images[:bar_graph]),
+          image_height: player_inspector_button_height,
+          radius: player_inspector_button_height,
+          x: (Coordinates::PLAYER_INSPECTOR_LEFT_X + Coordinates::PLAYER_INSPECTOR_RIGHT_X) / 2,
+          y: player_inspector_close_button_y_offset + (player_inspector_button_height +
+            player_inspector_button_gap) * 6 + player_inspector_button_height +
+            player_inspector_color_group_color_height +
+            (Coordinates::PLAYER_INSPECTOR_BORDER_WIDTH * 2) +
+            (player_inspector_button_gap * 1.5),
+          z: ZOrder::POP_UP_MENU_UI
+        ),
+        trade: CircularButton.new(
+          actions: nil,
+          color: colors[:tile_button],
+          game: self,
+          hover_color: colors[:neutral_yellow],
+          hover_image: Image.new(images[:handshake]),
+          image: Image.new(images[:handshake]),
+          image_height: player_inspector_button_height,
+          radius: player_inspector_button_height,
+          x: Coordinates::PLAYER_INSPECTOR_RIGHT_X - (player_inspector_button_height * 2) -
+            player_inspector_button_gap,
+          y: player_inspector_close_button_y_offset + (player_inspector_button_height +
+            player_inspector_button_gap) * 6 + player_inspector_button_height +
+            player_inspector_color_group_color_height +
+            (Coordinates::PLAYER_INSPECTOR_BORDER_WIDTH * 2) + (player_inspector_button_gap * 1.5),
+          z: ZOrder::POP_UP_MENU_UI
+        ),
+        utility_group: CircularButton.new(
+          actions: proc { toggle_group_menu(player_inspector_utility_groups.items.first.tiles) },
+          color: colors[:tile_button],
+          font: fonts[:default][:type],
+          font_color: colors[:clickable_text],
+          font_hover_color: colors[:clickable_text_hover],
+          game: self,
+          hover_color: colors[:tile_button_hover],
+          image_height: player_inspector_button_height * 0.75,
+          image_position_y: 0.35,
+          radius: player_inspector_button_height,
+          text_position_y: 0.75,
+          x: Coordinates::PLAYER_INSPECTOR_RIGHT_X - (player_inspector_button_height * 2) -
+            player_inspector_button_gap,
+          y: player_inspector_close_button_y_offset + (player_inspector_button_height +
+            player_inspector_button_gap) * 3 + player_inspector_button_height,
+          z: ZOrder::POP_UP_MENU_UI
+        ),
+        utility_group_left: Button.new(
+          actions: [
+            proc do
+              player_inspector_utility_groups.shift_back
+              set_visible_player_inspector_buttons if drawing_player_inspector?
+            end
+          ],
+          color: nil,
+          game: self,
+          height: player_inspector_button_height * 2,
+          hover_color: nil,
+          hover_image: Image.new(images[:arrow_left_hover]),
+          image: Image.new(images[:arrow_left]),
+          image_width: player_inspector_button_height / 2,
+          width: player_inspector_button_height / 2,
+          x: Coordinates::PLAYER_INSPECTOR_RIGHT_X - (player_inspector_button_height * 3.5) -
+            (player_inspector_button_gap * 2),
+          y: player_inspector_close_button_y_offset + (player_inspector_button_height +
+            player_inspector_button_gap) * 3,
+          z: ZOrder::POP_UP_MENU_UI
+        ),
+        utility_group_right: Button.new(
+          actions: [
+            proc do
+              player_inspector_utility_groups.shift_forward
+              set_visible_player_inspector_buttons if drawing_player_inspector?
+            end
+          ],
+          color: nil,
+          game: self,
+          height: player_inspector_button_height * 2,
+          hover_color: nil,
+          hover_image: Image.new(images[:arrow_right_hover]),
+          image: Image.new(images[:arrow_right]),
+          image_width: player_inspector_button_height / 2,
+          width: player_inspector_button_height / 2,
+          x: Coordinates::PLAYER_INSPECTOR_RIGHT_X - player_inspector_button_height,
+          y: player_inspector_close_button_y_offset + (player_inspector_button_height +
+            player_inspector_button_gap) * 3,
+          z: ZOrder::POP_UP_MENU_UI
+        ),
+      }
+
       player_menu_button_gap = PLAYER_MENU_BUTTON_HEIGHT * 0.1
       color_group_offset = PLAYER_MENU_BUTTON_HEIGHT + player_menu_button_gap
       color_group_initial_x = Coordinates::PLAYER_MENU_LEFT_X + color_group_offset
@@ -1017,7 +1495,7 @@ module Monopoly
               actions: nil,
               color: nil,
               game: self,
-              height: PLAYER_MENU_BUTTON_HEIGHT,
+              height: color_group_color_height,
               hover_color: nil,
               width: PLAYER_MENU_BUTTON_HEIGHT,
               x: color_group_initial_x +
@@ -1106,6 +1584,7 @@ module Monopoly
           hover_color: nil,
           text_position_x: 0.05,
           text_relative_position_x: 0,
+          text_relative_width: 0.95,
           width: Coordinates::PLAYER_MENU_WIDTH - (PLAYER_MENU_ROUNDED_CORNER_RADIUS * 4),
           x: Coordinates::PLAYER_MENU_LEFT_X,
           y: Coordinates::PLAYER_MENU_TOP_Y + PLAYER_MENU_ROUNDED_CORNER_RADIUS +
@@ -1128,7 +1607,10 @@ module Monopoly
         ),
         next_players: (0...4).map do |number|
           CircularButton.new(
-            actions: nil,
+            actions: proc do
+              self.inspected_player = next_players.items[number]
+              toggle_player_inspector
+            end,
             color: colors[:tile_button],
             game: self,
             hover_color: colors[:tile_button_hover],
@@ -1222,7 +1704,10 @@ module Monopoly
           z: ZOrder::MENU_UI
         ),
         player_token: CircularButton.new(
-          actions: nil,
+          actions: proc do
+            self.inspected_player = current_player
+            toggle_player_inspector
+          end,
           border_color: colors[:pop_up_menu_border],
           border_hover_color: colors[:pop_up_menu_border],
           border_width: DEFAULT_TILE_BUTTON_BORDER_WIDTH,
@@ -1437,6 +1922,40 @@ module Monopoly
         }
       }
 
+      self.player_inspector_data = {
+        rectangles: [
+          {
+            color: colors[:pop_up_menu_border],
+            height: Coordinates::PLAYER_INSPECTOR_HEIGHT,
+            width: Coordinates::PLAYER_INSPECTOR_WIDTH,
+            x: Coordinates::PLAYER_INSPECTOR_LEFT_X,
+            y: Coordinates::PLAYER_INSPECTOR_TOP_Y,
+            z: ZOrder::POP_UP_MENU_BACKGROUND
+          },
+          {
+            color: colors[:pop_up_menu_background],
+            height: Coordinates::PLAYER_INSPECTOR_HEIGHT -
+              (Coordinates::PLAYER_INSPECTOR_BORDER_WIDTH * 2),
+            width: Coordinates::PLAYER_INSPECTOR_WIDTH -
+              (Coordinates::PLAYER_INSPECTOR_BORDER_WIDTH * 2),
+            x: Coordinates::PLAYER_INSPECTOR_LEFT_X + Coordinates::PLAYER_INSPECTOR_BORDER_WIDTH,
+            y: Coordinates::PLAYER_INSPECTOR_TOP_Y + Coordinates::PLAYER_INSPECTOR_BORDER_WIDTH,
+            z: ZOrder::POP_UP_MENU_BACKGROUND
+          },
+          {
+            color: colors[:pop_up_menu_border],
+            height: Coordinates::PLAYER_INSPECTOR_BORDER_WIDTH * 2,
+            width: Coordinates::PLAYER_INSPECTOR_WIDTH -
+              (Coordinates::PLAYER_INSPECTOR_BORDER_WIDTH * 2),
+            x: Coordinates::PLAYER_INSPECTOR_LEFT_X + Coordinates::PLAYER_INSPECTOR_BORDER_WIDTH,
+            y: player_inspector_close_button_y_offset + (player_inspector_button_height +
+              player_inspector_button_gap) * 5 + player_inspector_button_height +
+              player_inspector_color_group_color_height,
+            z: ZOrder::POP_UP_MENU_BACKGROUND
+          }
+        ]
+      }
+
       self.cards = {
         chance: [
           MoneyCard.new(
@@ -1528,12 +2047,19 @@ module Monopoly
         ScrollingList.new(items: railroad_groups.values, view_size: 1)
       self.player_menu_utility_groups =
         ScrollingList.new(items: utility_groups.values, view_size: 1)
+      self.player_inspector_color_groups =
+        ScrollingList.new(items: color_groups.values, view_size: 8)
+      self.player_inspector_railroad_groups =
+        ScrollingList.new(items: railroad_groups.values, view_size: 1)
+      self.player_inspector_utility_groups =
+        ScrollingList.new(items: utility_groups.values, view_size: 1)
       self.drawing_player_menu = true
       self.next_players = ScrollingList.new(items: players[1..-1], view_size: 4)
       self.visible_buttons = [buttons[:roll_dice_for_move]]
       self.visible_card_menu_buttons = []
       self.visible_deed_menu_buttons = []
       self.visible_group_menu_buttons = []
+      self.visible_player_inspector_buttons = []
       set_visible_tile_menu_buttons
       set_visible_player_menu_buttons
     end
@@ -1549,7 +2075,15 @@ module Monopoly
       end
     end
 
-    %i[card_menu deed_menu dialogue_box group_menu options_menu player_menu].each do |value|
+    %i[
+      card_menu
+      deed_menu
+      dialogue_box
+      group_menu
+      options_menu
+      player_inspector
+      player_menu
+    ].each do |value|
       define_method(:"drawing_#{value}?") do
         send(:"drawing_#{value}")
       end
@@ -1560,7 +2094,7 @@ module Monopoly
     end
 
     def drawing_pop_up_menu?
-      drawing_deed_menu? || drawing_group_menu?
+      drawing_deed_menu? || drawing_group_menu? || drawing_player_inspector?
     end
 
     def button_down(id)
@@ -1580,8 +2114,7 @@ module Monopoly
       when Gosu::KB_B
         if ctrl_cmd_down?
           return_new_card if current_card
-          toggle_deed_menu if drawing_deed_menu?
-          toggle_group_menu if drawing_group_menu?
+          close_popup_menus
           toggle_dialogue_box if drawing_dialogue_box?
           move(spaces: -1, collect: false)
           land
@@ -1591,8 +2124,7 @@ module Monopoly
       when Gosu::KB_R
         if ctrl_cmd_down?
           return_new_card if current_card
-          toggle_deed_menu if drawing_deed_menu?
-          toggle_group_menu if drawing_group_menu?
+          close_popup_menus
           toggle_dialogue_box if drawing_dialogue_box?
           land
         end
@@ -1601,8 +2133,7 @@ module Monopoly
       when Gosu::KB_N
         if ctrl_cmd_down?
           return_new_card if current_card
-          toggle_deed_menu if drawing_deed_menu?
-          toggle_group_menu if drawing_group_menu?
+          close_popup_menus
           toggle_dialogue_box if drawing_dialogue_box?
           move(spaces: 1, collect: false)
           land
@@ -1620,9 +2151,9 @@ module Monopoly
       when Gosu::KB_EQUALS
         current_player.money += 100 if ctrl_cmd_down?
         set_visible_player_menu_buttons
-      else
-        super
       end
+
+      super
     end
 
     def ctrl_cmd_down?
@@ -1668,9 +2199,13 @@ module Monopoly
       end
     end
 
-    def format_money(amount)
-      formatted_amount =
-        ActiveSupport::NumberHelper.number_to_currency(amount, strip_insignificant_zeros: true)
+    def format_money(amount, dollar_sign: true)
+      unit = dollar_sign ? '$' : ''
+      formatted_amount = ActiveSupport::NumberHelper.number_to_currency(
+        amount,
+        strip_insignificant_zeros: true,
+        unit: unit
+      )
       formatted_amount << '0' if formatted_amount.match?(/\.\d$/)
       formatted_amount
     end
@@ -1694,6 +2229,8 @@ module Monopoly
             temp_buttons_to_check += visible_group_menu_buttons.reverse
           elsif drawing_deed_menu?
             temp_buttons_to_check += visible_deed_menu_buttons.reverse
+          elsif drawing_player_inspector?
+            temp_buttons_to_check += visible_player_inspector_buttons.reverse
           else
             temp_buttons_to_check +=
               (drawing_card_menu? ? visible_card_menu_buttons : visible_tile_menu_buttons).reverse

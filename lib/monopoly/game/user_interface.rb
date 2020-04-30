@@ -24,8 +24,7 @@ module Monopoly
         self.focused_tile = tile
         set_visible_tile_menu_buttons
         toggle_card_menu if drawing_card_menu?
-        toggle_deed_menu if drawing_deed_menu?
-        toggle_group_menu if drawing_group_menu?
+        close_popup_menus
       end
 
 
@@ -88,8 +87,8 @@ module Monopoly
           y_differential += fonts[:default][:offset]
         end
 
-        coordinates = [draw_mouse_x, draw_mouse_y] unless drawing_deed_menu? ||
-          drawing_group_menu? || drawing_dialogue_box?
+        coordinates = [draw_mouse_x, draw_mouse_y] unless drawing_pop_up_menu? ||
+          drawing_dialogue_box?
 
         # Primary buttons
         visible_buttons.each { |button| button.draw(*coordinates) }
@@ -108,6 +107,7 @@ module Monopoly
 
         draw_deed_menu
         draw_group_menu
+        draw_player_inspector
 
         draw_options_menu
         draw_dialogue_box
@@ -257,6 +257,16 @@ module Monopoly
         options_menu_buttons.each_value { |button| button.draw(*coordinates) }
       end
 
+      def draw_player_inspector
+        return unless drawing_player_inspector?
+
+        coordinates = [draw_mouse_x, draw_mouse_y] unless drawing_dialogue_box?
+
+        player_inspector_data[:rectangles].each { |data| Gosu.draw_rect(data) }
+
+        visible_player_inspector_buttons.each { |button| button.draw(*coordinates) }
+      end
+
       def draw_player_menu
         coordinates = [draw_mouse_x, draw_mouse_y] unless drawing_pop_up_menu? ||
           drawing_dialogue_box?
@@ -274,7 +284,7 @@ module Monopoly
       end
 
       def draw_tile_menu
-        return if drawing_card_menu? || drawing_deed_menu? || drawing_group_menu?
+        return if drawing_card_menu? || drawing_pop_up_menu?
 
         coordinates = [draw_mouse_x, draw_mouse_y] unless drawing_dialogue_box?
 
@@ -400,6 +410,109 @@ module Monopoly
         shift_group_menu_buttons
       end
 
+      def set_visible_player_inspector_buttons(refresh: false)
+        self.visible_player_inspector_buttons = []
+        visible_player_inspector_buttons << player_inspector_buttons[:close]
+
+        player_inspector_buttons[:player_token].hover_image = inspected_player.token_image
+        player_inspector_buttons[:player_token].image = inspected_player.token_image
+        player_inspector_buttons[:player_token].maximize_image_in_square(TOKEN_HEIGHT * 2)
+        visible_player_inspector_buttons << player_inspector_buttons[:player_token]
+
+        player_inspector_buttons[:player_name].text = inspected_player.name
+        visible_player_inspector_buttons << player_inspector_buttons[:player_name]
+
+        player_inspector_buttons[:currently_on].text = inspected_player.tile.name
+        visible_player_inspector_buttons << player_inspector_buttons[:currently_on]
+
+        player_inspector_buttons[:money].text =
+          format_money(inspected_player.money, dollar_sign: false)
+        visible_player_inspector_buttons << player_inspector_buttons[:money]
+
+        if inspected_player.in_jail?
+          player_inspector_buttons[:jail_turns].text = inspected_player.jail_turns.to_s
+          visible_player_inspector_buttons << player_inspector_buttons[:jail_turns]
+        end
+
+        visible_player_inspector_buttons <<
+          if inspected_player.cards.any? { |card| card.is_a?(GetOutOfJailFreeCard) }
+            player_inspector_buttons[:get_out_of_jail_free]
+          else
+            player_inspector_buttons[:no_get_out_of_jail_free]
+          end
+
+        visible_player_inspector_buttons <<
+          if inspected_player.properties.any? { |property| property.mortgaged? }
+            player_inspector_buttons[:mortgaged_properties]
+          else
+            player_inspector_buttons[:no_mortgaged_properties]
+          end
+
+        visible_player_inspector_buttons << player_inspector_buttons[:all_properties]
+
+        if refresh
+          [
+            player_inspector_color_groups,
+            player_inspector_railroad_groups,
+            player_inspector_utility_groups
+          ].each { |group_set| group_set.items = group_set.all_items }
+        end
+
+        %i[railroad utility].each do |type|
+          groups = send(:"player_inspector_#{type}_groups")
+          visible_player_inspector_buttons << player_inspector_buttons[:"#{type}_group_left"] if
+            groups.previous?
+          visible_player_inspector_buttons << player_inspector_buttons[:"#{type}_group_right"] if
+            groups.next?
+
+          button = player_inspector_buttons[:"#{type}_group"]
+          group = groups.items.first
+          amount_owned = group.amount_owned(inspected_player)
+          if amount_owned.positive? && group.monopolized?
+            button.color = colors[:monopoly_button_background]
+            button.hover_color = colors[:monopoly_button_background_hover]
+          else
+            button.color = colors[:tile_button]
+            button.hover_color = colors[:tile_button_hover]
+          end
+
+          button.text = "#{group.amount_owned(inspected_player)}/#{group.tiles.count}"
+          button.image = button.hover_image = group.image
+
+          visible_player_inspector_buttons << button
+        end
+
+        visible_player_inspector_buttons << player_inspector_buttons[:color_groups_left] if
+          player_inspector_color_groups.previous?
+        visible_player_inspector_buttons << player_inspector_buttons[:color_groups_right] if
+          player_inspector_color_groups.next?
+
+        player_inspector_color_groups.items.each.with_index do |color_group, index|
+          buttons = player_inspector_buttons[:color_groups][index]
+          buttons[:color].color = buttons[:color].hover_color = color_group.color
+
+          amount_owned = color_group.amount_owned(inspected_player)
+          if amount_owned.positive? && color_group.monopolized?
+            buttons[:count].color = colors[:monopoly_button_background]
+            buttons[:count].hover_color = colors[:monopoly_button_background_hover]
+          else
+            buttons[:count].color = colors[:tile_button]
+            buttons[:count].hover_color = colors[:tile_button_hover]
+          end
+
+          buttons[:count].text =
+            "#{color_group.amount_owned(inspected_player)}/#{color_group.tiles.count}"
+
+          self.visible_player_inspector_buttons += buttons.values
+        end
+
+        visible_player_inspector_buttons << player_inspector_buttons[:stats]
+        unless inspected_player == current_player
+          visible_player_inspector_buttons << player_inspector_buttons[:message]
+          visible_player_inspector_buttons << player_inspector_buttons[:trade]
+        end
+      end
+
       def set_visible_player_menu_buttons(refresh: false)
         self.visible_player_menu_buttons = []
 
@@ -469,7 +582,7 @@ module Monopoly
           button.text = "#{group.amount_owned(current_player)}/#{group.tiles.count}"
           button.image = button.hover_image = group.image
 
-          self.visible_player_menu_buttons << button
+          visible_player_menu_buttons << button
         end
 
         visible_player_menu_buttons << player_menu_buttons[:color_groups_left] if
@@ -531,14 +644,12 @@ module Monopoly
         if focused_tile.owner
           tile_menu_buttons[:owner].hover_image = focused_tile.owner.token_image
           tile_menu_buttons[:owner].image = focused_tile.owner.token_image
-          color =
+          tile_menu_buttons[:owner].color, tile_menu_buttons[:owner].hover_color =
             if focused_tile.group.monopolized?
-              colors[:monopoly_button_background]
+              colors.values_at(:monopoly_button_background, :monopoly_button_background_hover)
             else
-              colors[:tile_button]
+              colors.values_at(:tile_button, :tile_button_hover)
             end
-
-          tile_menu_buttons[:owner].color = tile_menu_buttons[:owner].hover_color = color
 
           tile_menu_buttons[:owner].maximize_image_in_square(TOKEN_HEIGHT)
 

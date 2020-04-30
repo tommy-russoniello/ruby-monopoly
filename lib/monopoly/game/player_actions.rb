@@ -132,8 +132,7 @@ module Monopoly
       end
 
       def forfeit
-        toggle_deed_menu if drawing_deed_menu?
-        toggle_group_menu if drawing_group_menu?
+        close_popup_menus
         toggle_options_menu if drawing_options_menu?
         return_new_card if current_card
         eliminate_player(current_player)
@@ -261,6 +260,7 @@ module Monopoly
         if drawing_deed_menu?
           self.deed_rent_line_index = 1
         else
+          close_popup_menus
           set_visible_deed_menu_buttons
         end
 
@@ -284,6 +284,7 @@ module Monopoly
         if drawing_group_menu?
           self.group_menu_tiles.items = []
         else
+          close_popup_menus
           self.group_menu_tiles.items = (tiles || focused_tile.group.tiles)
           set_visible_group_menu_buttons
         end
@@ -321,6 +322,17 @@ module Monopoly
         end
 
         self.drawing_options_menu = !drawing_options_menu
+      end
+
+      def toggle_player_inspector
+        if drawing_player_inspector?
+          self.inspected_player = nil
+        else
+          close_popup_menus
+          set_visible_player_inspector_buttons(refresh: true)
+        end
+
+        self.drawing_player_inspector = !drawing_player_inspector
       end
 
       def unmortgage(tile = focused_tile)
@@ -366,6 +378,7 @@ module Monopoly
           current_player.cards << current_card
           self.current_card = nil
           toggle_card_menu
+          set_visible_tile_menu_buttons
           set_visible_player_menu_buttons
           update_visible_buttons(:end_turn)
         else

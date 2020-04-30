@@ -36,6 +36,7 @@ module Monopoly
     attr_accessor :text_position_y
     attr_accessor :text_relative_position_x
     attr_accessor :text_relative_position_y
+    attr_reader :text_relative_width
     attr_reader :text_x
     attr_reader :text_y
     attr_reader :width
@@ -68,6 +69,7 @@ module Monopoly
       text_position_y: 0.5,
       text_relative_position_x: 0.5,
       text_relative_position_y: 0.5,
+      text_relative_width: 1,
       width: DEFAULT_WIDTH,
       x: 0,
       y: 0,
@@ -97,6 +99,7 @@ module Monopoly
       self.text_position_y = text_position_y
       self.text_relative_position_x = text_relative_position_x
       self.text_relative_position_y = text_relative_position_y
+      self.text_relative_width = text_relative_width
       self.width = width
 
       update_coordinates(x: x, y: y, z: z)
@@ -170,13 +173,21 @@ module Monopoly
       font
     end
 
+    %i[height width].each do |attribute|
+      define_method(:"#{attribute}=") do |value|
+        instance_variable_set(:"@#{attribute}", value&.round)
+        self.text = text
+        update_coordinates
+        send(attribute)
+      end
+    end
+
     %i[
-      height
       image_position_x
       image_position_y
       text_position_x
       text_position_y
-      width
+      text_relative_width
     ].each do |attribute|
       define_method(:"#{attribute}=") do |value|
         instance_variable_set(:"@#{attribute}", value)
@@ -216,7 +227,7 @@ module Monopoly
 
     def text=(value)
       @text = value
-      return text unless font && maximum_font_size && width
+      return text unless font && maximum_font_size && width && text_relative_width
 
       # Find maximum font size (between set maximum and minimum)
       # usable while still fitting text on button
@@ -224,7 +235,7 @@ module Monopoly
         .to_a
         .reverse
         .bsearch do |size|
-          Gosu::Font.new(size).text_width(text) < width - 5
+          Gosu::Font.new(size).text_width(text) < (width * text_relative_width) - 5
         end
 
       @font = Gosu::Font.new(font_size || MINIMUM_FONT_SIZE, name: font.name)
@@ -395,7 +406,7 @@ module Monopoly
     end
 
     def border_width=(value)
-      @border_width = value
+      @border_width = value&.round
       self.border_color = border_color
       self.border_hover_color = border_hover_color
       border_width
@@ -403,7 +414,13 @@ module Monopoly
 
     def color=(value)
       @color = value
-      self.circle = Image.new(Gosu::Circle.new(color: color, radius: radius)) if color
+      self.circle =
+        if color
+          Image.new(Gosu::Circle.new(color: color, radius: radius))
+        else
+          nil
+        end
+
       color
     end
 
@@ -415,7 +432,7 @@ module Monopoly
     end
 
     def radius=(value)
-      @radius = value
+      @radius = value.round
       self.height = self.width = radius * 2
       self.color = color
       self.hover_color = hover_color

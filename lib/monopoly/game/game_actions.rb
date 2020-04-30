@@ -33,6 +33,12 @@ module Monopoly
         end
       end
 
+      def close_popup_menus
+        toggle_deed_menu if drawing_deed_menu?
+        toggle_group_menu if drawing_group_menu?
+        toggle_player_inspector if drawing_player_inspector?
+      end
+
       def collect_go_money(times_passed_go, player: current_player)
         return unless times_passed_go > 0
 
