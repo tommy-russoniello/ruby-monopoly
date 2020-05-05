@@ -80,7 +80,8 @@ module Monopoly
           charges,
           actions: :return_new_card,
           on_current_player_eliminated:
-            [[:return_new_card, actions: :end_turn, new_visible_buttons: nil]]
+            [[:return_new_card, actions: :end_turn, new_visible_buttons: nil]],
+          reason: :game
         )
       else
         if amount.negative?
@@ -88,10 +89,11 @@ module Monopoly
             amount: -amount,
             on_bankrupt: [[:return_new_card, actions: :end_turn, new_visible_buttons: nil]],
             on_success: :return_new_card,
-            player: player
+            player: player,
+            reason: :game
           )
         else
-          player.money += amount
+          player.add_money(amount, :game)
           game.return_new_card
         end
       end
@@ -207,7 +209,8 @@ module Monopoly
         amount: total_cost,
         on_bankrupt: :return_new_card,
         on_success: :return_new_card,
-        player: player
+        player: player,
+        reason: :game
       )
     end
 

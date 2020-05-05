@@ -53,6 +53,7 @@ module Monopoly
     attr_accessor :player_inspector_color_groups
     attr_accessor :player_inspector_data
     attr_accessor :player_inspector_railroad_groups
+    attr_accessor :player_inspector_show_stats
     attr_accessor :player_inspector_utility_groups
     attr_accessor :player_menu_buttons
     attr_accessor :player_menu_data
@@ -1032,6 +1033,21 @@ module Monopoly
         (player_inspector_button_gap * 3)
       player_inspector_money_text_width_difference = (player_inspector_button_height / 2) +
         player_inspector_button_gap
+      player_inspector_stats_button_args = {
+        actions: nil,
+        color: nil,
+        font: fonts[:default][:type],
+        font_color: colors[:clickable_text],
+        game: self,
+        height: fonts[:default][:type].height,
+        hover_color: nil,
+        text_position_x: 0,
+        text_relative_position_x: 0,
+        width: Coordinates::PLAYER_INSPECTOR_WIDTH,
+        y: player_inspector_close_button_y_offset,
+        z: ZOrder::POP_UP_MENU_UI
+      }
+      player_inspector_stats_indent = player_inspector_button_height / 2
       self.player_inspector_buttons = {
         all_properties: CircularButton.new(
           actions: proc { toggle_group_menu(inspected_player.properties) },
@@ -1372,8 +1388,11 @@ module Monopoly
             player_inspector_button_gap) * 3,
           z: ZOrder::POP_UP_MENU_UI
         ),
-        stats: CircularButton.new(
-          actions: nil,
+        show_stats: CircularButton.new(
+          actions: proc do
+            self.player_inspector_show_stats = true
+            set_visible_player_inspector_buttons
+          end,
           color: colors[:tile_button],
           game: self,
           hover_color: colors[:positive_green],
@@ -1387,6 +1406,148 @@ module Monopoly
             player_inspector_color_group_color_height +
             (Coordinates::PLAYER_INSPECTOR_BORDER_WIDTH * 2) +
             (player_inspector_button_gap * 1.5),
+          z: ZOrder::POP_UP_MENU_UI
+        ),
+        stats: [
+          {
+            function: lambda { |player| format_money(player.total_asset_liquidation_amount) },
+            name: 'Net worth'
+          },
+          {
+            function: lambda { |player| format_money(player.stats[:money_gained].values.sum) },
+            name: 'Total money gained'
+          },
+          {
+            function: lambda { |player| format_money(player.stats[:money_gained][:buildings]) },
+            indent: true,
+            name: 'Gained from selling buildings'
+          },
+          {
+            function: lambda { |player| format_money(player.stats[:money_gained][:game]) },
+            indent: true,
+            name: 'Received from the game'
+          },
+          {
+            function: lambda { |player| format_money(player.stats[:money_gained][:mortgages]) },
+            indent: true,
+            name: 'Gained from mortgaging properties'
+          },
+          {
+            function: lambda { |player| format_money(player.stats[:money_gained][:rent]) },
+            indent: true,
+            name: 'Collected in rent'
+          },
+          {
+            function: lambda { |player| format_money(player.stats[:money_gained][:trades]) },
+            indent: true,
+            name: 'Gained in trades'
+          },
+          {
+            function: lambda { |player| format_money(player.stats[:money_lost].values.sum) },
+            name: 'Total money lost'
+          },
+          {
+            function: lambda { |player| format_money(player.stats[:money_lost][:buildings]) },
+            indent: true,
+            name: 'Spent buying buildings'
+          },
+          {
+            function: lambda { |player| format_money(player.stats[:money_lost][:game]) },
+            indent: true,
+            name: 'Lost to the game'
+          },
+          {
+            function: lambda { |player| format_money(player.stats[:money_lost][:mortgages]) },
+            indent: true,
+            name: 'Spent repaying mortgages'
+          },
+          {
+            function: lambda { |player| format_money(player.stats[:money_lost][:properties]) },
+            indent: true,
+            name: 'Spent buying properties'
+          },
+          {
+            function: lambda { |player| format_money(player.stats[:money_lost][:rent]) },
+            indent: true,
+            name: 'Spent paying rent'
+          },
+          {
+            function: lambda { |player| format_money(player.stats[:money_lost][:trades]) },
+            indent: true,
+            name: 'Spent in trades'
+          },
+          {
+            function: lambda do |player|
+              total_seconds = player.stats[:time_played]
+              hours = total_seconds / (60 * 60)
+              minutes = total_seconds / 60 % 60
+              seconds = total_seconds % 60
+
+              hours = "#{hours} hour#{'s' unless hours == 1}"
+              minutes = "#{minutes} minute#{'s' unless minutes == 1}"
+              seconds = "#{seconds} second#{'s' unless seconds == 1}"
+
+              "#{hours}, #{minutes}, and #{seconds}"
+            end,
+            name: 'Time played'
+          },
+          {
+            function: lambda { |player| format_number(player.stats[:times_passed_go]) },
+            name: 'Times passed Go'
+          },
+          {
+            function: lambda { |player| format_number(player.stats[:turns_in_jail]) },
+            name: 'Turns spent in Jail'
+          }
+        ].map.with_index do |data, number|
+          x = player_inspector_left_button_x
+          x += player_inspector_stats_indent if data.delete(:indent)
+          y = player_inspector_close_button_y_offset + (fonts[:default][:offset] * number)
+          data[:name] = Button.new(
+            player_inspector_stats_button_args.merge(text: "#{data[:name]}:", x: x, y: y)
+          )
+          data[:value] = Button.new(player_inspector_stats_button_args.merge(y: y))
+
+          data[:name].width = data[:name].font.text_width(data[:name].text) + 5
+          new_x = data[:name].x + data[:name].width + player_inspector_button_gap
+          data[:value].width = Coordinates::PLAYER_INSPECTOR_RIGHT_X -
+            Coordinates::PLAYER_INSPECTOR_BORDER_WIDTH - player_inspector_button_gap - new_x
+          data[:value].update_coordinates(x: new_x)
+          data
+        end,
+        stats_back: CircularButton.new(
+          actions: proc do
+            self.player_inspector_show_stats = false
+            set_visible_player_inspector_buttons
+          end,
+          color: colors[:tile_button],
+          game: self,
+          hover_color: colors[:neutral_blue],
+          hover_image: Image.new(images[:back]),
+          image: Image.new(images[:back]),
+          image_height: player_inspector_close_button_height * 0.7,
+          radius: player_inspector_close_button_height / 2,
+          x: Coordinates::PLAYER_INSPECTOR_RIGHT_X - Coordinates::PLAYER_INSPECTOR_BORDER_WIDTH -
+            (player_inspector_button_gap / 2) - (player_inspector_close_button_height / 2),
+          y: Coordinates::PLAYER_INSPECTOR_TOP_Y + Coordinates::PLAYER_INSPECTOR_BORDER_WIDTH +
+            (player_inspector_button_gap / 2) + (player_inspector_close_button_height / 2),
+          z: ZOrder::POP_UP_MENU_UI
+        ),
+        stats_player_name: Button.new(
+          actions: nil,
+          color: nil,
+          font: fonts[:title][:type],
+          font_color: colors[:clickable_text],
+          game: self,
+          height: player_inspector_close_button_height,
+          hover_color: nil,
+          width: Coordinates::PLAYER_INSPECTOR_WIDTH -
+            (Coordinates::PLAYER_INSPECTOR_BORDER_WIDTH * 2) - (player_inspector_button_gap * 3) -
+            (player_inspector_close_button_height * 2),
+          x: player_inspector_left_button_x + player_inspector_close_button_height +
+            player_inspector_button_gap,
+          y: Coordinates::PLAYER_INSPECTOR_TOP_Y + Coordinates::PLAYER_INSPECTOR_BORDER_WIDTH +
+            (player_inspector_button_gap / 2),
           z: ZOrder::POP_UP_MENU_UI
         ),
         trade: CircularButton.new(
@@ -1927,6 +2088,7 @@ module Monopoly
           {
             color: colors[:pop_up_menu_border],
             height: Coordinates::PLAYER_INSPECTOR_HEIGHT,
+            stats: true,
             width: Coordinates::PLAYER_INSPECTOR_WIDTH,
             x: Coordinates::PLAYER_INSPECTOR_LEFT_X,
             y: Coordinates::PLAYER_INSPECTOR_TOP_Y,
@@ -1936,6 +2098,7 @@ module Monopoly
             color: colors[:pop_up_menu_background],
             height: Coordinates::PLAYER_INSPECTOR_HEIGHT -
               (Coordinates::PLAYER_INSPECTOR_BORDER_WIDTH * 2),
+            stats: true,
             width: Coordinates::PLAYER_INSPECTOR_WIDTH -
               (Coordinates::PLAYER_INSPECTOR_BORDER_WIDTH * 2),
             x: Coordinates::PLAYER_INSPECTOR_LEFT_X + Coordinates::PLAYER_INSPECTOR_BORDER_WIDTH,

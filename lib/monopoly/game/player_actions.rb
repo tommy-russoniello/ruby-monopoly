@@ -52,7 +52,7 @@ module Monopoly
         end
 
         house_cost = tile.group.house_cost
-        current_player.money -= house_cost
+        current_player.subtract_money(house_cost, :buildings)
         tile.house_count += 1
 
         set_visible_tile_menu_buttons
@@ -73,7 +73,7 @@ module Monopoly
           return
         end
 
-        current_player.money -= current_tile.purchase_price
+        current_player.subtract_money(current_tile.purchase_price, :properties)
         current_tile.owner = current_player
         current_player.properties += [current_tile]
         current_player.properties.sort_by! { |tile| tile_indexes[tile] }
@@ -106,6 +106,7 @@ module Monopoly
         self.previous_player_number = current_player.number
 
         if current_player.in_jail?
+          current_player.stats[:turns_in_jail] += 1
           current_player.jail_turns -= 1
           new_visible_buttons = %i[end_turn]
           if current_player.in_jail?
@@ -163,7 +164,7 @@ module Monopoly
         end
 
         tile.mortgaged = true
-        current_player.money += tile.mortgage_cost
+        current_player.add_money(tile.mortgage_cost, :mortgages)
         add_message(
           "#{current_player.name} mortgaged #{tile.name} for #{format_money(tile.mortgage_cost)}."
         )
@@ -178,6 +179,7 @@ module Monopoly
           amount: current_tile.rent,
           on_bankrupt: :end_turn,
           on_success: [:update_visible_buttons, :end_turn],
+          reason: :rent,
           recipient: current_tile.owner
         )
         self.temporary_rent_multiplier = nil
@@ -190,7 +192,8 @@ module Monopoly
           amount: current_tile.tax_amount,
           on_bankrupt: :end_turn,
           on_success: [:update_visible_buttons, :end_turn],
-          player: current_player
+          player: current_player,
+          reason: :game
         )
 
         set_visible_player_menu_buttons
@@ -237,7 +240,7 @@ module Monopoly
         end
 
         house_sell_price = (tile.group.house_cost * building_sell_percentage).to_i
-        current_player.money += house_sell_price
+        current_player.add_money(house_sell_price, :buildings)
         tile.house_count -= 1
 
         set_visible_tile_menu_buttons
@@ -327,6 +330,7 @@ module Monopoly
       def toggle_player_inspector
         if drawing_player_inspector?
           self.inspected_player = nil
+          self.player_inspector_show_stats = false
         else
           close_popup_menus
           set_visible_player_inspector_buttons(refresh: true)
@@ -347,7 +351,7 @@ module Monopoly
           return
         end
 
-        current_player.money -= tile.unmortgage_cost
+        current_player.subtract_money(tile.unmortgage_cost, :mortgages)
         tile.mortgaged = false
         add_message(
           "#{current_player.name} payed #{format_money(tile.unmortgage_cost)} to " \

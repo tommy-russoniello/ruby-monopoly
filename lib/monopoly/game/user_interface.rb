@@ -262,7 +262,9 @@ module Monopoly
 
         coordinates = [draw_mouse_x, draw_mouse_y] unless drawing_dialogue_box?
 
-        player_inspector_data[:rectangles].each { |data| Gosu.draw_rect(data) }
+        player_inspector_data[:rectangles].each do |data|
+          Gosu.draw_rect(data.except(:stats)) unless !data[:stats] && player_inspector_show_stats
+        end
 
         visible_player_inspector_buttons.each { |button| button.draw(*coordinates) }
       end
@@ -414,6 +416,20 @@ module Monopoly
         self.visible_player_inspector_buttons = []
         visible_player_inspector_buttons << player_inspector_buttons[:close]
 
+        if player_inspector_show_stats
+          player_inspector_buttons[:stats].each do |data|
+            visible_player_inspector_buttons << data[:name]
+            data[:value].text = data[:function].call(inspected_player)
+            visible_player_inspector_buttons << data[:value]
+          end
+
+          visible_player_inspector_buttons << player_inspector_buttons[:stats_back]
+          player_inspector_buttons[:stats_player_name].text = inspected_player.name
+          visible_player_inspector_buttons << player_inspector_buttons[:stats_player_name]
+
+          return
+        end
+
         player_inspector_buttons[:player_token].hover_image = inspected_player.token_image
         player_inspector_buttons[:player_token].image = inspected_player.token_image
         player_inspector_buttons[:player_token].maximize_image_in_square(TOKEN_HEIGHT * 2)
@@ -506,7 +522,7 @@ module Monopoly
           self.visible_player_inspector_buttons += buttons.values
         end
 
-        visible_player_inspector_buttons << player_inspector_buttons[:stats]
+        visible_player_inspector_buttons << player_inspector_buttons[:show_stats]
         unless inspected_player == current_player
           visible_player_inspector_buttons << player_inspector_buttons[:message]
           visible_player_inspector_buttons << player_inspector_buttons[:trade]

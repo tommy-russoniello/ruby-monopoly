@@ -2,7 +2,7 @@ module Monopoly
   class Game < Gosu::Window
     module GameActions
       def charge_money(
-        amount:, on_bankrupt: nil, on_success: nil, player: current_player, recipient: nil
+        amount:, on_bankrupt: nil, on_success: nil, player: current_player, reason:, recipient: nil
       )
         recipient_name = recipient&.name || 'the bank'
 
@@ -15,19 +15,20 @@ module Monopoly
             )
           else
             add_message("#{player.name} does not have the cash or assets to pay #{recipient_name}.")
-            total_asset_liquidation_amount = player.total_asset_liquidation_amount
-            recipient.money += total_asset_liquidation_amount if recipient
-            player.money = 0
+            player.liquidate_assets
+            remaining_money = player.money
+            player.subtract_money(remaining_money, reason)
+            recipient.add_money(remaining_money, reason) if recipient
             add_message(
               "#{player.name} liquidated their remaining assets and payed " \
-              "#{format_money(total_asset_liquidation_amount)} to #{recipient_name}."
+              "#{format_money(remaining_money)} to #{recipient_name}."
             )
             eliminate_player(player)
             execute_actions(format_actions(on_bankrupt)) if on_bankrupt
           end
         else
-          recipient.money += amount if recipient
-          player.money -= amount
+          recipient.add_money(amount, reason) if recipient
+          player.subtract_money(amount, reason)
           add_message("#{player.name} payed #{format_money(amount)} to #{recipient_name}.")
           execute_actions(format_actions(on_success)) if on_success
         end
@@ -48,7 +49,7 @@ module Monopoly
           "#{player.name} has gained #{format_money(go_money_collected)} for " \
           "passing Go#{extra_string}."
         )
-        player.money += go_money_collected
+        player.add_money(go_money_collected, :game)
 
         set_visible_player_menu_buttons
       end
@@ -137,13 +138,19 @@ module Monopoly
         new_tile = tiles[new_index % tile_count]
         self.current_tile = self.focused_tile = new_tile if player == current_player
         player.tile = new_tile
-        collect_go_money(times_passed_go, player: player) if collect
+        if collect
+          player.stats[:times_passed_go] += times_passed_go
+          collect_go_money(times_passed_go, player: player)
+        end
+
         times_passed_go
       end
 
-      def process_consecutive_charges(charges, actions: nil, on_current_player_eliminated: nil)
+      def process_consecutive_charges(
+        charges, actions: nil, on_current_player_eliminated: nil, reason:
+      )
         cache_current_player
-        process_consecutive_charges_helper(charges, actions, on_current_player_eliminated)
+        process_consecutive_charges_helper(charges, actions, on_current_player_eliminated, reason)
       end
 
       def return_new_card(actions: nil, new_visible_buttons: [])
@@ -172,7 +179,7 @@ module Monopoly
 
       private
 
-      def process_consecutive_charge(charges, actions, on_current_player_eliminated)
+      def process_consecutive_charge(charges, actions, on_current_player_eliminated, reason)
         charge = charges.first
         charges_without_player =
           charges.reject { |later_charge| later_charge[:player] == charge[:player] }
@@ -182,7 +189,8 @@ module Monopoly
             :process_consecutive_charges_helper,
             charges_without_player,
             actions,
-            on_current_player_eliminated
+            on_current_player_eliminated,
+            reason
           ]
         ]
 
@@ -191,7 +199,8 @@ module Monopoly
             :process_consecutive_charges_helper,
             charges.drop(1),
             actions,
-            on_current_player_eliminated
+            on_current_player_eliminated,
+            reason
           ]
         ]
 
@@ -200,11 +209,12 @@ module Monopoly
           on_bankrupt: on_bankrupt,
           on_success: on_success,
           player: charge[:player],
+          reason: reason,
           recipient: charge[:recipient]
         )
       end
 
-      def process_consecutive_charges_helper(charges, actions, on_current_player_eliminated)
+      def process_consecutive_charges_helper(charges, actions, on_current_player_eliminated, reason)
         if charges.empty?
           pop_current_player_cache
           if on_current_player_eliminated && !players.include?(current_player)
@@ -221,7 +231,7 @@ module Monopoly
         buttons[:consecutive_charge].text =
           "Pay #{format_money(charge[:amount])} to #{charge[:recipient].name}"
         buttons[:consecutive_charge].actions =
-          [[:process_consecutive_charge, charges, actions, on_current_player_eliminated]]
+          [[:process_consecutive_charge, charges, actions, on_current_player_eliminated, reason]]
         set_visible_player_menu_buttons
         update_visible_buttons(:consecutive_charge)
       end
