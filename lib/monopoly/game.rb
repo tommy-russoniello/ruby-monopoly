@@ -16,6 +16,8 @@ module Monopoly
     attr_accessor :cards
     attr_accessor :color_groups
     attr_accessor :colors
+    attr_accessor :compass_menu_buttons
+    attr_accessor :compass_menu_data
     attr_accessor :current_card
     attr_accessor :current_player
     attr_accessor :current_player_cache
@@ -30,6 +32,7 @@ module Monopoly
     attr_accessor :die_a
     attr_accessor :die_b
     attr_accessor :drawing_card_menu
+    attr_accessor :drawing_compass_menu
     attr_accessor :drawing_deed_menu
     attr_accessor :drawing_dialogue_box
     attr_accessor :drawing_group_menu
@@ -75,6 +78,7 @@ module Monopoly
     attr_accessor :visible_buttons_cache
     attr_accessor :visible_buttons
     attr_accessor :visible_card_menu_buttons
+    attr_accessor :visible_compass_menu_buttons
     attr_accessor :visible_deed_menu_buttons
     attr_accessor :visible_group_menu_buttons
     attr_accessor :visible_player_inspector_buttons
@@ -95,6 +99,7 @@ module Monopoly
         deed_highlight: Gosu::Color.new(255, 173, 181, 91),
         default_button: Gosu::Color::WHITE,
         default_button_hover: Gosu::Color.new(255, 219, 219, 219),
+        default_button_hover_highlight: Gosu::Color.new(100, 255, 255, 255),
         default_text: Gosu::Color::BLACK,
         dialogue_box_background: Gosu::Color::BLACK,
         dialogue_box_text: Gosu::Color::WHITE,
@@ -1013,6 +1018,77 @@ module Monopoly
           x: Coordinates::CENTER_X - 150,
           y: Coordinates::CENTER_Y + (Coordinates::CARD_HEIGHT / 2) + 10
         )
+      }
+
+      self.compass_menu_buttons = (-COMPASS_RANGE..COMPASS_RANGE).map do |number|
+        [
+          number,
+          Button.new(
+            actions: proc { display_tile(tiles[(tile_indexes[current_tile] + number) % tile_count]) },
+            color: nil,
+            game: self,
+            height: DEFAULT_TILE_BUTTON_HEIGHT,
+            hover_highlight_color: colors[:default_button_hover_highlight],
+            hover_color: nil,
+            image_height: DEFAULT_TILE_BUTTON_HEIGHT,
+            width: DEFAULT_TILE_BUTTON_HEIGHT,
+            x: Coordinates::CENTER_X,
+            y: Coordinates::COMPASS_TOP_Y + COMPASS_BORDER_WIDTH,
+            z: ZOrder::MENU_UI
+          )
+        ]
+      end.to_h
+
+      compass_triangle_height = COMPASS_BORDER_WIDTH * 1.5
+      self.compass_menu_data = {
+        bottom_border: {
+          color: colors[:pop_up_menu_border],
+          height: COMPASS_BORDER_WIDTH + 1,
+          width: 0,
+          x: Coordinates::CENTER_X,
+          y: Coordinates::COMPASS_TOP_Y + COMPASS_BORDER_WIDTH + DEFAULT_TILE_BUTTON_HEIGHT - 1,
+          z: ZOrder::MENU_UI
+        },
+        inner_circle: Image.new(
+          Gosu::Circle.new(
+            color: colors[:pop_up_menu_background],
+            radius: DEFAULT_TILE_BUTTON_HEIGHT / 2
+          )
+        ),
+        left_circle_params: {
+          from_center: true,
+          y: Coordinates::COMPASS_TOP_Y + (DEFAULT_TILE_BUTTON_HEIGHT / 2) + COMPASS_BORDER_WIDTH,
+          z: ZOrder::MENU_BACKGROUND
+        },
+        outer_circle: Image.new(
+          Gosu::Circle.new(
+            color: colors[:pop_up_menu_border],
+            radius: (DEFAULT_TILE_BUTTON_HEIGHT / 2) + COMPASS_BORDER_WIDTH
+          )
+        ),
+        point: {
+          color: colors[:pop_up_menu_border],
+          x1: Coordinates::CENTER_X,
+          x2: Coordinates::CENTER_X + compass_triangle_height,
+          x3: Coordinates::CENTER_X - compass_triangle_height,
+          y1: Coordinates::COMPASS_TOP_Y + COMPASS_BORDER_WIDTH + compass_triangle_height,
+          y2: Coordinates::COMPASS_TOP_Y + COMPASS_BORDER_WIDTH,
+          y3: Coordinates::COMPASS_TOP_Y + COMPASS_BORDER_WIDTH,
+          z: ZOrder::MENU_UI
+        },
+        right_circle_params: {
+          from_center: true,
+          y: Coordinates::COMPASS_TOP_Y + (DEFAULT_TILE_BUTTON_HEIGHT / 2) + COMPASS_BORDER_WIDTH,
+          z: ZOrder::MENU_BACKGROUND
+        },
+        top_border: {
+          color: colors[:pop_up_menu_border],
+          height: COMPASS_BORDER_WIDTH + 1,
+          width: 0,
+          x: Coordinates::CENTER_X,
+          y: Coordinates::COMPASS_TOP_Y,
+          z: ZOrder::MENU_UI
+        }
       }
 
       player_inspector_button_height = DEFAULT_TILE_BUTTON_HEIGHT * 0.75
@@ -2216,6 +2292,7 @@ module Monopoly
         ScrollingList.new(items: railroad_groups.values, view_size: 1)
       self.player_inspector_utility_groups =
         ScrollingList.new(items: utility_groups.values, view_size: 1)
+      self.drawing_compass_menu = true
       self.drawing_player_menu = true
       self.next_players = ScrollingList.new(items: players[1..-1], view_size: 4)
       self.visible_buttons = [buttons[:roll_dice_for_move]]
@@ -2223,6 +2300,7 @@ module Monopoly
       self.visible_deed_menu_buttons = []
       self.visible_group_menu_buttons = []
       self.visible_player_inspector_buttons = []
+      set_visible_compass_menu_buttons
       set_visible_tile_menu_buttons
       set_visible_player_menu_buttons
     end
@@ -2240,6 +2318,7 @@ module Monopoly
 
     %i[
       card_menu
+      compass_menu
       deed_menu
       dialogue_box
       group_menu
@@ -2399,6 +2478,7 @@ module Monopoly
               (drawing_card_menu? ? visible_card_menu_buttons : visible_tile_menu_buttons).reverse
 
             temp_buttons_to_check += visible_player_menu_buttons.reverse if drawing_player_menu?
+            temp_buttons_to_check += visible_compass_menu_buttons.reverse if drawing_compass_menu?
 
             temp_buttons_to_check += visible_buttons.reverse
           end

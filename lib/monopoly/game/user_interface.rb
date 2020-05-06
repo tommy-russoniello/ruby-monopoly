@@ -1,6 +1,8 @@
 module Monopoly
   class Game < Gosu::Window
     module UserInterface
+      COMPASS_BORDER_WIDTH = 10
+      COMPASS_RANGE = 4
       DEFAULT_FONT_SIZE = 30
       DEFAULT_TILE_BUTTON_BORDER_WIDTH = 5
       DEFAULT_TILE_BUTTON_HEIGHT = 100
@@ -46,21 +48,6 @@ module Monopoly
         draw_card_menu
         draw_tile_menu
 
-        # Player list
-        y_differential = 0
-        players.each do |player|
-          fonts[:default][:type].draw_text(
-            "#{player.name}: #{player.tile.name}",
-            color: colors[:default_text],
-            rel_x: 0.5,
-            rel_y: 0,
-            x: Coordinates::CENTER_X,
-            y: Coordinates::TOP_Y + y_differential,
-            z: ZOrder::MAIN_UI
-          )
-          y_differential += fonts[:default][:offset]
-        end
-
         # Mouse coordinates
         fonts[:default][:type].draw_text(
           "#{mouse_x.round(3)}, #{mouse_y.round(3)}",
@@ -105,6 +92,7 @@ module Monopoly
           )
         end
 
+        draw_compass_menu
         draw_deed_menu
         draw_group_menu
         draw_player_inspector
@@ -127,6 +115,31 @@ module Monopoly
 
         coordinates = [draw_mouse_x, draw_mouse_y] unless drawing_dialogue_box?
         visible_card_menu_buttons.each { |button| button.draw(*coordinates) }
+      end
+
+      def draw_compass_menu
+        return unless drawing_compass_menu?
+
+        compass_menu_data[:outer_circle].draw(
+          compass_menu_data[:left_circle_params]
+        )
+        compass_menu_data[:outer_circle].draw(
+          compass_menu_data[:right_circle_params]
+        )
+        compass_menu_data[:inner_circle].draw(
+          compass_menu_data[:left_circle_params]
+        )
+        compass_menu_data[:inner_circle].draw(
+          compass_menu_data[:right_circle_params]
+        )
+
+        coordinates = [draw_mouse_x, draw_mouse_y] unless drawing_pop_up_menu? ||
+          drawing_dialogue_box?
+        visible_compass_menu_buttons.each { |button| button.draw(*coordinates) }
+
+        Gosu.draw_rect(compass_menu_data[:bottom_border])
+        Gosu.draw_triangle(compass_menu_data[:point])
+        Gosu.draw_rect(compass_menu_data[:top_border])
       end
 
       def draw_deed_menu
@@ -332,6 +345,54 @@ module Monopoly
           visible_card_menu_buttons << card_menu_buttons[:back]
           visible_card_menu_buttons << card_menu_buttons[:continue] if !current_card.triggered
         end
+      end
+
+      def set_visible_compass_menu_buttons
+        self.visible_compass_menu_buttons = []
+
+        ratio = Coordinates::TILE_HEIGHT / DEFAULT_TILE_BUTTON_HEIGHT.to_f
+        normal_width = Coordinates::TILE_WIDTH / ratio
+        corner_width = Coordinates::TILE_HEIGHT / ratio
+        button = compass_menu_buttons[0]
+        button.image = button.hover_image = current_tile.tile_image
+        width = current_tile.corner? ? corner_width : normal_width
+        button.width = button.image_width = width
+        button.update_coordinates(x: Coordinates::CENTER_X - (width / 2))
+        visible_compass_menu_buttons << button
+
+        current_tile_index = tile_indexes[current_tile]
+        right_offset = left_offset = width / 2
+        (1..COMPASS_RANGE).each do |index|
+          break unless tile_count >= index * 2
+
+          tile = tiles[(current_tile_index + index) % tile_count]
+          button = compass_menu_buttons[index]
+          button.image = button.hover_image = tile.tile_image
+          width = tile.corner? ? corner_width : normal_width
+          button.width = button.image_width = width
+          button.update_coordinates(x: Coordinates::CENTER_X + right_offset)
+          right_offset += width
+          visible_compass_menu_buttons << button
+
+          break unless tile_count >= index * 2 + 1
+
+          tile = tiles[(current_tile_index - index) % tile_count]
+          button = compass_menu_buttons[-index]
+          button.image = button.hover_image = tile.tile_image
+          width = tile.corner? ? corner_width : normal_width
+          button.width = button.image_width = width
+          left_offset += width
+          button.update_coordinates(x: Coordinates::CENTER_X - left_offset)
+          visible_compass_menu_buttons << button
+        end
+
+        left_edge = Coordinates::CENTER_X - left_offset
+        compass_menu_data[:bottom_border][:x] = compass_menu_data[:top_border][:x] = left_edge
+        compass_menu_data[:bottom_border][:width] = compass_menu_data[:top_border][:width] =
+          left_offset + right_offset
+
+        compass_menu_data[:left_circle_params][:x] = left_edge
+        compass_menu_data[:right_circle_params][:x] = Coordinates::CENTER_X + right_offset
       end
 
       def set_visible_deed_menu_buttons

@@ -20,6 +20,7 @@ module Monopoly
     attr_accessor :game
     attr_reader :height
     attr_accessor :hover_color
+    attr_accessor :hover_highlight_color
     attr_accessor :hover_image
     attr_accessor :image
     attr_accessor :image_background_color
@@ -56,6 +57,7 @@ module Monopoly
       game:,
       height: DEFAULT_HEIGHT,
       hover_color: DEFAULT_HOVER_COLOR,
+      hover_highlight_color: nil,
       hover_image: nil,
       image: nil,
       image_background_color: nil,
@@ -87,6 +89,7 @@ module Monopoly
       self.font_hover_color = font_hover_color || font_color
       self.height = height
       self.hover_color = hover_color
+      self.hover_highlight_color = hover_highlight_color
       self.hover_image = hover_image
       self.image = image
       self.image_background_color = image_background_color
@@ -138,6 +141,8 @@ module Monopoly
             z: z
           )
         end
+
+        draw_hover_highlight if hover_highlight_color
       else
         draw_shape
 
@@ -272,6 +277,10 @@ module Monopoly
 
     protected
 
+    def draw_hover_highlight
+      Gosu.draw_rect(color: hover_highlight_color, height: height, width: width, x: x, y: y, z: z)
+    end
+
     def draw_image_background(hover: false)
       color_to_draw, image_drawn =
         hover ? [image_background_hover_color, hover_image] : [image_background_color, image]
@@ -322,6 +331,7 @@ module Monopoly
     attr_accessor :border_hover_circle
     attr_accessor :circle
     attr_accessor :hover_circle
+    attr_accessor :hover_highlight_circle
     attr_reader :radius
 
     def initialize(
@@ -334,6 +344,7 @@ module Monopoly
       font_color: DEFAULT_TEXT_COLOR,
       font_hover_color: nil,
       game:,
+      hover_highlight_color: nil,
       hover_color: DEFAULT_HOVER_COLOR,
       hover_image: nil,
       image: nil,
@@ -365,6 +376,7 @@ module Monopoly
       self.font = font
       self.font_color = font_color
       self.font_hover_color = font_hover_color || font_color
+      self.hover_highlight_color = hover_highlight_color
       self.hover_color = hover_color
       self.hover_image = hover_image
       self.image = image
@@ -409,6 +421,7 @@ module Monopoly
       @border_width = value&.round
       self.border_color = border_color
       self.border_hover_color = border_hover_color
+      self.hover_highlight_color = hover_highlight_color
       border_width
     end
 
@@ -424,6 +437,16 @@ module Monopoly
       color
     end
 
+    def hover_highlight_color=(value)
+      @hover_highlight_color = value
+      if hover_highlight_color
+        self.hover_highlight_circle =
+          Image.new(Gosu::Circle.new(color: hover_highlight_color, radius: radius + border_width))
+      end
+
+      hover_highlight_color
+    end
+
     def hover_color=(value)
       @hover_color = value
       self.hover_circle = Image.new(Gosu::Circle.new(color: hover_color, radius: radius)) if
@@ -435,6 +458,7 @@ module Monopoly
       @radius = value.round
       self.height = self.width = radius * 2
       self.color = color
+      self.hover_highlight_color = hover_highlight_color
       self.hover_color = hover_color
       self.text = text
       radius
@@ -459,6 +483,10 @@ module Monopoly
     end
 
     protected
+
+    def draw_hover_highlight
+      hover_highlight_circle&.draw(from_center: true, x: center_x, y: center_y, z: z)
+    end
 
     def draw_shape(hover: false)
       if hover

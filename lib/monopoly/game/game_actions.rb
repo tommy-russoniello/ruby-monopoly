@@ -87,12 +87,14 @@ module Monopoly
         self.current_tile = self.focused_tile = current_player.tile
         self.current_player_landed = false
 
+        set_visible_compass_menu_buttons
         set_visible_tile_menu_buttons
         set_visible_player_menu_buttons(refresh: true)
       end
 
       def land
         self.current_player_landed = true
+        set_visible_compass_menu_buttons
         set_visible_tile_menu_buttons
         case current_tile
         when CardTile
