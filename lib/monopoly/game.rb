@@ -1708,9 +1708,10 @@ module Monopoly
       color_group_offset = PLAYER_MENU_BUTTON_HEIGHT + player_menu_button_gap
       color_group_initial_x = Coordinates::PLAYER_MENU_LEFT_X + color_group_offset
       color_group_color_height = PLAYER_MENU_BUTTON_HEIGHT * 0.2
-      next_players_x_offset = DEFAULT_TILE_BUTTON_HEIGHT + TILE_BUTTON_GAP
-      next_players_initial_x = Coordinates::PLAYER_MENU_RIGHT_X +
-        (DEFAULT_TILE_BUTTON_HEIGHT * 0.75) + TILE_BUTTON_GAP
+      next_players_initial_y = Coordinates::PLAYER_MENU_TOP_Y + PLAYER_MENU_ROUNDED_CORNER_RADIUS -
+        (DEFAULT_TILE_BUTTON_HEIGHT / 2) - DEFAULT_TILE_BUTTON_BORDER_WIDTH -
+        (DEFAULT_TILE_BUTTON_HEIGHT * 0.75) - TILE_BUTTON_GAP
+      next_players_y_offset = DEFAULT_TILE_BUTTON_HEIGHT + TILE_BUTTON_GAP
       self.player_menu_buttons = {
         all_properties: CircularButton.new(
           actions: proc { toggle_group_menu(current_player.properties) },
@@ -1852,13 +1853,13 @@ module Monopoly
             game: self,
             hover_color: colors[:tile_button_hover],
             radius: DEFAULT_TILE_BUTTON_HEIGHT / 2,
-            x: next_players_initial_x + (next_players_x_offset * number),
-            y: Coordinates::PLAYER_MENU_BOTTOM_Y - TILE_BUTTON_GAP -
-              (DEFAULT_TILE_BUTTON_HEIGHT / 2),
+            x: Coordinates::PLAYER_MENU_LEFT_X + (DEFAULT_TILE_BUTTON_HEIGHT / 2) +
+              DEFAULT_TILE_BUTTON_BORDER_WIDTH,
+            y: next_players_initial_y - (next_players_y_offset * number),
             z: ZOrder::MENU_UI
           )
         end,
-        next_players_left: Button.new(
+        next_players_down: Button.new(
           actions: [
             proc do
               next_players.shift_back
@@ -1867,17 +1868,17 @@ module Monopoly
           ],
           color: nil,
           game: self,
-          height: DEFAULT_TILE_BUTTON_HEIGHT,
+          height: DEFAULT_TILE_BUTTON_HEIGHT * 0.25,
           hover_color: nil,
-          hover_image: Image.new(images[:arrow_left_hover]),
-          image: Image.new(images[:arrow_left]),
-          image_width: DEFAULT_TILE_BUTTON_HEIGHT * 0.25,
-          width: DEFAULT_TILE_BUTTON_HEIGHT * 0.25,
-          x: next_players_initial_x - (DEFAULT_TILE_BUTTON_HEIGHT * 0.75) - (TILE_BUTTON_GAP / 2),
-          y: Coordinates::PLAYER_MENU_BOTTOM_Y - TILE_BUTTON_GAP - DEFAULT_TILE_BUTTON_HEIGHT,
+          hover_image: Image.new(images[:arrow_down_hover]),
+          image: Image.new(images[:arrow_down]),
+          image_height: DEFAULT_TILE_BUTTON_HEIGHT * 0.25,
+          width: DEFAULT_TILE_BUTTON_HEIGHT,
+          x: Coordinates::PLAYER_MENU_LEFT_X + DEFAULT_TILE_BUTTON_BORDER_WIDTH,
+          y: next_players_initial_y + (DEFAULT_TILE_BUTTON_HEIGHT * 0.5) + (TILE_BUTTON_GAP / 2),
           z: ZOrder::MENU_UI
         ),
-        next_players_right: Button.new(
+        next_players_up: Button.new(
           actions: [
             proc do
               next_players.shift_forward
@@ -1886,15 +1887,15 @@ module Monopoly
           ],
           color: nil,
           game: self,
-          height: DEFAULT_TILE_BUTTON_HEIGHT,
+          height: DEFAULT_TILE_BUTTON_HEIGHT * 0.25,
           hover_color: nil,
-          hover_image: Image.new(images[:arrow_right_hover]),
-          image: Image.new(images[:arrow_right]),
-          image_width: DEFAULT_TILE_BUTTON_HEIGHT * 0.25,
-          width: DEFAULT_TILE_BUTTON_HEIGHT * 0.25,
-          x: next_players_initial_x + (next_players_x_offset * 3) +
-            (DEFAULT_TILE_BUTTON_HEIGHT / 2) + (TILE_BUTTON_GAP / 2),
-          y: Coordinates::PLAYER_MENU_BOTTOM_Y - TILE_BUTTON_GAP - DEFAULT_TILE_BUTTON_HEIGHT,
+          hover_image: Image.new(images[:arrow_up_hover]),
+          image: Image.new(images[:arrow_up]),
+          image_height: DEFAULT_TILE_BUTTON_HEIGHT * 0.25,
+          width: DEFAULT_TILE_BUTTON_HEIGHT,
+          x: Coordinates::PLAYER_MENU_LEFT_X + DEFAULT_TILE_BUTTON_BORDER_WIDTH,
+          y: next_players_initial_y - (next_players_y_offset * 3) -
+            (DEFAULT_TILE_BUTTON_HEIGHT * 0.75) - (TILE_BUTTON_GAP / 2),
           z: ZOrder::MENU_UI
         ),
         no_get_out_of_jail_free: CircularButton.new(

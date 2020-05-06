@@ -686,9 +686,9 @@ module Monopoly
           self.visible_player_menu_buttons += buttons.values
         end
 
-        visible_player_menu_buttons << player_menu_buttons[:next_players_left] if
+        visible_player_menu_buttons << player_menu_buttons[:next_players_down] if
           next_players.previous?
-        visible_player_menu_buttons << player_menu_buttons[:next_players_right] if
+        visible_player_menu_buttons << player_menu_buttons[:next_players_up] if
           next_players.next?
 
         next_players.items.each.with_index do |player, index|
