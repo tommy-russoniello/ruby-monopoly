@@ -7,9 +7,11 @@ module Monopoly
       DEFAULT_TILE_BUTTON_BORDER_WIDTH = 5
       DEFAULT_TILE_BUTTON_HEIGHT = 100
       DIALOGUE_BOX_BUTTON_GAP = 20
+      HEADER_HEIGHT = 50
       MAX_DEED_ICON_HEIGHT = Coordinates::DEED_HEIGHT * 0.27
       MAX_DEED_ICON_WIDTH = Coordinates::DEED_HEIGHT * 0.5
       MAX_DEED_NAME_LINES = 3
+      MINIMUM_ERROR_DIALOGUE_SECONDS = 2
       MINIMUM_FONT_SIZE = 15
       PLAYER_MENU_BUTTON_HEIGHT = 50
       PLAYER_MENU_RIGHT_BORDER_WIDTH = 5
@@ -17,16 +19,38 @@ module Monopoly
       TILE_BUTTON_GAP = 15
       TOKEN_HEIGHT = 70
 
-      def add_message(message)
-        puts(message)
-        self.messages = [message] + messages
+      def display_error(message)
+        wrapped_text_data = Gosu::Font.wrap_text(
+          max_lines: 4,
+          max_size: fonts[:default][:type].height,
+          min_size: MINIMUM_FONT_SIZE,
+          name: fonts[:default][:type].name,
+          text: message,
+          width: (Coordinates::ERROR_DIALOGUE_WIDTH - (Coordinates::ERROR_DIALOGUE_BORDER_WIDTH * 2)) * 0.95
+        )
+
+        error_dialogue_data[:font] = wrapped_text_data[:font]
+        compacted_lines = wrapped_text_data[:lines].compact
+        initial_offset = fonts[:error_dialogue][:offset] *
+          ((wrapped_text_data[:lines].size - compacted_lines.size) / 2.0)
+        error_dialogue_data[:lines] = compacted_lines.map.with_index do |line, index|
+          {
+            text: line,
+            y: initial_offset + Coordinates::ERROR_DIALOGUE_TOP_Y +
+              Coordinates::ERROR_DIALOGUE_BORDER_WIDTH + (fonts[:error_dialogue][:offset] * index)
+          }
+        end
+
+        # Make the error dialogue stay up for more time the longer the error message
+        self.error_ticks = ticks_for_seconds(MINIMUM_ERROR_DIALOGUE_SECONDS) +
+          compacted_lines.sum(&:length) * 2
       end
 
       def display_tile(tile)
         self.focused_tile = tile
         set_visible_tile_menu_buttons
         toggle_card_menu if drawing_card_menu?
-        close_popup_menus
+        close_pop_up_menus
       end
 
 
@@ -56,23 +80,8 @@ module Monopoly
           rel_y: 0,
           x: Coordinates::RIGHT_X * 0.85,
           y: Coordinates::TOP_Y,
-          z: ZOrder::MAIN_UI
+          z: ZOrder::POP_UP_MENU_UI
         )
-
-        # Messages
-        y_differential = 0
-        self.messages = messages[0..4]
-        messages.each do |message|
-          fonts[:default][:type].draw_text(
-            message,
-            color: colors[:default_text],
-            x: Coordinates::LEFT_X,
-            y: Coordinates::TOP_Y + y_differential,
-            z: ZOrder::MAIN_UI
-          )
-
-          y_differential += fonts[:default][:offset]
-        end
 
         coordinates = [draw_mouse_x, draw_mouse_y] unless drawing_pop_up_menu? ||
           drawing_dialogue_box?
@@ -92,13 +101,26 @@ module Monopoly
           )
         end
 
+        # Header background
+        Gosu.draw_rect(
+          color: colors[:pop_up_menu_background_light],
+          height: HEADER_HEIGHT,
+          width: Coordinates::RIGHT_X - Coordinates::LEFT_X,
+          x: Coordinates::LEFT_X,
+          y: Coordinates::TOP_Y,
+          z: ZOrder::MENU_BACKGROUND
+        )
+
         draw_compass_menu
         draw_deed_menu
+        draw_event_history_menu
+        draw_game_menu
         draw_group_menu
         draw_player_inspector
 
         draw_options_menu
         draw_dialogue_box
+        draw_error_dialogue
       end
 
       def draw_card_menu
@@ -132,6 +154,7 @@ module Monopoly
         compass_menu_data[:inner_circle].draw(
           compass_menu_data[:right_circle_params]
         )
+        Gosu.draw_rect(compass_menu_data[:tile_background])
 
         coordinates = [draw_mouse_x, draw_mouse_y] unless drawing_pop_up_menu? ||
           drawing_dialogue_box?
@@ -223,22 +246,67 @@ module Monopoly
         dialogue_box_buttons.values.each { |button| button.draw(mouse_x, mouse_y) }
       end
 
+      def draw_error_dialogue
+        return unless drawing_error_dialogue?
+
+        error_dialogue_data[:rectangles].each { |data| Gosu.draw_rect(data) }
+        error_dialogue_data[:exclamation_point][:image].draw(
+          error_dialogue_data[:exclamation_point][:params]
+        )
+
+        error_dialogue_data[:lines].each do |line|
+          error_dialogue_data[:font].draw_text(
+            line[:text],
+            y: line[:y],
+            **error_dialogue_data[:text]
+          )
+        end
+
+        coordinates = [draw_mouse_x, draw_mouse_y] unless drawing_dialogue_box?
+        error_dialogue_buttons[:close].draw(coordinates)
+
+        self.error_ticks -= 1
+        close_error_dialogue unless error_ticks.positive?
+      end
+
+      def draw_event_history_menu
+        return unless drawing_event_history_menu?
+
+        Gosu.draw_rect(
+          color: colors[:pop_up_menu_border],
+          height: Coordinates::EVENT_HISTORY_MENU_HEIGHT,
+          width: Coordinates::EVENT_HISTORY_MENU_WIDTH,
+          x: Coordinates::EVENT_HISTORY_MENU_LEFT_X,
+          y: Coordinates::EVENT_HISTORY_MENU_TOP_Y,
+          z: ZOrder::POP_UP_MENU_BACKGROUND
+        )
+        Gosu.draw_rect(
+          color: colors[:pop_up_menu_background],
+          height: Coordinates::EVENT_HISTORY_MENU_HEIGHT -
+            (Coordinates::EVENT_HISTORY_MENU_BORDER_WIDTH * 2),
+          width: Coordinates::EVENT_HISTORY_MENU_WIDTH -
+            (Coordinates::EVENT_HISTORY_MENU_BORDER_WIDTH * 2),
+          x: Coordinates::EVENT_HISTORY_MENU_LEFT_X + Coordinates::EVENT_HISTORY_MENU_BORDER_WIDTH,
+          y: Coordinates::EVENT_HISTORY_MENU_TOP_Y + Coordinates::EVENT_HISTORY_MENU_BORDER_WIDTH,
+          z: ZOrder::POP_UP_MENU_BACKGROUND
+        )
+
+        coordinates = [draw_mouse_x, draw_mouse_y] unless drawing_dialogue_box?
+        visible_event_history_menu_buttons.each { |button| button.draw(*coordinates) }
+      end
+
+      def draw_game_menu
+        return unless drawing_game_menu?
+
+        coordinates = [draw_mouse_x, draw_mouse_y] unless drawing_pop_up_menu? ||
+          drawing_dialogue_box?
+        game_menu_buttons.values.each { |button| button.draw(*coordinates) }
+      end
+
       def draw_group_menu
         return unless drawing_group_menu?
 
-        unless drawing_dialogue_box?
-          # Background blur
-          Gosu.draw_rect(
-            color: colors[:blur],
-            height: Coordinates::BOTTOM_Y - Coordinates::TOP_Y,
-            width: Coordinates::RIGHT_X - Coordinates::LEFT_X,
-            x: Coordinates::LEFT_X,
-            y: Coordinates::TOP_Y,
-            z: ZOrder::POP_UP_BLUR
-          )
-
-          coordinates = [draw_mouse_x, draw_mouse_y]
-        end
+        coordinates = [draw_mouse_x, draw_mouse_y] unless drawing_dialogue_box?
 
         Gosu.draw_rect(
           color: colors[:pop_up_menu_border],
@@ -354,9 +422,10 @@ module Monopoly
         normal_width = Coordinates::TILE_WIDTH / ratio
         corner_width = Coordinates::TILE_HEIGHT / ratio
         button = compass_menu_buttons[0]
-        button.image = button.hover_image = current_tile.tile_image
+        button.image = current_tile.tile_image.clone
+        button.hover_image = current_tile.tile_image.clone
         width = current_tile.corner? ? corner_width : normal_width
-        button.width = button.image_width = width
+        button.width = button.image_width = button.hover_image_width = width
         button.update_coordinates(x: Coordinates::CENTER_X - (width / 2))
         visible_compass_menu_buttons << button
 
@@ -367,9 +436,10 @@ module Monopoly
 
           tile = tiles[(current_tile_index + index) % tile_count]
           button = compass_menu_buttons[index]
-          button.image = button.hover_image = tile.tile_image
+          button.image = tile.tile_image.clone
+          button.hover_image = tile.tile_image.clone
           width = tile.corner? ? corner_width : normal_width
-          button.width = button.image_width = width
+          button.width = button.image_width = button.hover_image_width = width
           button.update_coordinates(x: Coordinates::CENTER_X + right_offset)
           right_offset += width
           visible_compass_menu_buttons << button
@@ -378,18 +448,20 @@ module Monopoly
 
           tile = tiles[(current_tile_index - index) % tile_count]
           button = compass_menu_buttons[-index]
-          button.image = button.hover_image = tile.tile_image
+          button.image = tile.tile_image.clone
+          button.hover_image = tile.tile_image.clone
           width = tile.corner? ? corner_width : normal_width
-          button.width = button.image_width = width
+          button.width = button.image_width = button.hover_image_width = width
           left_offset += width
           button.update_coordinates(x: Coordinates::CENTER_X - left_offset)
           visible_compass_menu_buttons << button
         end
 
         left_edge = Coordinates::CENTER_X - left_offset
-        compass_menu_data[:bottom_border][:x] = compass_menu_data[:top_border][:x] = left_edge
+        compass_menu_data[:bottom_border][:x] = compass_menu_data[:top_border][:x] =
+          compass_menu_data[:tile_background][:x] = left_edge
         compass_menu_data[:bottom_border][:width] = compass_menu_data[:top_border][:width] =
-          left_offset + right_offset
+          compass_menu_data[:tile_background][:width] = left_offset + right_offset
 
         compass_menu_data[:left_circle_params][:x] = left_edge
         compass_menu_data[:right_circle_params][:x] = Coordinates::CENTER_X + right_offset
@@ -421,6 +493,52 @@ module Monopoly
         end
       end
 
+      def set_visible_event_history_menu_buttons
+        self.visible_event_history_menu_buttons = []
+
+        visible_event_history_menu_buttons << event_history_menu_buttons[:close]
+        if event_history_view.previous?
+          self.visible_event_history_menu_buttons +=
+            event_history_menu_buttons.values_at(:page_up, :skip_to_top, :up)
+        end
+
+        if event_history_view.next?
+          self.visible_event_history_menu_buttons +=
+            event_history_menu_buttons.values_at(:down, :page_down, :skip_to_bottom)
+        end
+
+        event_history_view.items.each.with_index do |event, index|
+          button = event_history_menu_buttons[:events][index]
+          if event[:font]
+            line_count = event[:text].count("\n") + 1
+            button.instance_variable_set(:@text, event[:text])
+            button.instance_variable_set(:@font, event[:font])
+          else
+            wrap_text_data = Gosu::Font.wrap_text(
+              max_lines: 3,
+              max_size: fonts[:default][:type].height,
+              min_size: MINIMUM_FONT_SIZE,
+              name: fonts[:default][:type].name,
+              text: event[:text],
+              width: button.width
+            )
+
+            compacted_lines = wrap_text_data[:lines].compact
+            line_count = compacted_lines.size
+            wrapped_text = compacted_lines.join("\n")
+            button.instance_variable_set(:@text, wrapped_text)
+            button.instance_variable_set(:@font, wrap_text_data[:font])
+            event[:font] = wrap_text_data[:font]
+            event[:text] = wrapped_text
+          end
+
+          button.instance_variable_set(:@text_position_y, 0.5 - (line_count - 1) * 0.175)
+          button.update_coordinates
+
+          visible_event_history_menu_buttons << button
+        end
+      end
+
       def set_visible_group_menu_buttons
         self.visible_group_menu_buttons = []
 
@@ -431,13 +549,15 @@ module Monopoly
         index_offset = group_menu_tiles.all_items.size <= 2 ? 1 : 0
         group_menu_tiles.items.each.with_index do |tile, index|
           buttons = group_menu_buttons[:tiles][index + index_offset]
-          buttons[:tile].hover_image = buttons[:tile].image = tile.tile_image
+          buttons[:tile].hover_image = tile.tile_image.clone
+          buttons[:tile].image = tile.tile_image.clone
           buttons[:tile].actions = [[:display_tile, tile]]
           visible_group_menu_buttons << buttons[:tile]
 
           if tile.owner
-            buttons[:owner].hover_image = buttons[:owner].image = tile.owner.token_image
-            buttons[:owner].maximize_image_in_square(TOKEN_HEIGHT)
+            buttons[:owner].hover_image = tile.owner.token_image.clone
+            buttons[:owner].image = tile.owner.token_image.clone
+            buttons[:owner].maximize_images_in_square(TOKEN_HEIGHT)
             visible_group_menu_buttons << buttons[:owner]
 
             if tile.group.monopolized? && tile.is_a?(StreetTile)
@@ -491,9 +611,9 @@ module Monopoly
           return
         end
 
-        player_inspector_buttons[:player_token].hover_image = inspected_player.token_image
-        player_inspector_buttons[:player_token].image = inspected_player.token_image
-        player_inspector_buttons[:player_token].maximize_image_in_square(TOKEN_HEIGHT * 2)
+        player_inspector_buttons[:player_token].hover_image = inspected_player.token_image.clone
+        player_inspector_buttons[:player_token].image = inspected_player.token_image.clone
+        player_inspector_buttons[:player_token].maximize_images_in_square(TOKEN_HEIGHT * 2)
         visible_player_inspector_buttons << player_inspector_buttons[:player_token]
 
         player_inspector_buttons[:player_name].text = inspected_player.name
@@ -554,7 +674,8 @@ module Monopoly
           end
 
           button.text = "#{group.amount_owned(inspected_player)}/#{group.tiles.count}"
-          button.image = button.hover_image = group.image
+          button.image = group.image.clone
+          button.hover_image = group.image.clone
 
           visible_player_inspector_buttons << button
         end
@@ -593,9 +714,9 @@ module Monopoly
       def set_visible_player_menu_buttons(refresh: false)
         self.visible_player_menu_buttons = []
 
-        player_menu_buttons[:player_token].hover_image = current_player.token_image
-        player_menu_buttons[:player_token].image = current_player.token_image
-        player_menu_buttons[:player_token].maximize_image_in_square(TOKEN_HEIGHT)
+        player_menu_buttons[:player_token].hover_image = current_player.token_image.clone
+        player_menu_buttons[:player_token].image = current_player.token_image.clone
+        player_menu_buttons[:player_token].maximize_images_in_square(TOKEN_HEIGHT)
         visible_player_menu_buttons << player_menu_buttons[:player_token]
 
         player_menu_buttons[:player_name].text = current_player.name
@@ -657,7 +778,8 @@ module Monopoly
           end
 
           button.text = "#{group.amount_owned(current_player)}/#{group.tiles.count}"
-          button.image = button.hover_image = group.image
+          button.image = group.image.clone
+          button.hover_image = group.image.clone
 
           visible_player_menu_buttons << button
         end
@@ -694,9 +816,9 @@ module Monopoly
         next_players.items.each.with_index do |player, index|
           button = player_menu_buttons[:next_players][index]
 
-          button.hover_image = player.token_image
-          button.image = player.token_image
-          button.maximize_image_in_square(TOKEN_HEIGHT)
+          button.hover_image = player.token_image.clone
+          button.image = player.token_image.clone
+          button.maximize_images_in_square(TOKEN_HEIGHT)
 
           visible_player_menu_buttons << button
         end
@@ -705,22 +827,28 @@ module Monopoly
       def set_visible_tile_menu_buttons
         self.visible_tile_menu_buttons = []
 
-        visible_tile_menu_buttons << tile_menu_buttons[:back] if focused_tile != current_tile
+        if focused_tile != current_tile
+          x = Coordinates::BACK_TO_CURRENT_TILE_BUTTON_X
+          x += (Coordinates::TILE_HEIGHT - Coordinates::TILE_WIDTH) / 2 if focused_tile.corner?
+          tile_menu_buttons[:back].update_coordinates(x: x) unless tile_menu_buttons[:back].x == x
+          visible_tile_menu_buttons << tile_menu_buttons[:back]
+        end
+
         visible_tile_menu_buttons << tile_menu_buttons[:show_card] if current_card
 
         return unless focused_tile.is_a?(PropertyTile)
 
         visible_tile_menu_buttons << tile_menu_buttons[:show_deed]
 
-        tile_menu_buttons[:show_group].hover_image = tile_menu_buttons[:show_group].image =
-          focused_tile.group.image
+        tile_menu_buttons[:show_group].hover_image = focused_tile.group.image.clone
+        tile_menu_buttons[:show_group].image = focused_tile.group.image.clone
 
-        tile_menu_buttons[:show_group].maximize_image_in_square(TOKEN_HEIGHT)
+        tile_menu_buttons[:show_group].maximize_images_in_square(TOKEN_HEIGHT)
         visible_tile_menu_buttons << tile_menu_buttons[:show_group]
 
         if focused_tile.owner
-          tile_menu_buttons[:owner].hover_image = focused_tile.owner.token_image
-          tile_menu_buttons[:owner].image = focused_tile.owner.token_image
+          tile_menu_buttons[:owner].hover_image = focused_tile.owner.token_image.clone
+          tile_menu_buttons[:owner].image = focused_tile.owner.token_image.clone
           tile_menu_buttons[:owner].color, tile_menu_buttons[:owner].hover_color =
             if focused_tile.group.monopolized?
               colors.values_at(:monopoly_button_background, :monopoly_button_background_hover)
@@ -728,7 +856,7 @@ module Monopoly
               colors.values_at(:tile_button, :tile_button_hover)
             end
 
-          tile_menu_buttons[:owner].maximize_image_in_square(TOKEN_HEIGHT)
+          tile_menu_buttons[:owner].maximize_images_in_square(TOKEN_HEIGHT)
 
           visible_tile_menu_buttons << tile_menu_buttons[:owner]
 
@@ -907,7 +1035,7 @@ module Monopoly
       end
 
       def set_railroad_tile_deed_data
-        image = focused_tile.icon || focused_tile.group.image
+        image = (focused_tile.icon || focused_tile.group.image).clone
         if (image.height / MAX_DEED_ICON_HEIGHT) > (image.width / MAX_DEED_ICON_WIDTH)
           height = MAX_DEED_ICON_HEIGHT
         else
@@ -1356,7 +1484,7 @@ module Monopoly
       end
 
       def set_utility_tile_deed_data
-        image = focused_tile.icon || focused_tile.group.image
+        image = (focused_tile.icon || focused_tile.group.image).clone
         if (image.height / MAX_DEED_ICON_HEIGHT) > (image.width / MAX_DEED_ICON_WIDTH)
           height = MAX_DEED_ICON_HEIGHT
         else

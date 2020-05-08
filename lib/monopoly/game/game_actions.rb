@@ -8,18 +8,18 @@ module Monopoly
 
         if player.money < amount
           if player.has_assets_for?(amount)
-            add_message(
-              "#{current_player.name} cannot afford to pay #{recipient_name} " \
-              "#{format_money(amount)} in cash but can afford it by liquidating " \
-              "assets (selling houses and/or mortgaging properties)."
+            display_error(
+              "You can't afford to pay #{recipient_name} #{format_money(amount)} " \
+              'in cash but you can afford it by liquidating assets (selling houses ' \
+              'and/or mortgaging properties).'
             )
           else
-            add_message("#{player.name} does not have the cash or assets to pay #{recipient_name}.")
+            display_error("You don't have the cash or assets to pay #{recipient_name}.")
             player.liquidate_assets
             remaining_money = player.money
             player.subtract_money(remaining_money, reason)
             recipient.add_money(remaining_money, reason) if recipient
-            add_message(
+            log_event(
               "#{player.name} liquidated their remaining assets and payed " \
               "#{format_money(remaining_money)} to #{recipient_name}."
             )
@@ -29,13 +29,14 @@ module Monopoly
         else
           recipient.add_money(amount, reason) if recipient
           player.subtract_money(amount, reason)
-          add_message("#{player.name} payed #{format_money(amount)} to #{recipient_name}.")
+          log_event("#{player.name} payed #{format_money(amount)} to #{recipient_name}.")
           execute_actions(format_actions(on_success)) if on_success
         end
       end
 
-      def close_popup_menus
+      def close_pop_up_menus
         toggle_deed_menu if drawing_deed_menu?
+        toggle_event_history_menu if drawing_event_history_menu?
         toggle_group_menu if drawing_group_menu?
         toggle_player_inspector if drawing_player_inspector?
       end
@@ -45,8 +46,8 @@ module Monopoly
 
         go_money_collected = go_money_amount * times_passed_go
         extra_string = " #{times_passed_go} times" if times_passed_go > 1
-        add_message(
-          "#{player.name} has gained #{format_money(go_money_collected)} for " \
+        log_event(
+          "#{player.name} gained #{format_money(go_money_collected)} for " \
           "passing Go#{extra_string}."
         )
         player.add_money(go_money_collected, :game)
@@ -55,9 +56,8 @@ module Monopoly
       end
 
       def eliminate_player(player = current_player)
-        add_message(
-          "#{player.name} is eliminated! All of #{player.name}'s properties " \
-          "have been reclaimed by the bank."
+        log_event(
+          "#{player.name} is eliminated, and all of their properties are reclaimed by the bank."
         )
         player.properties.each do |property|
           property.owner = nil
@@ -87,12 +87,15 @@ module Monopoly
         self.current_tile = self.focused_tile = current_player.tile
         self.current_player_landed = false
 
+        close_error_dialogue
         set_visible_compass_menu_buttons
         set_visible_tile_menu_buttons
         set_visible_player_menu_buttons(refresh: true)
       end
 
       def land
+        log_event("#{current_player.name} landed on #{current_tile.name}.") unless
+          current_player_landed
         self.current_player_landed = true
         set_visible_compass_menu_buttons
         set_visible_tile_menu_buttons
@@ -100,7 +103,6 @@ module Monopoly
         when CardTile
           update_visible_buttons(:draw_card)
         when FreeParkingTile
-          add_message('whoopdie doo, free parking')
           update_visible_buttons(:end_turn)
         when GoTile
           update_visible_buttons(:end_turn)
@@ -110,13 +112,7 @@ module Monopoly
           update_visible_buttons(:end_turn)
         when PropertyTile
           if current_tile.owner
-            if current_tile.owner == current_player
-              update_visible_buttons(:end_turn)
-            elsif current_tile.mortgaged?
-              add_message(
-                "No rent is due to #{current_tile.owner.name} as " \
-                "#{current_tile.name} is currently mortgaged."
-              )
+            if current_tile.owner == current_player || current_tile.mortgaged?
               update_visible_buttons(:end_turn)
             else
               current_tile.dice_roll = die_a + die_b if current_tile.is_a?(UtilityTile)
@@ -174,7 +170,7 @@ module Monopoly
       end
 
       def send_player_to_jail(player)
-        add_message("#{player.name} has gone to jail!")
+        log_event("#{player.name} went to jail.")
         player.tile = tiles[:jail]
         player.jail_turns = jail_time
       end

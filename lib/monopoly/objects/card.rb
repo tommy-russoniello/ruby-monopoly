@@ -141,14 +141,14 @@ module Monopoly
     def perform_action
       spaces = move_spaces
       game.move(spaces: spaces, player: player)
-      message =
+      event =
         if spaces.negative?
           "#{player.name} moved back #{-spaces} spaces to #{player.tile.name}."
         else
           "#{player.name} advanced #{spaces} spaces to #{player.tile.name}."
         end
 
-      game.add_message(message)
+      game.log_event(event)
       multiply_rent = rent_multiplier && player.tile.owner && player.tile.owner != player &&
         !player.tile.mortgaged? && player.tile.is_a?(PropertyTile)
       if multiply_rent
@@ -172,7 +172,7 @@ module Monopoly
 
     def perform_action
       player.jail_turns = 0
-      game.add_message("#{player.name} used a Get Out Of Jail Free Card to get out of jail.")
+      game.log_event("#{player.name} used a Get Out Of Jail Free Card to get out of jail.")
     end
   end
 

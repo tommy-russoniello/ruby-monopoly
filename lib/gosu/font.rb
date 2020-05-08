@@ -1,17 +1,45 @@
 module Gosu
   class Font
-    def self.wrap_text(
-      max_lines: nil,
-      max_size:,
-      min_size:,
-      name: nil,
-      text:,
-      trailing_text: '...',
-      width:
-    )
-      text = text.strip
-      return_lines = []
-      font_size = (min_size..max_size).to_a.reverse.bsearch do |size|
+    class << self
+      def wrap_text(
+        max_lines: nil,
+        max_size:,
+        min_size:,
+        name: nil,
+        text:,
+        trailing_text: '...',
+        width:
+      )
+        text = text.strip
+        return_lines = []
+        params = {
+          max_lines: max_lines,
+          text: text,
+          trailing_text: trailing_text,
+          width: width
+        }
+        data = wrap_text_for_size(size: max_size, **params)
+        if data[:success]
+          font_size = max_size
+          return_lines = data[:lines]
+        end
+
+        font_size ||= (min_size...max_size).to_a.reverse.bsearch do |size|
+          data = wrap_text_for_size(size: size, **params)
+
+          # The last iteration with either of these conditions will be the optimal
+          # solution, so we record the value each time to avoid having to reprocess
+          # the lines once we've found the optimal font size
+          return_lines = data[:lines] if data[:success] || size == min_size
+          data[:success]
+        end
+
+        { font: new(font_size || min_size, name: name), lines: return_lines }
+      end
+
+      private
+
+      def wrap_text_for_size(max_lines:, size:, text:, trailing_text:, width:)
         font = new(size, name: name)
         lines = Array.new(max_lines || 0)
         line_index = 0
@@ -49,14 +77,8 @@ module Gosu
           end
         end
 
-        # The last iteration with either of these conditions will be the optimal
-        # solution, so we record the value each time to avoid having to reprocess
-        # the lines once we've found the optimal font size
-        return_lines = lines if success || size == min_size
-        success
+        { lines: lines, success: success }
       end
-
-      { font: new(font_size || min_size, name: name), lines: return_lines }
     end
 
     alias _draw_text draw_text
@@ -76,7 +98,8 @@ module Gosu
     end
 
     def truncate_text(text:, trailing_text: nil, width:)
-      length = (1..text.length).to_a.reverse.bsearch do |length|
+      length = text.length if text_width(text) < width
+      length ||= (1..text.length).to_a.reverse.bsearch do |length|
         text_width(text[0...length]) < width
       end
 

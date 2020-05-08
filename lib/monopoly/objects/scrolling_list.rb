@@ -9,6 +9,23 @@ module Monopoly
       @pre_items + @current_items + @post_items
     end
 
+    def full_shift_back
+      return false if @pre_items.empty?
+
+      self.items = all_items
+      true
+    end
+
+    def full_shift_forward
+      return false if @post_items.empty?
+
+      items = all_items
+      @current_items = items.pop(@view_size)
+      @pre_items = items
+      @post_items = []
+      true
+    end
+
     def items
       @current_items
     end

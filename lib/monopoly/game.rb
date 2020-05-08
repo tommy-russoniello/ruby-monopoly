@@ -8,6 +8,7 @@ module Monopoly
     DEFAULT_GO_MONEY_AMOUNT = 200
     DEFAULT_JAIL_TIME = 3
     DEFAULT_MAX_HOUSE_COUNT = 5
+    EVENT_HISTORY_LIMIT = 1_000
     RESOLUTION_HEIGHT = ENV['RESOLUTION_HEIGHT'].to_i
     RESOLUTION_WIDTH = ENV['RESOLUTION_WIDTH'].to_i
 
@@ -35,20 +36,28 @@ module Monopoly
     attr_accessor :drawing_compass_menu
     attr_accessor :drawing_deed_menu
     attr_accessor :drawing_dialogue_box
+    attr_accessor :drawing_event_history_menu
+    attr_accessor :drawing_game_menu
     attr_accessor :drawing_group_menu
     attr_accessor :drawing_options_menu
     attr_accessor :drawing_player_inspector
     attr_accessor :drawing_player_menu
     attr_accessor :draw_mouse_x
     attr_accessor :draw_mouse_y
+    attr_accessor :error_dialogue_buttons
+    attr_accessor :error_dialogue_data
+    attr_accessor :error_ticks
+    attr_accessor :event_history
+    attr_accessor :event_history_menu_buttons
+    attr_accessor :event_history_view
     attr_accessor :focused_tile
     attr_accessor :fonts
+    attr_accessor :game_menu_buttons
     attr_accessor :group_menu_alt_button_positions
     attr_accessor :group_menu_buttons
     attr_accessor :group_menu_tiles
     attr_accessor :images
     attr_accessor :inspected_player
-    attr_accessor :messages
     attr_accessor :next_players
     attr_accessor :options_menu_buttons
     attr_accessor :options_menu_bar_paramaters
@@ -80,6 +89,7 @@ module Monopoly
     attr_accessor :visible_card_menu_buttons
     attr_accessor :visible_compass_menu_buttons
     attr_accessor :visible_deed_menu_buttons
+    attr_accessor :visible_event_history_menu_buttons
     attr_accessor :visible_group_menu_buttons
     attr_accessor :visible_player_inspector_buttons
     attr_accessor :visible_player_menu_buttons
@@ -114,6 +124,7 @@ module Monopoly
         options_menu_button: Gosu::Color.new(255, 153, 153, 153),
         options_menu_button_hover: Gosu::Color.new(255, 95, 95, 95),
         pop_up_menu_background: Gosu::Color.new(255, 39, 138, 134),
+        pop_up_menu_background_alt: Gosu::Color.new(255, 38, 130, 130),
         pop_up_menu_background_light: Gosu::Color.new(255, 80, 166, 163),
         pop_up_menu_background_light_hover: Gosu::Color.new(255, 159, 224, 222),
         pop_up_menu_border: Gosu::Color.new(255, 29, 102, 99),
@@ -133,6 +144,7 @@ module Monopoly
         deed_name: { type: Gosu::Font.new(30, name: monopoly_font), offset: 35 },
         dialogue: { type: Gosu::Font.new(50), offset: 55 },
         default: { type: Gosu::Font.new(DEFAULT_FONT_SIZE), offset: 35 },
+        error_dialogue: { type: Gosu::Font.new(30), offset: 35 },
         house_count: { type: Gosu::Font.new(45), offset: 50 },
         title: { type: Gosu::Font.new(55), offset: 55 }
       }
@@ -154,10 +166,13 @@ module Monopoly
         build_house: 'user_interface/build_house.png',
         build_house_hover: 'user_interface/build_house_hover.png',
         dollar_sign: 'user_interface/dollar_sign.png',
+        exclamation_point: 'user_interface/exclamation_point.png',
         handshake: 'user_interface/handshake.png',
         house: 'user_interface/house.png',
         jail_cell: 'user_interface/jail_cell.png',
         key: 'user_interface/key.png',
+        list: 'user_interface/list.png',
+        list_hover: 'user_interface/list_hover.png',
         message: 'user_interface/message.png',
         mortgage: 'user_interface/mortgage.png',
         mortgage_hover: 'user_interface/mortgage_hover.png',
@@ -417,14 +432,14 @@ module Monopoly
           actions: :toggle_options_menu,
           color: nil,
           game: self,
-          height: 50,
+          height: HEADER_HEIGHT,
           hover_color: nil,
           hover_image: Image.new(images[:options_gear_hover]),
-          image_height: 45,
-          image_width: 45,
+          image_height: HEADER_HEIGHT * 0.9,
+          image_width: HEADER_HEIGHT * 0.9,
           image: Image.new(images[:options_gear]),
-          width: 50,
-          x: Coordinates::RIGHT_X - 50,
+          width: HEADER_HEIGHT,
+          x: Coordinates::RIGHT_X - HEADER_HEIGHT,
           y: Coordinates::TOP_Y,
           z: ZOrder::POP_UP_MENU_UI
         ),
@@ -1020,6 +1035,243 @@ module Monopoly
         )
       }
 
+      error_dialogue_close_button_height = DEFAULT_TILE_BUTTON_HEIGHT * 0.2
+      error_dialogue_button_gap = error_dialogue_close_button_height * 0.25
+      self.error_dialogue_buttons = {
+        close: Button.new(
+          actions: :close_error_dialogue,
+          color: nil,
+          game: self,
+          height: error_dialogue_close_button_height,
+          hover_color: nil,
+          hover_image: Image.new(images[:x_hover]),
+          image: Image.new(images[:x]),
+          image_height: error_dialogue_close_button_height,
+          width: error_dialogue_close_button_height,
+          x: Coordinates::ERROR_DIALOGUE_LEFT_X + Coordinates::ERROR_DIALOGUE_BORDER_WIDTH +
+            error_dialogue_button_gap,
+          y: Coordinates::ERROR_DIALOGUE_TOP_Y + Coordinates::ERROR_DIALOGUE_BORDER_WIDTH +
+            error_dialogue_button_gap,
+          z: ZOrder::DIALOGUE_UI
+        )
+      }
+
+      self.error_dialogue_data = {
+        exclamation_point: {
+          image: Image.new(images[:exclamation_point]),
+          params: {
+            draw_width: error_dialogue_close_button_height,
+            x: Coordinates::ERROR_DIALOGUE_RIGHT_X - Coordinates::ERROR_DIALOGUE_BORDER_WIDTH -
+              error_dialogue_close_button_height - (error_dialogue_button_gap * 2),
+            y: Coordinates::ERROR_DIALOGUE_TOP_Y + Coordinates::ERROR_DIALOGUE_BORDER_WIDTH +
+              (error_dialogue_button_gap * 3) + error_dialogue_close_button_height,
+            z: ZOrder::DIALOGUE_UI
+          }
+        },
+        rectangles: [
+          {
+            color: colors[:pop_up_menu_border],
+            height: Coordinates::ERROR_DIALOGUE_HEIGHT,
+            width: Coordinates::ERROR_DIALOGUE_WIDTH,
+            x: Coordinates::ERROR_DIALOGUE_LEFT_X,
+            y: Coordinates::ERROR_DIALOGUE_TOP_Y,
+            z: ZOrder::DIALOGUE_BACKGROUND
+          },
+          {
+            color: colors[:pop_up_menu_background],
+            height: Coordinates::ERROR_DIALOGUE_HEIGHT -
+              (Coordinates::ERROR_DIALOGUE_BORDER_WIDTH * 2),
+            width: Coordinates::ERROR_DIALOGUE_WIDTH -
+              (Coordinates::ERROR_DIALOGUE_BORDER_WIDTH * 2),
+            x: Coordinates::ERROR_DIALOGUE_LEFT_X + Coordinates::ERROR_DIALOGUE_BORDER_WIDTH,
+            y: Coordinates::ERROR_DIALOGUE_TOP_Y + Coordinates::ERROR_DIALOGUE_BORDER_WIDTH,
+            z: ZOrder::DIALOGUE_BACKGROUND
+          }
+        ],
+        text: {
+          color: colors[:default_text],
+          x: Coordinates::ERROR_DIALOGUE_LEFT_X + Coordinates::ERROR_DIALOGUE_BORDER_WIDTH +
+            (error_dialogue_button_gap * 5) + error_dialogue_close_button_height,
+          z: ZOrder::DIALOGUE_UI
+        }
+      }
+
+      event_history_edge_button_height = 40
+      event_history_button_gap = 5
+      event_history_text_height = 83
+      event_history_text_initial_y = Coordinates::EVENT_HISTORY_MENU_TOP_Y +
+        Coordinates::EVENT_HISTORY_MENU_BORDER_WIDTH + event_history_edge_button_height +
+        (event_history_button_gap * 3)
+      self.event_history_menu_buttons = {
+        close: Button.new(
+          actions: :toggle_event_history_menu,
+          color: nil,
+          game: self,
+          height: event_history_edge_button_height,
+          hover_color: nil,
+          hover_image: Image.new(images[:x_hover]),
+          image: Image.new(images[:x]),
+          image_height: event_history_edge_button_height,
+          width: event_history_edge_button_height,
+          x: Coordinates::EVENT_HISTORY_MENU_LEFT_X + Coordinates::EVENT_HISTORY_MENU_BORDER_WIDTH +
+            event_history_button_gap,
+          y: Coordinates::EVENT_HISTORY_MENU_TOP_Y + Coordinates::EVENT_HISTORY_MENU_BORDER_WIDTH +
+            event_history_button_gap,
+          z: ZOrder::POP_UP_MENU_UI
+        ),
+        down: Button.new(
+          actions: [
+            proc do
+              event_history_view.shift_forward
+              set_visible_event_history_menu_buttons if drawing_event_history_menu?
+            end
+          ],
+          color: colors[:pop_up_menu_border],
+          game: self,
+          height: event_history_edge_button_height,
+          hover_color: colors[:pop_up_menu_border],
+          hover_image: Image.new(images[:arrow_down_hover]),
+          image: Image.new(images[:arrow_down]),
+          image_height: event_history_edge_button_height * 0.8,
+          image_width: Coordinates::EVENT_HISTORY_MENU_WIDTH * 0.1,
+          width: Coordinates::EVENT_HISTORY_MENU_WIDTH * 0.25,
+          x: Coordinates::EVENT_HISTORY_MENU_LEFT_X +
+            (Coordinates::EVENT_HISTORY_MENU_WIDTH * 0.375),
+          y: Coordinates::EVENT_HISTORY_MENU_BOTTOM_Y -
+            Coordinates::EVENT_HISTORY_MENU_BORDER_WIDTH - event_history_button_gap -
+            event_history_edge_button_height,
+          z: ZOrder::POP_UP_MENU_UI
+        ),
+        events: (0...10).map do |number|
+          Button.new(
+            actions: nil,
+            color: colors[:pop_up_menu_background_alt],
+            game: self,
+            height: event_history_text_height,
+            hover_color: colors[:pop_up_menu_background_light],
+            width: Coordinates::EVENT_HISTORY_MENU_WIDTH -
+              (Coordinates::EVENT_HISTORY_MENU_BORDER_WIDTH * 2) - (event_history_button_gap * 2),
+            x: Coordinates::EVENT_HISTORY_MENU_LEFT_X +
+              Coordinates::EVENT_HISTORY_MENU_BORDER_WIDTH + event_history_button_gap,
+            y: event_history_text_initial_y +
+              (event_history_text_height + event_history_button_gap) * number,
+            z: ZOrder::POP_UP_MENU_UI
+          )
+        end,
+        page_down: Button.new(
+          actions: [
+            proc do
+              event_history_view.shift_forward(10)
+              set_visible_event_history_menu_buttons if drawing_event_history_menu?
+            end
+          ],
+          color: colors[:pop_up_menu_border],
+          font: fonts[:default][:type],
+          font_color: colors[:clickable_text],
+          font_hover_color: colors[:clickable_text_hover],
+          game: self,
+          height: event_history_edge_button_height,
+          hover_color: colors[:pop_up_menu_border],
+          text: 'Page down',
+          width: Coordinates::EVENT_HISTORY_MENU_WIDTH * 0.25,
+          x: Coordinates::EVENT_HISTORY_MENU_LEFT_X +
+            (Coordinates::EVENT_HISTORY_MENU_WIDTH * 0.12),
+          y: Coordinates::EVENT_HISTORY_MENU_BOTTOM_Y -
+            Coordinates::EVENT_HISTORY_MENU_BORDER_WIDTH - event_history_button_gap -
+            event_history_edge_button_height,
+          z: ZOrder::POP_UP_MENU_UI
+        ),
+        page_up: Button.new(
+          actions: [
+            proc do
+              event_history_view.shift_back(10)
+              set_visible_event_history_menu_buttons if drawing_event_history_menu?
+            end
+          ],
+          color: colors[:pop_up_menu_border],
+          font: fonts[:default][:type],
+          font_color: colors[:clickable_text],
+          font_hover_color: colors[:clickable_text_hover],
+          game: self,
+          height: event_history_edge_button_height,
+          hover_color: colors[:pop_up_menu_border],
+          text: 'Page up',
+          width: Coordinates::EVENT_HISTORY_MENU_WIDTH * 0.25,
+          x: Coordinates::EVENT_HISTORY_MENU_LEFT_X +
+            (Coordinates::EVENT_HISTORY_MENU_WIDTH * 0.12),
+          y: Coordinates::EVENT_HISTORY_MENU_TOP_Y + Coordinates::EVENT_HISTORY_MENU_BORDER_WIDTH +
+            event_history_button_gap,
+          z: ZOrder::POP_UP_MENU_UI
+        ),
+        skip_to_bottom: Button.new(
+          actions: [
+            proc do
+              event_history_view.full_shift_forward
+              set_visible_event_history_menu_buttons if drawing_event_history_menu?
+            end
+          ],
+          color: colors[:pop_up_menu_border],
+          font: fonts[:default][:type],
+          font_color: colors[:clickable_text],
+          font_hover_color: colors[:clickable_text_hover],
+          game: self,
+          height: event_history_edge_button_height,
+          hover_color: colors[:pop_up_menu_border],
+          text: 'Skip to bottom',
+          width: Coordinates::EVENT_HISTORY_MENU_WIDTH * 0.25,
+          x: Coordinates::EVENT_HISTORY_MENU_LEFT_X +
+            (Coordinates::EVENT_HISTORY_MENU_WIDTH * 0.63),
+          y: Coordinates::EVENT_HISTORY_MENU_BOTTOM_Y -
+            Coordinates::EVENT_HISTORY_MENU_BORDER_WIDTH - event_history_button_gap -
+            event_history_edge_button_height,
+          z: ZOrder::POP_UP_MENU_UI
+        ),
+        skip_to_top: Button.new(
+          actions: [
+            proc do
+              event_history_view.full_shift_back
+              set_visible_event_history_menu_buttons if drawing_event_history_menu?
+            end
+          ],
+          color: colors[:pop_up_menu_border],
+          font: fonts[:default][:type],
+          font_color: colors[:clickable_text],
+          font_hover_color: colors[:clickable_text_hover],
+          game: self,
+          height: event_history_edge_button_height,
+          hover_color: colors[:pop_up_menu_border],
+          text: 'Back to top',
+          width: Coordinates::EVENT_HISTORY_MENU_WIDTH * 0.25,
+          x: Coordinates::EVENT_HISTORY_MENU_LEFT_X +
+            (Coordinates::EVENT_HISTORY_MENU_WIDTH * 0.63),
+          y: Coordinates::EVENT_HISTORY_MENU_TOP_Y + Coordinates::EVENT_HISTORY_MENU_BORDER_WIDTH +
+            event_history_button_gap,
+          z: ZOrder::POP_UP_MENU_UI
+        ),
+        up: Button.new(
+          actions: [
+            proc do
+              event_history_view.shift_back
+              set_visible_event_history_menu_buttons if drawing_event_history_menu?
+            end
+          ],
+          color: colors[:pop_up_menu_border],
+          game: self,
+          height: event_history_edge_button_height,
+          hover_color: colors[:pop_up_menu_border],
+          hover_image: Image.new(images[:arrow_up_hover]),
+          image: Image.new(images[:arrow_up]),
+          image_height: event_history_edge_button_height * 0.8,
+          image_width: Coordinates::EVENT_HISTORY_MENU_WIDTH * 0.1,
+          width: Coordinates::EVENT_HISTORY_MENU_WIDTH * 0.25,
+          x: Coordinates::EVENT_HISTORY_MENU_LEFT_X +
+            (Coordinates::EVENT_HISTORY_MENU_WIDTH * 0.375),
+          y: Coordinates::EVENT_HISTORY_MENU_TOP_Y + Coordinates::EVENT_HISTORY_MENU_BORDER_WIDTH +
+            event_history_button_gap,
+          z: ZOrder::POP_UP_MENU_UI
+        )
+      }
+
       self.compass_menu_buttons = (-COMPASS_RANGE..COMPASS_RANGE).map do |number|
         [
           number,
@@ -1044,8 +1296,6 @@ module Monopoly
         bottom_border: {
           color: colors[:pop_up_menu_border],
           height: COMPASS_BORDER_WIDTH + 1,
-          width: 0,
-          x: Coordinates::CENTER_X,
           y: Coordinates::COMPASS_TOP_Y + COMPASS_BORDER_WIDTH + DEFAULT_TILE_BUTTON_HEIGHT - 1,
           z: ZOrder::MENU_UI
         },
@@ -1081,14 +1331,36 @@ module Monopoly
           y: Coordinates::COMPASS_TOP_Y + (DEFAULT_TILE_BUTTON_HEIGHT / 2) + COMPASS_BORDER_WIDTH,
           z: ZOrder::MENU_BACKGROUND
         },
+        tile_background: {
+          color: colors[:pop_up_menu_background],
+          height: DEFAULT_TILE_BUTTON_HEIGHT,
+          y: Coordinates::COMPASS_TOP_Y + COMPASS_BORDER_WIDTH,
+          z: ZOrder::MENU_BACKGROUND
+        },
         top_border: {
           color: colors[:pop_up_menu_border],
           height: COMPASS_BORDER_WIDTH + 1,
-          width: 0,
-          x: Coordinates::CENTER_X,
           y: Coordinates::COMPASS_TOP_Y,
           z: ZOrder::MENU_UI
         }
+      }
+
+      self.game_menu_buttons = {
+        event_history: Button.new(
+          actions: :toggle_event_history_menu,
+          color: nil,
+          game: self,
+          height: HEADER_HEIGHT,
+          hover_color: nil,
+          hover_image: Image.new(images[:list_hover]),
+          image_height: HEADER_HEIGHT * 0.6,
+          image_width: HEADER_HEIGHT * 0.6,
+          image: Image.new(images[:list]),
+          width: HEADER_HEIGHT,
+          x: Coordinates::LEFT_X,
+          y: Coordinates::TOP_Y,
+          z: ZOrder::MENU_UI
+        )
       }
 
       player_inspector_button_height = DEFAULT_TILE_BUTTON_HEIGHT * 0.75
@@ -1239,10 +1511,11 @@ module Monopoly
           z: ZOrder::POP_UP_MENU_UI
         ),
         currently_on: Button.new(
-          actions: nil,
+          actions: proc { display_tile(inspected_player.tile) },
           color: nil,
           font: fonts[:title][:type],
           font_color: colors[:clickable_text],
+          font_hover_color: colors[:clickable_text_hover],
           game: self,
           height: player_inspector_button_height,
           hover_color: nil,
@@ -2269,10 +2542,10 @@ module Monopoly
 
       self.current_tile = self.focused_tile = tiles[0]
 
-      self.messages = []
+      self.event_history = []
 
       self.turn = 1
-      add_message('Turn 1...')
+      log_event('Turn 1 began.')
 
       self.die_a = 1
       self.die_b = 1
@@ -2294,11 +2567,13 @@ module Monopoly
       self.player_inspector_utility_groups =
         ScrollingList.new(items: utility_groups.values, view_size: 1)
       self.drawing_compass_menu = true
+      self.drawing_game_menu = true
       self.drawing_player_menu = true
       self.next_players = ScrollingList.new(items: players[1..-1], view_size: 4)
       self.visible_buttons = [buttons[:roll_dice_for_move]]
       self.visible_card_menu_buttons = []
       self.visible_deed_menu_buttons = []
+      self.visible_event_history_menu_buttons = []
       self.visible_group_menu_buttons = []
       self.visible_player_inspector_buttons = []
       set_visible_compass_menu_buttons
@@ -2322,6 +2597,8 @@ module Monopoly
       compass_menu
       deed_menu
       dialogue_box
+      event_history_menu
+      game_menu
       group_menu
       options_menu
       player_inspector
@@ -2332,12 +2609,58 @@ module Monopoly
       end
     end
 
+    def active_buttons(x, y)
+      temp_buttons = []
+      if drawing_error_dialogue?
+        temp_buttons += error_dialogue_buttons.values.reverse
+
+        # Prevent clicking on buttons behind the error dialogue
+        # without preventing clicks elsewhere
+        return temp_buttons if x >= Coordinates::ERROR_DIALOGUE_LEFT_X &&
+          x < Coordinates::ERROR_DIALOGUE_RIGHT_X && y >= Coordinates::ERROR_DIALOGUE_TOP_Y &&
+          y < Coordinates::ERROR_DIALOGUE_BOTTOM_Y
+      end
+
+      if drawing_dialogue_box?
+        temp_buttons += dialogue_box_buttons.values
+      else
+        temp_buttons = [buttons[:options]]
+        temp_buttons += options_menu_buttons.values.reverse if drawing_options_menu?
+
+        if drawing_event_history_menu?
+          temp_buttons += visible_event_history_menu_buttons.reverse
+        elsif drawing_group_menu?
+          temp_buttons += visible_group_menu_buttons.reverse
+        elsif drawing_deed_menu?
+          temp_buttons += visible_deed_menu_buttons.reverse
+        elsif drawing_player_inspector?
+          temp_buttons += visible_player_inspector_buttons.reverse
+        else
+          temp_buttons +=
+            (drawing_card_menu? ? visible_card_menu_buttons : visible_tile_menu_buttons).reverse
+
+          temp_buttons += visible_player_menu_buttons.reverse if drawing_player_menu?
+          temp_buttons += visible_compass_menu_buttons.reverse if drawing_compass_menu?
+          temp_buttons += game_menu_buttons.values.reverse if drawing_game_menu?
+
+          temp_buttons += visible_buttons.reverse
+        end
+      end
+
+      temp_buttons
+    end
+
     def building_sell_percentage
       DEFAULT_BUILDING_SELL_PERCENTAGE
     end
 
+    def drawing_error_dialogue?
+      !error_ticks.nil?
+    end
+
     def drawing_pop_up_menu?
-      drawing_deed_menu? || drawing_group_menu? || drawing_player_inspector?
+      drawing_deed_menu? || drawing_event_history_menu? || drawing_group_menu? ||
+        drawing_player_inspector?
     end
 
     def button_down(id)
@@ -2357,7 +2680,7 @@ module Monopoly
       when Gosu::KB_B
         if ctrl_cmd_down?
           return_new_card if current_card
-          close_popup_menus
+          close_pop_up_menus
           toggle_dialogue_box if drawing_dialogue_box?
           move(spaces: -1, collect: false)
           land
@@ -2367,7 +2690,7 @@ module Monopoly
       when Gosu::KB_R
         if ctrl_cmd_down?
           return_new_card if current_card
-          close_popup_menus
+          close_pop_up_menus
           toggle_dialogue_box if drawing_dialogue_box?
           land
         end
@@ -2376,7 +2699,7 @@ module Monopoly
       when Gosu::KB_N
         if ctrl_cmd_down?
           return_new_card if current_card
-          close_popup_menus
+          close_pop_up_menus
           toggle_dialogue_box if drawing_dialogue_box?
           move(spaces: 1, collect: false)
           land
@@ -2462,32 +2785,7 @@ module Monopoly
     end
 
     def handle_click(x, y)
-      buttons_to_check =
-        if drawing_dialogue_box?
-          dialogue_box_buttons.values
-        else
-          temp_buttons_to_check = [buttons[:options]]
-          temp_buttons_to_check += options_menu_buttons.values.reverse if drawing_options_menu?
-          if drawing_group_menu?
-            temp_buttons_to_check += visible_group_menu_buttons.reverse
-          elsif drawing_deed_menu?
-            temp_buttons_to_check += visible_deed_menu_buttons.reverse
-          elsif drawing_player_inspector?
-            temp_buttons_to_check += visible_player_inspector_buttons.reverse
-          else
-            temp_buttons_to_check +=
-              (drawing_card_menu? ? visible_card_menu_buttons : visible_tile_menu_buttons).reverse
-
-            temp_buttons_to_check += visible_player_menu_buttons.reverse if drawing_player_menu?
-            temp_buttons_to_check += visible_compass_menu_buttons.reverse if drawing_compass_menu?
-
-            temp_buttons_to_check += visible_buttons.reverse
-          end
-
-          temp_buttons_to_check
-        end
-
-      buttons_to_check.each do |button|
+      active_buttons(x, y).each do |button|
         if button.within?(x, y)
           button.perform_actions
           break
@@ -2501,6 +2799,12 @@ module Monopoly
 
     def jail_time
       DEFAULT_JAIL_TIME
+    end
+
+    def log_event(event)
+      text = event.tr("\n", '')
+      puts(text)
+      event_history.unshift(text: text, time: Time.now).slice!(EVENT_HISTORY_LIMIT..-1)
     end
 
     def max_house_count

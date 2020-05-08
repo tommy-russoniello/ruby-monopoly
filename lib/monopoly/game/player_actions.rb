@@ -8,28 +8,21 @@ module Monopoly
       end
 
       def build_house(tile = focused_tile)
-        if !tile.is_a?(StreetTile) || tile.owner != current_player
-          add_message('Invalid tile to build house on.')
-        end
+        return display_error('Invalid tile to build house on.') if !tile.is_a?(StreetTile) ||
+          tile.owner != current_player
 
         if !tile.group.monopolized?
-          add_message(
-            "#{current_player.name} must have a monopoly on the #{tile.group.singular_name} " \
+          display_error(
+            "You must have a monopoly on the #{tile.group.singular_name} " \
             "color group before building a house on #{tile.name}."
           )
           return
         elsif current_player.money < tile.group.house_cost
-          add_message(
-            "#{current_player.name} does not have enough money to build a house on #{tile.name}."
-          )
-          return
+          return display_error("You don't have enough money to build a house on #{tile.name}.")
         elsif tile.house_count >= max_house_count
-          add_message("#{tile.name} cannot have anymore houses built on it.")
-          return
+          return display_error("You can't build anymore houses on #{tile.name}.")
         elsif tile.mortgaged?
-          add_message(
-            "Houses cannot be built on #{tile.name} as it is currently mortgaged."
-          )
+          display_error("You can't build houses on #{tile.name} because it is currently mortgaged.")
           return
         end
 
@@ -39,12 +32,15 @@ module Monopoly
 
         unless related_tiles_with_less_houses.empty?
           if related_tiles_with_less_houses.size == 1
-            add_message("Must build a house on #{related_tiles_with_less_houses.first.name} first.")
+            display_error(
+              "You must build a house on #{related_tiles_with_less_houses.first.name} first."
+            )
           else
             last_tile = related_tiles_with_less_houses.pop
-            add_message(
-              "Must build a house on #{related_tiles_with_less_houses.map(&:name).join(', ')} " \
-              "and #{last_tile.name} first."
+            display_error(
+              'You must build a house on ' \
+              "#{related_tiles_with_less_houses.map(&:name).join(', ')} and " \
+              "#{last_tile.name} first."
             )
           end
 
@@ -59,26 +55,22 @@ module Monopoly
         set_visible_player_menu_buttons
         set_visible_group_menu_buttons if drawing_group_menu?
 
-        add_message(
+        log_event(
           "#{current_player.name} built a house on #{tile.name} for " \
           "#{format_money(house_cost)}."
         )
       end
 
       def buy
-        unless current_player.money >= current_tile.purchase_price
-          add_message(
-            "#{current_player.name} does not have enough money to purchase this property."
-          )
-          return
-        end
+        return display_error('You don\'t have enough money to purchase this property.') unless
+          current_player.money >= current_tile.purchase_price
 
         current_player.subtract_money(current_tile.purchase_price, :properties)
         current_tile.owner = current_player
         current_player.properties += [current_tile]
         current_player.properties.sort_by! { |tile| tile_indexes[tile] }
 
-        add_message(
+        log_event(
           "#{current_player.name} bought #{current_tile.name} for " \
           "#{format_money(current_tile.purchase_price)}."
         )
@@ -86,6 +78,10 @@ module Monopoly
         set_visible_tile_menu_buttons
         set_visible_player_menu_buttons
         update_visible_buttons(:end_turn)
+      end
+
+      def close_error_dialogue
+        self.error_ticks = nil
       end
 
       def draw_card
@@ -100,7 +96,7 @@ module Monopoly
         increment_current_player
         if current_player.number <= previous_player_number
           self.turn += 1
-          add_message("Turn #{turn}...")
+          log_event("Turn #{turn} began.")
         end
 
         self.previous_player_number = current_player.number
@@ -110,14 +106,10 @@ module Monopoly
           current_player.jail_turns -= 1
           new_visible_buttons = %i[end_turn]
           if current_player.in_jail?
-            add_message(
-              "#{current_player.name} has #{current_player.jail_turns} turn" \
-              "#{'s' if current_player.jail_turns > 1} left in jail."
-            )
             new_visible_buttons << :use_get_out_of_jail_free_card if
               current_player.cards.any? { |card| card.is_a?(GetOutOfJailFreeCard) }
           else
-            add_message("#{current_player.name} is out of jail.")
+            log_event("#{current_player.name} got out of jail.")
           end
 
           set_visible_tile_menu_buttons
@@ -133,7 +125,7 @@ module Monopoly
       end
 
       def forfeit
-        close_popup_menus
+        close_pop_up_menus
         toggle_options_menu if drawing_options_menu?
         return_new_card if current_card
         eliminate_player(current_player)
@@ -152,20 +144,19 @@ module Monopoly
       end
 
       def mortgage(tile = focused_tile)
-        if !tile.is_a?(PropertyTile) || tile.owner != current_player
-          add_message('Invalid tile to mortgage.')
-        end
+        return display_error('Invalid tile to mortgage.') if !tile.is_a?(PropertyTile) ||
+          tile.owner != current_player
 
         if tile.is_a?(StreetTile)
           if tile.is_a?(StreetTile) && tile.house_count.positive?
-            add_message("The houses on #{tile.name} must be sold before it can be mortgaged.")
+            display_error("You must sell the houses on #{tile.name} before it can be mortgaged.")
             return
           end
         end
 
         tile.mortgaged = true
         current_player.add_money(tile.mortgage_cost, :mortgages)
-        add_message(
+        log_event(
           "#{current_player.name} mortgaged #{tile.name} for #{format_money(tile.mortgage_cost)}."
         )
 
@@ -202,7 +193,7 @@ module Monopoly
       def roll_dice
         self.die_a = roll_die
         self.die_b = roll_die
-        add_message("#{current_player.name} has rolled #{die_a + die_b} (#{die_a}, #{die_b}).")
+        log_event("#{current_player.name} rolled #{die_a + die_b} (#{die_a}, #{die_b}).")
       end
 
       def save_game
@@ -210,14 +201,10 @@ module Monopoly
       end
 
       def sell_house(tile = focused_tile)
-        if !tile.is_a?(StreetTile) || tile.owner != current_player
-          add_message('Invalid tile to sell house from.')
-        end
+        return display_error('Invalid tile to sell house from.') if !tile.is_a?(StreetTile) ||
+          tile.owner != current_player
 
-        if tile.house_count < 1
-          add_message("#{tile.name} has no houses on it to sell.")
-          return
-        end
+        return display_error("#{tile.name} has no houses on it to sell.") if tile.house_count < 1
 
         related_tiles_with_more_houses = tile.group.tiles.select do |related_tile|
           related_tile.house_count > tile.house_count
@@ -225,13 +212,14 @@ module Monopoly
 
         unless related_tiles_with_more_houses.empty?
           if related_tiles_with_more_houses.size == 1
-            add_message(
-              "Must sell a house from #{related_tiles_with_more_houses.first.name} first."
+            display_error(
+              "You must sell a house from #{related_tiles_with_more_houses.first.name} first."
             )
           else
             last_tile = related_tiles_with_more_houses.pop
-            add_message(
-              "Must sell a house from #{related_tiles_with_more_houses.map(&:name).join(', ')} " \
+            display_error(
+              'You must sell a house from ' \
+              "#{related_tiles_with_more_houses.map(&:name).join(', ')} " \
               "and #{last_tile.name} first."
             )
           end
@@ -247,7 +235,7 @@ module Monopoly
         set_visible_player_menu_buttons
         set_visible_group_menu_buttons if drawing_group_menu?
 
-        add_message(
+        log_event(
           "#{current_player.name} sold a house from #{tile.name} for " \
           "#{format_money(house_sell_price)}."
         )
@@ -263,7 +251,7 @@ module Monopoly
         if drawing_deed_menu?
           self.deed_rent_line_index = 1
         else
-          close_popup_menus
+          close_pop_up_menus
           set_visible_deed_menu_buttons
         end
 
@@ -283,11 +271,22 @@ module Monopoly
         self.drawing_dialogue_box = !drawing_dialogue_box
       end
 
+      def toggle_event_history_menu
+        if drawing_event_history_menu?
+          self.event_history_view = nil
+        else
+          self.event_history_view = ScrollingList.new(items: event_history, view_size: 10)
+          set_visible_event_history_menu_buttons
+        end
+
+        self.drawing_event_history_menu = !drawing_event_history_menu
+      end
+
       def toggle_group_menu(tiles = nil)
         if drawing_group_menu?
           self.group_menu_tiles.items = []
         else
-          close_popup_menus
+          close_pop_up_menus
           self.group_menu_tiles.items = (tiles || focused_tile.group.tiles)
           set_visible_group_menu_buttons
         end
@@ -332,7 +331,7 @@ module Monopoly
           self.inspected_player = nil
           self.player_inspector_show_stats = false
         else
-          close_popup_menus
+          close_pop_up_menus
           set_visible_player_inspector_buttons(refresh: true)
         end
 
@@ -340,20 +339,15 @@ module Monopoly
       end
 
       def unmortgage(tile = focused_tile)
-        if !tile.is_a?(PropertyTile) || tile.owner != current_player
-          add_message('Invalid tile to unmortgage.')
-        end
+        return display_error('Invalid tile to unmortgage.') if !tile.is_a?(PropertyTile) ||
+          tile.owner != current_player
 
-        unless current_player.money >= tile.unmortgage_cost
-          add_message(
-            "#{current_player.name} does not have enough money to unmortgage this property."
-          )
-          return
-        end
+        return display_error('You don\'t have enough money to unmortgage this property.') unless
+          current_player.money >= tile.unmortgage_cost
 
         current_player.subtract_money(tile.unmortgage_cost, :mortgages)
         tile.mortgaged = false
-        add_message(
+        log_event(
           "#{current_player.name} payed #{format_money(tile.unmortgage_cost)} to " \
           "unmortgage #{tile.name}."
         )

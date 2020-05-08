@@ -21,14 +21,16 @@ module Monopoly
     attr_reader :height
     attr_accessor :hover_color
     attr_accessor :hover_highlight_color
-    attr_accessor :hover_image
-    attr_accessor :image
+    attr_reader :hover_image
+    attr_reader :hover_image_height
+    attr_reader :hover_image_width
+    attr_reader :image
     attr_accessor :image_background_color
     attr_accessor :image_background_hover_color
-    attr_accessor :image_height
+    attr_reader :image_height
     attr_accessor :image_position_x
     attr_accessor :image_position_y
-    attr_accessor :image_width
+    attr_reader :image_width
     attr_reader :image_x
     attr_reader :image_y
     attr_accessor :maximum_font_size
@@ -59,6 +61,8 @@ module Monopoly
       hover_color: DEFAULT_HOVER_COLOR,
       hover_highlight_color: nil,
       hover_image: nil,
+      hover_image_height: nil,
+      hover_image_width: nil,
       image: nil,
       image_background_color: nil,
       image_background_hover_color: nil,
@@ -90,14 +94,16 @@ module Monopoly
       self.height = height
       self.hover_color = hover_color
       self.hover_highlight_color = hover_highlight_color
-      self.hover_image = hover_image
-      self.image = image
+      @hover_image = hover_image
+      self.hover_image_height = hover_image_height
+      self.hover_image_width ||= hover_image_width
+      @image = image
       self.image_background_color = image_background_color
       self.image_background_hover_color = image_background_color
       self.image_height = image_height
       self.image_position_x = image_position_x
       self.image_position_y = image_position_y
-      self.image_width = image_width
+      self.image_width ||= image_width
       self.text_position_x = text_position_x
       self.text_position_y = text_position_y
       self.text_relative_position_x = text_relative_position_x
@@ -105,9 +111,36 @@ module Monopoly
       self.text_relative_width = text_relative_width
       self.width = width
 
+      @hover_image_height ||= @image_height
+      @hover_image_width ||= @image_width
+
       update_coordinates(x: x, y: y, z: z)
 
       self.text = text
+    end
+
+    %i[height width].each do |attribute|
+      define_method(:"#{attribute}=") do |value|
+        instance_variable_set(:"@#{attribute}", value&.round)
+        self.text = text
+        update_coordinates
+        send(attribute)
+      end
+    end
+
+    %i[
+      image_position_x
+      image_position_y
+      text_position_x
+      text_position_y
+      text_relative_width
+    ].each do |attribute|
+      define_method(:"#{attribute}=") do |value|
+        instance_variable_set(:"@#{attribute}", value)
+        self.text = text
+        update_coordinates
+        send(attribute)
+      end
     end
 
     def actions=(value)
@@ -121,8 +154,8 @@ module Monopoly
         draw_image_background(hover: true) if image_background_hover_color
 
         hover_image&.draw(
-          draw_height: image_height,
-          draw_width: image_width,
+          draw_height: hover_image_height,
+          draw_width: hover_image_width,
           from_center: true,
           x: image_x,
           y: image_y,
@@ -178,38 +211,73 @@ module Monopoly
       font
     end
 
-    %i[height width].each do |attribute|
-      define_method(:"#{attribute}=") do |value|
-        instance_variable_set(:"@#{attribute}", value&.round)
-        self.text = text
-        update_coordinates
-        send(attribute)
+    def hover_image=(value)
+      @hover_image = value
+      if hover_image_height
+        self.hover_image_height = hover_image_height unless hover_image_width
+      elsif hover_image_width
+        self.hover_image_width = hover_image_width
       end
+
+      hover_image
     end
 
-    %i[
-      image_position_x
-      image_position_y
-      text_position_x
-      text_position_y
-      text_relative_width
-    ].each do |attribute|
-      define_method(:"#{attribute}=") do |value|
-        instance_variable_set(:"@#{attribute}", value)
-        self.text = text
-        update_coordinates
-        send(attribute)
-      end
+    def hover_image_height=(value)
+      @hover_image_height = value&.round
+      @hover_image_width ||= hover_image.width * (hover_image_height / hover_image.height.to_f) if
+        hover_image && hover_image_height
+      hover_image_height
     end
 
-    def maximize_image_in_square(size)
-      return unless image
+    def hover_image_width=(value)
+      @hover_image_width = value&.round
+      @hover_image_height ||= hover_image.height * (hover_image_width / hover_image.width.to_f) if
+        hover_image && hover_image_width
+      hover_image_width
+    end
 
-      self.image_height = self.image_width = nil
-      if image.height > image.width
-        self.image_height = size
+    def image=(value)
+      @image = value
+      if image_height
+        self.image_height = image_height unless image_width
+      elsif image_width
+        self.image_width = image_width
+      end
+
+      image
+    end
+
+    def image_height=(value)
+      @image_height = value&.round
+      @image_width ||= (image.width * (image_height / image.height.to_f)).round if image &&
+        image_height
+      image_height
+    end
+
+    def image_width=(value)
+      @image_width = value&.round
+      @image_height ||= (image.height * (image_width / image.width.to_f)).round if image &&
+        image_width
+      image_width
+    end
+
+    def maximize_images_in_square(size)
+      if image
+        self.image_height = self.image_width = nil
+        if image.height > image.width
+          self.image_height = size
+        else
+          self.image_width = size
+        end
+      end
+
+      return unless hover_image
+
+      self.hover_image_height = self.hover_image_width = nil
+      if hover_image.height > hover_image.width
+        self.hover_image_height = size
       else
-        self.image_width = size
+        self.hover_image_width = size
       end
     end
 
@@ -218,25 +286,33 @@ module Monopoly
     end
 
     def perform_image_animation(animation_type, animation_args)
-      animation_args = animation_args.merge(
+      animation_args = animation_args.merge(x: image_x, y: image_y, z: z)
+
+      hover_image&.perform_animation(
+        animation_type,
+        draw_height: hover_image_height,
+        draw_width: hover_image_width,
+        **animation_args
+      )
+      image&.perform_animation(
+        animation_type,
         draw_height: image_height,
         draw_width: image_width,
-        x: image_x,
-        y: image_y,
-        z: z
+        **animation_args
       )
-
-      hover_image&.perform_animation(animation_type, **animation_args)
-      image&.perform_animation(animation_type, **animation_args)
     end
 
     def text=(value)
       @text = value
       return text unless font && maximum_font_size && width && text_relative_width
 
-      # Find maximum font size (between set maximum and minimum)
-      # usable while still fitting text on button
-      font_size = (MINIMUM_FONT_SIZE..maximum_font_size)
+      # Find maximum font size (between set maximum and minimum) usable while still fitting
+      # text on the button. Try skipping the binary search by checking the maximum
+      # size first as this is the most common case.
+      font_size = maximum_font_size if
+        Gosu::Font.new(maximum_font_size).text_width(text) < (width * text_relative_width) - 5
+
+      font_size ||= (MINIMUM_FONT_SIZE...maximum_font_size)
         .to_a
         .reverse
         .bsearch do |size|
@@ -282,23 +358,18 @@ module Monopoly
     end
 
     def draw_image_background(hover: false)
-      color_to_draw, image_drawn =
-        hover ? [image_background_hover_color, hover_image] : [image_background_color, image]
-
-      if image_height
-        draw_height = image_height
-        draw_width =
-          image_width ? image_width : image_drawn.width * (image_height / image_drawn.height.to_f)
-      elsif image_width
-        draw_width = image_width
-        draw_height = image_drawn.height * (image_width / image_drawn.width.to_f)
-      end
+      color_to_draw, drawn_height, drawn_width =
+        if hover
+          [image_background_hover_color, hover_image_height, hover_image_width]
+        else
+          [image_background_color, image_height, image_width]
+        end
 
       Gosu.draw_rect(
         color: color_to_draw,
         from_center: true,
-        height: draw_height,
-        width: draw_width,
+        height: drawn_height,
+        width: drawn_width,
         x: image_x,
         y: image_y,
         z: z
@@ -347,6 +418,8 @@ module Monopoly
       hover_highlight_color: nil,
       hover_color: DEFAULT_HOVER_COLOR,
       hover_image: nil,
+      hover_image_height: nil,
+      hover_image_width: nil,
       image: nil,
       image_background_color: nil,
       image_background_hover_color: nil,
@@ -378,18 +451,23 @@ module Monopoly
       self.font_hover_color = font_hover_color || font_color
       self.hover_highlight_color = hover_highlight_color
       self.hover_color = hover_color
-      self.hover_image = hover_image
-      self.image = image
+      @hover_image = hover_image
+      self.hover_image_height = hover_image_height
+      self.hover_image_width ||= hover_image_width
+      @image = image
       self.image_background_color = image_background_color
       self.image_background_hover_color = image_background_hover_color
       self.image_height = image_height
       self.image_position_x = image_position_x
       self.image_position_y = image_position_y
-      self.image_width = image_width
+      self.image_width ||= image_width
       self.text_position_x = text_position_x
       self.text_position_y = text_position_y
       self.text_relative_position_x = text_relative_position_x
       self.text_relative_position_y = text_relative_position_y
+
+      @hover_image_height ||= @image_height
+      @hover_image_width ||= @image_width
 
       update_coordinates(x: x, y: y, z: z)
 
