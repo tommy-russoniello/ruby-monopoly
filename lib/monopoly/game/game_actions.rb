@@ -39,6 +39,7 @@ module Monopoly
         toggle_event_history_menu if drawing_event_history_menu?
         toggle_group_menu if drawing_group_menu?
         toggle_player_inspector if drawing_player_inspector?
+        toggle_player_list_menu if drawing_player_list_menu?
       end
 
       def collect_go_money(times_passed_go, player: current_player)
@@ -72,7 +73,9 @@ module Monopoly
         end
 
         player.cards = []
-        players.delete(player)
+        player.money = 0
+        player.eliminated = true
+        eliminated_players << players.delete(player)
         if player == (current_player_cache || current_player)
           self.current_player_index =
             current_player_index == 0 ? players.size - 1 : current_player_index - 1

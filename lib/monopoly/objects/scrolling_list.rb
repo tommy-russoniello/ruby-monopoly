@@ -1,5 +1,7 @@
 module Monopoly
   class ScrollingList
+    attr_reader :view_size
+
     def initialize(items:, view_size:)
       @view_size = view_size
       self.items = items

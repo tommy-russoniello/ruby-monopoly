@@ -308,7 +308,7 @@ module Monopoly
             options_menu_buttons.values.last.y + options_menu_buttons.values.last.height
 
           self.options_menu_bar_paramaters = {
-            color: colors[:options_menu_background],
+            color: colors[:pop_up_menu_border],
             height: bottom_of_last_option_button_y - bottom_of_options_menu_button_y,
             width:
               options_button.x - options_menu_buttons.values.first.x + options_button.width + 1,
@@ -316,8 +316,8 @@ module Monopoly
             y: options_menu_buttons.values.first.y - 1,
             z: ZOrder::POP_UP_MENU_UI
           }
-          options_button.color = colors[:options_menu_background]
-          options_button.hover_color = colors[:options_menu_background]
+          options_button.color = colors[:pop_up_menu_border]
+          options_button.hover_color = colors[:pop_up_menu_border]
 
           options_button.perform_image_animation(:spin, counterclockwise: true,
             length: ticks_for_seconds(0.25), times: 0.25)
@@ -336,6 +336,19 @@ module Monopoly
         end
 
         self.drawing_player_inspector = !drawing_player_inspector
+      end
+
+      def toggle_player_list_menu(given_players = nil)
+        if drawing_player_list_menu?
+          self.player_list_menu_players.items = []
+        else
+          close_pop_up_menus
+          self.player_list_menu_players.items = given_players ||
+            (players + eliminated_players).sort_by(&:number)
+          set_visible_player_list_menu_buttons
+        end
+
+        self.drawing_player_list_menu = !drawing_player_list_menu
       end
 
       def unmortgage(tile = focused_tile)

@@ -41,9 +41,11 @@ module Monopoly
     attr_accessor :drawing_group_menu
     attr_accessor :drawing_options_menu
     attr_accessor :drawing_player_inspector
+    attr_accessor :drawing_player_list_menu
     attr_accessor :drawing_player_menu
     attr_accessor :draw_mouse_x
     attr_accessor :draw_mouse_y
+    attr_accessor :eliminated_players
     attr_accessor :error_dialogue_buttons
     attr_accessor :error_dialogue_data
     attr_accessor :error_ticks
@@ -67,6 +69,9 @@ module Monopoly
     attr_accessor :player_inspector_railroad_groups
     attr_accessor :player_inspector_show_stats
     attr_accessor :player_inspector_utility_groups
+    attr_accessor :player_list_menu_buttons
+    attr_accessor :player_list_menu_data
+    attr_accessor :player_list_menu_players
     attr_accessor :player_menu_buttons
     attr_accessor :player_menu_data
     attr_accessor :player_menu_color_groups
@@ -81,6 +86,7 @@ module Monopoly
     attr_accessor :tile_count
     attr_accessor :tile_indexes
     attr_accessor :tile_menu_buttons
+    attr_accessor :tile_menu_data
     attr_accessor :tiles
     attr_accessor :turn
     attr_accessor :utility_groups
@@ -92,6 +98,7 @@ module Monopoly
     attr_accessor :visible_event_history_menu_buttons
     attr_accessor :visible_group_menu_buttons
     attr_accessor :visible_player_inspector_buttons
+    attr_accessor :visible_player_list_menu_buttons
     attr_accessor :visible_player_menu_buttons
     attr_accessor :visible_tile_menu_buttons
 
@@ -120,7 +127,6 @@ module Monopoly
         monopoly_button_background_hover: Gosu::Color.new(100, 42, 133, 44),
         neutral_blue: Gosu::Color.new(255, 36, 72, 130),
         neutral_yellow: Gosu::Color.new(255, 198, 201, 0),
-        options_menu_background: Gosu::Color.new(255, 14, 58, 61),
         options_menu_button: Gosu::Color.new(255, 153, 153, 153),
         options_menu_button_hover: Gosu::Color.new(255, 95, 95, 95),
         pop_up_menu_background: Gosu::Color.new(255, 39, 138, 134),
@@ -172,7 +178,6 @@ module Monopoly
         jail_cell: 'user_interface/jail_cell.png',
         key: 'user_interface/key.png',
         list: 'user_interface/list.png',
-        list_hover: 'user_interface/list_hover.png',
         message: 'user_interface/message.png',
         mortgage: 'user_interface/mortgage.png',
         mortgage_hover: 'user_interface/mortgage_hover.png',
@@ -180,6 +185,7 @@ module Monopoly
         no_key: 'user_interface/no_key.png',
         options_gear: 'user_interface/options_gear.png',
         options_gear_hover: 'user_interface/options_gear_hover.png',
+        people: 'user_interface/people.png',
         pinpoint: 'user_interface/pinpoint.png',
         sell_house: 'user_interface/sell_house.png',
         sell_house_hover: 'user_interface/sell_house_hover.png',
@@ -587,6 +593,7 @@ module Monopoly
         y: Coordinates::MORTGAGE_LOCK_Y,
         z: ZOrder::MAIN_UI
       }
+      tile_menu_back_button_radius = 30
 
       self.tile_menu_buttons = {
         back: CircularButton.new(
@@ -596,10 +603,10 @@ module Monopoly
           hover_color: colors[:neutral_blue],
           hover_image: Image.new(images[:back]),
           image: Image.new(images[:back]),
-          image_height: 42,
-          radius: 30,
-          x: Coordinates::BACK_TO_CURRENT_TILE_BUTTON_X,
-          y: Coordinates::BACK_TO_CURRENT_TILE_BUTTON_Y,
+          image_height: tile_menu_back_button_radius * 1.4,
+          radius: tile_menu_back_button_radius,
+          x: 0,
+          y: 0,
           z: ZOrder::MAIN_UI
         ),
         build_house: build_house_buttons,
@@ -725,6 +732,21 @@ module Monopoly
           y: Coordinates::BUY_BUTTON_Y + ((DEFAULT_TILE_BUTTON_HEIGHT + TILE_BUTTON_GAP) * 2),
           z: ZOrder::MAIN_UI
         ),
+        show_players: CircularButton.new(
+          actions: proc do
+            toggle_player_list_menu(players.select { |player| player.tile == focused_tile })
+          end,
+          color: colors[:tile_button],
+          game: self,
+          hover_color: colors[:tile_button_hover],
+          hover_image: Image.new(images[:people]),
+          image: Image.new(images[:people]),
+          image_height: DEFAULT_TILE_BUTTON_HEIGHT / 2,
+          radius: DEFAULT_TILE_BUTTON_HEIGHT / 2,
+          x: 0,
+          y: 0,
+          z: ZOrder::MAIN_UI
+        ),
         unmortgage: Button.new(
           mortgage_lock_button_options.merge(
             actions: :unmortgage,
@@ -732,6 +754,38 @@ module Monopoly
             image: Image.new(images[:unmortgage])
           )
         )
+      }
+
+      self.tile_menu_data = {
+        back: {
+          corner: {
+            x: Coordinates::BACK_TO_CURRENT_TILE_BUTTON_X +
+              (Coordinates::TILE_HEIGHT - Coordinates::TILE_WIDTH) / 2,
+            y: Coordinates::BUY_BUTTON_Y -
+              ((DEFAULT_TILE_BUTTON_HEIGHT / 2) - tile_menu_back_button_radius)
+          },
+          middle: {
+            x: Coordinates::BACK_TO_CURRENT_TILE_BUTTON_X,
+            y: Coordinates::BACK_TO_CURRENT_TILE_BUTTON_Y
+          }
+        },
+        show_players: {
+          corner: {
+            x: Coordinates::BUY_BUTTON_X -
+              (Coordinates::TILE_HEIGHT - Coordinates::TILE_WIDTH) / 2,
+            y: Coordinates::BUY_BUTTON_Y
+          },
+          middle: {
+            non_property: {
+              x: Coordinates::BUY_BUTTON_X,
+              y: Coordinates::BUY_BUTTON_Y,
+            },
+            property: {
+              x: Coordinates::BUY_BUTTON_X,
+              y: Coordinates::BUY_BUTTON_Y + ((DEFAULT_TILE_BUTTON_HEIGHT + TILE_BUTTON_GAP) * 3),
+            }
+          }
+        }
       }
 
       group_menu_tile_button_options = {
@@ -1276,11 +1330,12 @@ module Monopoly
         [
           number,
           Button.new(
-            actions: proc { display_tile(tiles[(tile_indexes[current_tile] + number) % tile_count]) },
+            actions:
+              proc { display_tile(tiles[(tile_indexes[current_tile] + number) % tile_count]) },
             color: nil,
             game: self,
             height: DEFAULT_TILE_BUTTON_HEIGHT,
-            hover_highlight_color: colors[:default_button_hover_highlight],
+            highlight_hover_color: colors[:default_button_hover_highlight],
             hover_color: nil,
             image_height: DEFAULT_TILE_BUTTON_HEIGHT,
             width: DEFAULT_TILE_BUTTON_HEIGHT,
@@ -1351,13 +1406,28 @@ module Monopoly
           color: nil,
           game: self,
           height: HEADER_HEIGHT,
-          hover_color: nil,
-          hover_image: Image.new(images[:list_hover]),
+          hover_color: colors[:pop_up_menu_background],
+          hover_image: Image.new(images[:list]),
           image_height: HEADER_HEIGHT * 0.6,
           image_width: HEADER_HEIGHT * 0.6,
           image: Image.new(images[:list]),
           width: HEADER_HEIGHT,
           x: Coordinates::LEFT_X,
+          y: Coordinates::TOP_Y,
+          z: ZOrder::MENU_UI
+        ),
+        player_list: Button.new(
+          actions: :toggle_player_list_menu,
+          color: nil,
+          game: self,
+          height: HEADER_HEIGHT,
+          hover_color: colors[:pop_up_menu_background],
+          hover_image: Image.new(images[:people]),
+          image_height: HEADER_HEIGHT * 0.6,
+          image_width: HEADER_HEIGHT * 0.6,
+          image: Image.new(images[:people]),
+          width: HEADER_HEIGHT,
+          x: Coordinates::LEFT_X + HEADER_HEIGHT,
           y: Coordinates::TOP_Y,
           z: ZOrder::MENU_UI
         )
@@ -1977,6 +2047,135 @@ module Monopoly
         ),
       }
 
+      player_list_menu_button_gap = DEFAULT_TILE_BUTTON_HEIGHT * 0.075
+      player_list_menu_token_y = Coordinates::PLAYER_LIST_MENU_TOP_Y +
+        (Coordinates::PLAYER_LIST_MENU_HEIGHT / 3)
+      self.player_list_menu_buttons = {
+        close: Button.new(
+          actions: :toggle_player_list_menu,
+          color: nil,
+          game: self,
+          height: 40,
+          hover_color: nil,
+          hover_image: Image.new(images[:x_hover]),
+          image: Image.new(images[:x]),
+          image_height: 40,
+          width: 40,
+          x: Coordinates::PLAYER_LIST_MENU_LEFT_X + Coordinates::PLAYER_LIST_MENU_BORDER_WIDTH + 5,
+          y: Coordinates::PLAYER_LIST_MENU_TOP_Y + Coordinates::PLAYER_LIST_MENU_BORDER_WIDTH + 5,
+          z: ZOrder::POP_UP_MENU_UI
+        ),
+        left: CircularButton.new(
+          actions: [
+            proc do
+              player_list_menu_players.shift_back
+              set_visible_player_list_menu_buttons if drawing_player_list_menu?
+            end
+          ],
+          color: colors[:tile_button],
+          game: self,
+          hover_color: colors[:tile_button],
+          hover_image: Image.new(images[:arrow_left_hover]),
+          image: Image.new(images[:arrow_left]),
+          image_height: DEFAULT_TILE_BUTTON_HEIGHT * 0.3,
+          radius: DEFAULT_TILE_BUTTON_HEIGHT * 0.2,
+          x: Coordinates::PLAYER_LIST_MENU_LEFT_X + Coordinates::PLAYER_LIST_MENU_BORDER_WIDTH +
+            player_list_menu_button_gap + (DEFAULT_TILE_BUTTON_HEIGHT * 0.2),
+          y: (Coordinates::PLAYER_LIST_MENU_BOTTOM_Y + Coordinates::PLAYER_LIST_MENU_TOP_Y) / 2,
+          z: ZOrder::POP_UP_MENU_UI
+        ),
+        right: CircularButton.new(
+          actions: [
+            proc do
+              player_list_menu_players.shift_forward
+              set_visible_player_list_menu_buttons if drawing_player_list_menu?
+            end
+          ],
+          color: colors[:tile_button],
+          game: self,
+          hover_color: colors[:tile_button],
+          hover_image: Image.new(images[:arrow_right_hover]),
+          image: Image.new(images[:arrow_right]),
+          image_height: DEFAULT_TILE_BUTTON_HEIGHT * 0.3,
+          radius: DEFAULT_TILE_BUTTON_HEIGHT * 0.2,
+          x: Coordinates::PLAYER_LIST_MENU_RIGHT_X - Coordinates::PLAYER_LIST_MENU_BORDER_WIDTH -
+            player_list_menu_button_gap - (DEFAULT_TILE_BUTTON_HEIGHT * 0.2),
+          y: (Coordinates::PLAYER_LIST_MENU_BOTTOM_Y + Coordinates::PLAYER_LIST_MENU_TOP_Y) / 2,
+          z: ZOrder::POP_UP_MENU_UI
+        ),
+        players: (0...8).map do |number|
+          {
+            message: CircularButton.new(
+              actions: nil,
+              color: colors[:tile_button],
+              game: self,
+              hover_color: colors[:neutral_blue],
+              hover_image: Image.new(images[:message]),
+              image: Image.new(images[:message]),
+              image_height: DEFAULT_TILE_BUTTON_HEIGHT * 0.26,
+              radius: DEFAULT_TILE_BUTTON_HEIGHT * 0.35,
+              x: 0,
+              y: player_list_menu_token_y + (DEFAULT_TILE_BUTTON_HEIGHT * 1.8) +
+                (player_list_menu_button_gap * 2),
+              z: ZOrder::POP_UP_MENU_UI
+            ),
+            name: Button.new(
+              actions: nil,
+              color: nil,
+              font: fonts[:default][:type],
+              font_color: colors[:clickable_text],
+              game: self,
+              height: DEFAULT_TILE_BUTTON_HEIGHT * 0.5,
+              hover_color: nil,
+              width: DEFAULT_TILE_BUTTON_HEIGHT * 2,
+              x: 0,
+              y: player_list_menu_token_y + DEFAULT_TILE_BUTTON_HEIGHT +
+                player_list_menu_button_gap,
+              z: ZOrder::POP_UP_MENU_UI
+            ),
+            token: CircularButton.new(
+              actions: proc do
+                self.inspected_player = current_player
+                toggle_player_inspector
+              end,
+              border_color: colors[:pop_up_menu_border],
+              border_hover_color: colors[:pop_up_menu_border],
+              border_width: DEFAULT_TILE_BUTTON_BORDER_WIDTH,
+              color: colors[:pop_up_menu_background_light],
+              game: self,
+              hover_color: colors[:pop_up_menu_background_light_hover],
+              radius: DEFAULT_TILE_BUTTON_HEIGHT,
+              x: 0,
+              y: player_list_menu_token_y,
+              z: ZOrder::POP_UP_MENU_UI
+            ),
+            trade: CircularButton.new(
+              actions: nil,
+              color: colors[:tile_button],
+              game: self,
+              hover_color: colors[:neutral_yellow],
+              hover_image: Image.new(images[:handshake]),
+              image: Image.new(images[:handshake]),
+              image_height: DEFAULT_TILE_BUTTON_HEIGHT * 0.35,
+              radius: DEFAULT_TILE_BUTTON_HEIGHT * 0.35,
+              x: 0,
+              y: player_list_menu_token_y + (DEFAULT_TILE_BUTTON_HEIGHT * 1.8) +
+                (player_list_menu_button_gap * 2),
+              z: ZOrder::POP_UP_MENU_UI
+            )
+          }
+        end
+      }
+
+      self.player_list_menu_data = {
+        initial_x: Coordinates::PLAYER_LIST_MENU_LEFT_X +
+          Coordinates::PLAYER_LIST_MENU_BORDER_WIDTH + player_list_menu_button_gap +
+          (DEFAULT_TILE_BUTTON_HEIGHT * 1.475),
+        offset: (DEFAULT_TILE_BUTTON_HEIGHT * 2) + (DEFAULT_TILE_BUTTON_BORDER_WIDTH * 2) +
+          player_list_menu_button_gap
+      }
+
+
       player_menu_button_gap = PLAYER_MENU_BUTTON_HEIGHT * 0.1
       color_group_offset = PLAYER_MENU_BUTTON_HEIGHT + player_menu_button_gap
       color_group_initial_x = Coordinates::PLAYER_MENU_LEFT_X + color_group_offset
@@ -2553,6 +2752,8 @@ module Monopoly
       self.deed_data = {}
       self.deed_rent_line_index = 1
 
+      self.eliminated_players = []
+
       self.group_menu_tiles = ScrollingList.new(items: [], view_size: 4)
       self.group_menu_alt_button_positions = false
       self.player_menu_color_groups = ScrollingList.new(items: color_groups.values, view_size: 8)
@@ -2566,6 +2767,7 @@ module Monopoly
         ScrollingList.new(items: railroad_groups.values, view_size: 1)
       self.player_inspector_utility_groups =
         ScrollingList.new(items: utility_groups.values, view_size: 1)
+      self.player_list_menu_players = ScrollingList.new(items: [], view_size: 8)
       self.drawing_compass_menu = true
       self.drawing_game_menu = true
       self.drawing_player_menu = true
@@ -2576,6 +2778,7 @@ module Monopoly
       self.visible_event_history_menu_buttons = []
       self.visible_group_menu_buttons = []
       self.visible_player_inspector_buttons = []
+      self.visible_player_list_menu_buttons = []
       set_visible_compass_menu_buttons
       set_visible_tile_menu_buttons
       set_visible_player_menu_buttons
@@ -2602,6 +2805,7 @@ module Monopoly
       group_menu
       options_menu
       player_inspector
+      player_list_menu
       player_menu
     ].each do |value|
       define_method(:"drawing_#{value}?") do
@@ -2633,6 +2837,8 @@ module Monopoly
           temp_buttons += visible_group_menu_buttons.reverse
         elsif drawing_deed_menu?
           temp_buttons += visible_deed_menu_buttons.reverse
+        elsif drawing_player_list_menu?
+          temp_buttons += visible_player_list_menu_buttons.reverse
         elsif drawing_player_inspector?
           temp_buttons += visible_player_inspector_buttons.reverse
         else
@@ -2660,7 +2866,7 @@ module Monopoly
 
     def drawing_pop_up_menu?
       drawing_deed_menu? || drawing_event_history_menu? || drawing_group_menu? ||
-        drawing_player_inspector?
+        drawing_player_inspector? || drawing_player_list_menu?
     end
 
     def button_down(id)

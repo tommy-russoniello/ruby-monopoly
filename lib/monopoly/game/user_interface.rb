@@ -42,8 +42,9 @@ module Monopoly
         end
 
         # Make the error dialogue stay up for more time the longer the error message
-        self.error_ticks = ticks_for_seconds(MINIMUM_ERROR_DIALOGUE_SECONDS) +
-          compacted_lines.sum(&:length) * 2
+        self.error_ticks = ticks_for_seconds(
+          MINIMUM_ERROR_DIALOGUE_SECONDS + (0.03 * compacted_lines.sum(&:length))
+        ).round
       end
 
       def display_tile(tile)
@@ -117,6 +118,7 @@ module Monopoly
         draw_game_menu
         draw_group_menu
         draw_player_inspector
+        draw_player_list_menu
 
         draw_options_menu
         draw_dialogue_box
@@ -263,7 +265,7 @@ module Monopoly
         end
 
         coordinates = [draw_mouse_x, draw_mouse_y] unless drawing_dialogue_box?
-        error_dialogue_buttons[:close].draw(coordinates)
+        error_dialogue_buttons[:close].draw(*coordinates)
 
         self.error_ticks -= 1
         close_error_dialogue unless error_ticks.positive?
@@ -348,6 +350,31 @@ module Monopoly
         end
 
         visible_player_inspector_buttons.each { |button| button.draw(*coordinates) }
+      end
+
+      def draw_player_list_menu
+        return unless drawing_player_list_menu?
+
+        coordinates = [draw_mouse_x, draw_mouse_y] unless drawing_dialogue_box?
+
+        Gosu.draw_rect(
+          color: colors[:pop_up_menu_border],
+          height: Coordinates::PLAYER_LIST_MENU_HEIGHT,
+          width: Coordinates::PLAYER_LIST_MENU_WIDTH,
+          x: Coordinates::PLAYER_LIST_MENU_LEFT_X,
+          y: Coordinates::PLAYER_LIST_MENU_TOP_Y,
+          z: ZOrder::POP_UP_MENU_BACKGROUND
+        )
+        Gosu.draw_rect(
+          color: colors[:pop_up_menu_background],
+          height: Coordinates::PLAYER_LIST_MENU_HEIGHT - (Coordinates::PLAYER_LIST_MENU_BORDER_WIDTH * 2),
+          width: Coordinates::PLAYER_LIST_MENU_WIDTH - (Coordinates::PLAYER_LIST_MENU_BORDER_WIDTH * 2),
+          x: Coordinates::PLAYER_LIST_MENU_LEFT_X + Coordinates::PLAYER_LIST_MENU_BORDER_WIDTH,
+          y: Coordinates::PLAYER_LIST_MENU_TOP_Y + Coordinates::PLAYER_LIST_MENU_BORDER_WIDTH,
+          z: ZOrder::POP_UP_MENU_BACKGROUND
+        )
+
+        visible_player_list_menu_buttons.each { |button| button.draw(*coordinates) }
       end
 
       def draw_player_menu
@@ -614,6 +641,9 @@ module Monopoly
         player_inspector_buttons[:player_token].hover_image = inspected_player.token_image.clone
         player_inspector_buttons[:player_token].image = inspected_player.token_image.clone
         player_inspector_buttons[:player_token].maximize_images_in_square(TOKEN_HEIGHT * 2)
+        player_inspector_buttons[:player_token].highlight_color =
+          player_inspector_buttons[:player_token].highlight_hover_color =
+            inspected_player.eliminated? ? colors[:blur] : nil
         visible_player_inspector_buttons << player_inspector_buttons[:player_token]
 
         player_inspector_buttons[:player_name].text = inspected_player.name
@@ -705,9 +735,51 @@ module Monopoly
         end
 
         visible_player_inspector_buttons << player_inspector_buttons[:show_stats]
-        unless inspected_player == current_player
+        unless inspected_player == current_player || inspected_player.eliminated?
           visible_player_inspector_buttons << player_inspector_buttons[:message]
           visible_player_inspector_buttons << player_inspector_buttons[:trade]
+        end
+      end
+
+      def set_visible_player_list_menu_buttons
+        self.visible_player_list_menu_buttons = []
+
+        visible_player_list_menu_buttons << player_list_menu_buttons[:close]
+        visible_player_list_menu_buttons << player_list_menu_buttons[:left] if
+          player_list_menu_players.previous?
+        visible_player_list_menu_buttons << player_list_menu_buttons[:right] if
+          player_list_menu_players.next?
+
+        initial_offset = player_list_menu_data[:initial_x] + player_list_menu_data[:offset] *
+          ((player_list_menu_players.view_size - player_list_menu_players.items.size) / 2.0)
+
+        player_list_menu_players.items.each.with_index do |player, index|
+          buttons = player_list_menu_buttons[:players][index]
+          buttons[:token].hover_image = player.token_image.clone
+          buttons[:token].image = player.token_image.clone
+          buttons[:token].maximize_images_in_square(TOKEN_HEIGHT * 2)
+          buttons[:token].actions = proc do
+            self.inspected_player = player
+            toggle_player_inspector
+          end
+
+          x = initial_offset + (player_list_menu_data[:offset] * index)
+          buttons[:token].update_coordinates(x: x)
+          buttons[:token].highlight_color = buttons[:token].highlight_hover_color =
+            player.eliminated? ? colors[:blur] : nil
+          visible_player_list_menu_buttons << buttons[:token]
+
+          buttons[:name].text = player.name
+          buttons[:name].update_coordinates(x: x - DEFAULT_TILE_BUTTON_HEIGHT)
+          visible_player_list_menu_buttons << buttons[:name]
+
+          unless player == current_player || player.eliminated?
+            buttons[:message].update_coordinates(x: x - (DEFAULT_TILE_BUTTON_HEIGHT * 0.4))
+            visible_player_list_menu_buttons << buttons[:message]
+
+            buttons[:trade].update_coordinates(x: x + (DEFAULT_TILE_BUTTON_HEIGHT * 0.4))
+            visible_player_list_menu_buttons << buttons[:trade]
+          end
         end
       end
 
@@ -827,14 +899,25 @@ module Monopoly
       def set_visible_tile_menu_buttons
         self.visible_tile_menu_buttons = []
 
+        tile_type = focused_tile.corner? ? :corner : :middle
         if focused_tile != current_tile
-          x = Coordinates::BACK_TO_CURRENT_TILE_BUTTON_X
-          x += (Coordinates::TILE_HEIGHT - Coordinates::TILE_WIDTH) / 2 if focused_tile.corner?
-          tile_menu_buttons[:back].update_coordinates(x: x) unless tile_menu_buttons[:back].x == x
+          x, y = tile_menu_data[:back][tile_type].values_at(:x, :y)
+          tile_menu_buttons[:back].update_coordinates(x: x, y: y) unless
+            tile_menu_buttons[:back].x == x && tile_menu_buttons[:back].y == y
           visible_tile_menu_buttons << tile_menu_buttons[:back]
         end
 
         visible_tile_menu_buttons << tile_menu_buttons[:show_card] if current_card
+
+        if players.count { |player| player.tile == focused_tile }.positive?
+          data = tile_menu_data[:show_players][tile_type]
+          data = data[focused_tile.is_a?(PropertyTile) ? :property : :non_property] if
+            tile_type == :middle
+          x, y = data.values_at(:x, :y)
+          tile_menu_buttons[:show_players].update_coordinates(x: x, y: y) unless
+            tile_menu_buttons[:show_players].x == x && tile_menu_buttons[:show_players].y == y
+          visible_tile_menu_buttons << tile_menu_buttons[:show_players]
+        end
 
         return unless focused_tile.is_a?(PropertyTile)
 

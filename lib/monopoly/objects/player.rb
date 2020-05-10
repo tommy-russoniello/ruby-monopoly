@@ -1,6 +1,7 @@
 module Monopoly
   class Player
     attr_accessor :cards
+    attr_accessor :eliminated
     attr_accessor :game
     attr_accessor :jail_turns
     attr_accessor :money
@@ -46,6 +47,10 @@ module Monopoly
     def add_money(amount, reason)
       self.money += amount
       stats[:money_gained][reason] += amount
+    end
+
+    def eliminated?
+      eliminated
     end
 
     def has_assets_for?(amount)
