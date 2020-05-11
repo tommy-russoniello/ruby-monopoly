@@ -206,11 +206,53 @@ module Monopoly
           singular_name: 'Brown'
         ),
         light_blue: ColorGroup.new(
+          color: Gosu::Color.new(255, 170, 224, 250),
+          image: Image.new(images[:blank_street_tile]),
+          house_cost: 50,
+          plural_name: 'Light Blues',
+          singular_name: 'Light Blue'
+        ),
+        pink: ColorGroup.new(
+          color: Gosu::Color.new(255, 217, 58, 150),
+          image: Image.new(images[:blank_street_tile]),
+          house_cost: 100,
+          plural_name: 'Pinks',
+          singular_name: 'Pink'
+        ),
+        orange: ColorGroup.new(
+          color: Gosu::Color.new(255, 247, 148, 29),
+          image: Image.new(images[:blank_street_tile]),
+          house_cost: 100,
+          plural_name: 'Oranges',
+          singular_name: 'Orange'
+        ),
+        red: ColorGroup.new(
+          color: Gosu::Color.new(255, 237, 27, 36),
+          image: Image.new(images[:blank_street_tile]),
+          house_cost: 150,
+          plural_name: 'Reds',
+          singular_name: 'Red'
+        ),
+        yellow: ColorGroup.new(
+          color: Gosu::Color.new(255, 254, 242, 0),
+          image: Image.new(images[:blank_street_tile]),
+          house_cost: 150,
+          plural_name: 'Yellows',
+          singular_name: 'Yellow'
+        ),
+        green: ColorGroup.new(
+          color: Gosu::Color.new(255, 31, 178, 90),
+          image: Image.new(images[:blank_street_tile]),
+          house_cost: 200,
+          plural_name: 'Greens',
+          singular_name: 'Green'
+        ),
+        dark_blue: ColorGroup.new(
           color: Gosu::Color.new(255, 0, 114, 187),
           image: Image.new(images[:blank_street_tile]),
           house_cost: 200,
-          plural_name: 'Light Blues',
-          singular_name: 'Light Blue'
+          plural_name: 'Dark Blues',
+          singular_name: 'Dark Blue'
         )
       }
 
@@ -259,6 +301,11 @@ module Monopoly
           rent_scale: [4, 20, 60, 180, 320, 450],
           tile_image: Image.new('media/images/tiles/baltic_avenue.png')
         ),
+        TaxTile.new(
+          name: 'Income Tax',
+          tax_amount: 200,
+          tile_image: Image.new('media/images/tiles/income_tax.png')
+        ),
         RailroadTile.new(
           game: self,
           group: railroad_groups[:railroads],
@@ -267,14 +314,46 @@ module Monopoly
           rent_scale: [25, 50, 100, 200],
           tile_image: Image.new('media/images/tiles/reading_railroad.png')
         ),
+        StreetTile.new(
+          game: self,
+          group: color_groups[:light_blue],
+          name: 'Oriental Avenue',
+          purchase_price: 100,
+          rent_scale: [6, 30, 90, 270, 400, 550],
+          tile_image: Image.new('media/images/tiles/oriental_avenue.png')
+        ),
         CardTile.new(
           card_type: :chance,
           name: 'Chance',
           tile_image: Image.new('media/images/tiles/chance_1.png')
         ),
+        StreetTile.new(
+          game: self,
+          group: color_groups[:light_blue],
+          name: 'Vermont Avenue',
+          purchase_price: 100,
+          rent_scale: [6, 30, 90, 270, 400, 550],
+          tile_image: Image.new('media/images/tiles/vermont_avenue.png')
+        ),
+        StreetTile.new(
+          game: self,
+          group: color_groups[:light_blue],
+          name: 'Connecticut Avenue',
+          purchase_price: 120,
+          rent_scale: [8, 40, 100, 300, 450, 600],
+          tile_image: Image.new('media/images/tiles/connecticut_avenue.png')
+        ),
         JailTile.new(
           name: 'Jail',
           tile_image: Image.new('media/images/tiles/jail.png')
+        ),
+        StreetTile.new(
+          game: self,
+          group: color_groups[:pink],
+          name: 'St. Charles Place',
+          purchase_price: 140,
+          rent_scale: [10, 50, 150, 450, 625, 750],
+          tile_image: Image.new('media/images/tiles/st_charles_place.png')
         ),
         UtilityTile.new(
           game: self,
@@ -285,6 +364,22 @@ module Monopoly
           rent_multiplier_scale: [4, 10],
           tile_image: Image.new('media/images/tiles/electric_company.png')
         ),
+        StreetTile.new(
+          game: self,
+          group: color_groups[:pink],
+          name: 'States Avenue',
+          purchase_price: 140,
+          rent_scale: [10, 50, 150, 450, 625, 750],
+          tile_image: Image.new('media/images/tiles/states_avenue.png')
+        ),
+        StreetTile.new(
+          game: self,
+          group: color_groups[:pink],
+          name: 'Virginia Avenue',
+          purchase_price: 160,
+          rent_scale: [12, 60, 180, 500, 700, 900],
+          tile_image: Image.new('media/images/tiles/virginia_avenue.png')
+        ),
         RailroadTile.new(
           game: self,
           group: railroad_groups[:railroads],
@@ -293,19 +388,67 @@ module Monopoly
           rent_scale: [25, 50, 100, 200],
           tile_image: Image.new('media/images/tiles/pennsylvania_railroad.png')
         ),
+        StreetTile.new(
+          game: self,
+          group: color_groups[:orange],
+          name: 'St. James Place',
+          purchase_price: 180,
+          rent_scale: [14, 70, 200, 550, 750, 950],
+          tile_image: Image.new('media/images/tiles/st_james_place.png')
+        ),
         CardTile.new(
           card_type: :community_chest,
           name: 'Community Chest',
           tile_image: Image.new('media/images/tiles/community_chest.png')
         ),
+        StreetTile.new(
+          game: self,
+          group: color_groups[:orange],
+          name: 'Tennessee Avenue',
+          purchase_price: 180,
+          rent_scale: [14, 70, 200, 550, 750, 950],
+          tile_image: Image.new('media/images/tiles/tennessee_avenue.png')
+        ),
+        StreetTile.new(
+          game: self,
+          group: color_groups[:orange],
+          name: 'New York Avenue',
+          purchase_price: 200,
+          rent_scale: [16, 80, 220, 600, 800, 1_000],
+          tile_image: Image.new('media/images/tiles/new_york_avenue.png')
+        ),
         FreeParkingTile.new(
           name: 'Free Parking',
           tile_image: Image.new('media/images/tiles/free_parking.png')
+        ),
+        StreetTile.new(
+          game: self,
+          group: color_groups[:red],
+          name: 'Kentucky Avenue',
+          purchase_price: 220,
+          rent_scale: [18, 90, 250, 700, 875, 1_050],
+          tile_image: Image.new('media/images/tiles/kentucky_avenue.png')
         ),
         CardTile.new(
           card_type: :chance,
           name: 'Chance',
           tile_image: Image.new('media/images/tiles/chance_2.png')
+        ),
+        StreetTile.new(
+          game: self,
+          group: color_groups[:red],
+          name: 'Indiana Avenue',
+          purchase_price: 220,
+          rent_scale: [18, 90, 250, 700, 875, 1_050],
+          tile_image: Image.new('media/images/tiles/indiana_avenue.png')
+        ),
+        StreetTile.new(
+          game: self,
+          group: color_groups[:red],
+          name: 'Illinois Avenue',
+          purchase_price: 240,
+          rent_scale: [20, 100, 300, 750, 925, 1_100],
+          tile_image: Image.new('media/images/tiles/illinois_avenue.png')
         ),
         RailroadTile.new(
           game: self,
@@ -314,6 +457,22 @@ module Monopoly
           purchase_price: 200,
           rent_scale: [25, 50, 100, 200],
           tile_image: Image.new('media/images/tiles/b_o_railroad.png')
+        ),
+        StreetTile.new(
+          game: self,
+          group: color_groups[:yellow],
+          name: 'Atlantic Avenue',
+          purchase_price: 260,
+          rent_scale: [22, 110, 330, 800, 975, 1_150],
+          tile_image: Image.new('media/images/tiles/atlantic_avenue.png')
+        ),
+        StreetTile.new(
+          game: self,
+          group: color_groups[:yellow],
+          name: 'Ventnor Avenue',
+          purchase_price: 260,
+          rent_scale: [22, 110, 330, 800, 975, 1_150],
+          tile_image: Image.new('media/images/tiles/ventnor_avenue.png')
         ),
         UtilityTile.new(
           game: self,
@@ -324,14 +483,46 @@ module Monopoly
           rent_multiplier_scale: [4, 10],
           tile_image: Image.new('media/images/tiles/water_works.png')
         ),
+        StreetTile.new(
+          game: self,
+          group: color_groups[:yellow],
+          name: 'Marvin Gardens',
+          purchase_price: 280,
+          rent_scale: [24, 120, 360, 850, 1_025, 1_200],
+          tile_image: Image.new('media/images/tiles/marvin_gardens.png')
+        ),
         GoToJailTile.new(
           name: 'Go To Jail',
           tile_image: Image.new('media/images/tiles/go_to_jail.png')
+        ),
+        StreetTile.new(
+          game: self,
+          group: color_groups[:green],
+          name: 'Pacific Avenue',
+          purchase_price: 300,
+          rent_scale: [26, 130, 390, 900, 1_100, 1_275],
+          tile_image: Image.new('media/images/tiles/pacific_avenue.png')
+        ),
+        StreetTile.new(
+          game: self,
+          group: color_groups[:green],
+          name: 'North Carolina Avenue',
+          purchase_price: 300,
+          rent_scale: [26, 130, 390, 900, 1_100, 1_275],
+          tile_image: Image.new('media/images/tiles/north_carolina_avenue.png')
         ),
         CardTile.new(
           card_type: :community_chest,
           name: 'Community Chest',
           tile_image: Image.new('media/images/tiles/community_chest.png')
+        ),
+        StreetTile.new(
+          game: self,
+          group: color_groups[:green],
+          name: 'Pennsylvania Avenue',
+          purchase_price: 320,
+          rent_scale: [28, 150, 450, 1_000, 1_200, 1_400],
+          tile_image: Image.new('media/images/tiles/pennsylvania_avenue.png')
         ),
         RailroadTile.new(
           game: self,
@@ -348,7 +539,7 @@ module Monopoly
         ),
         StreetTile.new(
           game: self,
-          group: color_groups[:light_blue],
+          group: color_groups[:dark_blue],
           name: 'Park Place',
           purchase_price: 350,
           rent_scale: [35, 175, 500, 1100, 1300, 1500],
@@ -361,7 +552,7 @@ module Monopoly
         ),
         StreetTile.new(
           game: self,
-          group: color_groups[:light_blue],
+          group: color_groups[:dark_blue],
           name: 'Boardwalk',
           purchase_price: 400,
           rent_scale: [50, 200, 600, 1400, 1700, 2000],

@@ -128,7 +128,9 @@ module Monopoly
       if move_value.is_a?(Integer)
         move_value
       elsif move_value.is_a?(Class) && move_value < Tile
-        new_index = (0...game.tile_count).find { |index| game.tiles[index].is_a?(move_value) }
+        next_tile_index = (game.tile_indexes[game.current_tile] + 1) % game.tile_count
+        indexes = (next_tile_index...game.tile_count).to_a + (0...next_tile_index).to_a
+        new_index = indexes.find { |index| game.tiles[index].is_a?(move_value) }
         (new_index - game.tile_indexes[player.tile]) % game.tile_count
       elsif move_value.is_a?(Tile)
         (game.tile_indexes[move_value] - game.tile_indexes[player.tile]) % game.tile_count
