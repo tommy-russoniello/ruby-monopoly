@@ -236,7 +236,7 @@ module Monopoly
       [
         GoTile.new(
           name: 'Go',
-          tile_image: Image.new('media/images/tiles/go.jpg')
+          tile_image: Image.new('media/images/tiles/go.png')
         ),
         StreetTile.new(
           game: self,
@@ -245,6 +245,11 @@ module Monopoly
           purchase_price: 60,
           rent_scale: [2, 10, 30, 90, 160, 250],
           tile_image: Image.new('media/images/tiles/mediterranean_avenue.png')
+        ),
+        CardTile.new(
+          card_type: :community_chest,
+          name: 'Community Chest',
+          tile_image: Image.new('media/images/tiles/community_chest.png')
         ),
         StreetTile.new(
           game: self,
@@ -265,11 +270,11 @@ module Monopoly
         CardTile.new(
           card_type: :chance,
           name: 'Chance',
-          tile_image: Image.new('media/images/tiles/chance_1.jpg')
+          tile_image: Image.new('media/images/tiles/chance_1.png')
         ),
         JailTile.new(
           name: 'Jail',
-          tile_image: Image.new('media/images/tiles/jail.jpg')
+          tile_image: Image.new('media/images/tiles/jail.png')
         ),
         UtilityTile.new(
           game: self,
@@ -281,21 +286,26 @@ module Monopoly
           tile_image: Image.new('media/images/tiles/electric_company.png')
         ),
         RailroadTile.new(
-         game: self,
-         group: railroad_groups[:railroads],
-         name: 'Pennsylvania Railroad',
-         purchase_price: 200,
-         rent_scale: [25, 50, 100, 200],
-         tile_image: Image.new('media/images/tiles/pennsylvania_railroad.png')
-       ),
+          game: self,
+          group: railroad_groups[:railroads],
+          name: 'Pennsylvania Railroad',
+          purchase_price: 200,
+          rent_scale: [25, 50, 100, 200],
+          tile_image: Image.new('media/images/tiles/pennsylvania_railroad.png')
+        ),
         CardTile.new(
           card_type: :community_chest,
           name: 'Community Chest',
-          tile_image: Image.new('media/images/tiles/community_chest.jpg')
+          tile_image: Image.new('media/images/tiles/community_chest.png')
         ),
         FreeParkingTile.new(
           name: 'Free Parking',
-          tile_image: Image.new('media/images/tiles/free_parking.jpg')
+          tile_image: Image.new('media/images/tiles/free_parking.png')
+        ),
+        CardTile.new(
+          card_type: :chance,
+          name: 'Chance',
+          tile_image: Image.new('media/images/tiles/chance_2.png')
         ),
         RailroadTile.new(
           game: self,
@@ -316,7 +326,12 @@ module Monopoly
         ),
         GoToJailTile.new(
           name: 'Go To Jail',
-          tile_image: Image.new('media/images/tiles/gotojail.jpg')
+          tile_image: Image.new('media/images/tiles/go_to_jail.png')
+        ),
+        CardTile.new(
+          card_type: :community_chest,
+          name: 'Community Chest',
+          tile_image: Image.new('media/images/tiles/community_chest.png')
         ),
         RailroadTile.new(
           game: self,
@@ -325,6 +340,11 @@ module Monopoly
           purchase_price: 200,
           rent_scale: [25, 50, 100, 200],
           tile_image: Image.new('media/images/tiles/short_line.png')
+        ),
+        CardTile.new(
+          card_type: :chance,
+          name: 'Chance',
+          tile_image: Image.new('media/images/tiles/chance_3.png')
         ),
         StreetTile.new(
           game: self,
@@ -337,7 +357,7 @@ module Monopoly
         TaxTile.new(
           name: 'Luxury Tax',
           tax_amount: 75,
-          tile_image: Image.new('media/images/tiles/luxury_tax.jpg')
+          tile_image: Image.new('media/images/tiles/luxury_tax.png')
         ),
         StreetTile.new(
           game: self,
