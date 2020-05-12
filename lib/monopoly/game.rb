@@ -2921,28 +2921,100 @@ module Monopoly
           )
         ],
         community_chest: [
+          MoveCard.new(
+            game: self,
+            go_money: true,
+            image: Image.new('media/images/cards/advance_to_go.png'),
+            move_value: tiles[:go],
+            type: :community_chest
+          ),
+          MoneyCard.new(
+            amount: 45,
+            game: self,
+            image: Image.new('media/images/cards/sale_of_stock.png'),
+            type: :community_chest
+          ),
+          MoneyCard.new(
+            amount: 100,
+            game: self,
+            image: Image.new('media/images/cards/inherit.png'),
+            type: :community_chest
+          ),
+          MoneyCard.new(
+            amount: -100,
+            game: self,
+            image: Image.new('media/images/cards/hospital.png'),
+            type: :community_chest
+          ),
           MoneyCard.new(
             amount: 50,
             every_other_player: true,
             game: self,
-            image: Image.new('media/images/cards/opera.jpg'),
+            image: Image.new('media/images/cards/opera.png'),
             type: :community_chest
           ),
-          GoToJailCard.new(
+          MoneyCard.new(
+            amount: 20,
             game: self,
-            image: Image.new('media/images/cards/go_to_jail_community_chest.jpg'),
-            type: :community_chest
-          ),
-          PropertyRepairCard.new(
-            cost_per_house: 40,
-            game: self,
-            image: Image.new('media/images/cards/street_repairs.jpg'),
+            image: Image.new('media/images/cards/income_tax_refund.png'),
             type: :community_chest
           ),
           MoneyCard.new(
             amount: 25,
             game: self,
-            image: Image.new('media/images/cards/receive_for_services.jpg'),
+            image: Image.new('media/images/cards/receive_for_services.png'),
+            type: :community_chest
+          ),
+          MoneyCard.new(
+            amount: -50,
+            game: self,
+            image: Image.new('media/images/cards/doctors_fee.png'),
+            type: :community_chest
+          ),
+          GoToJailCard.new(
+            game: self,
+            image: Image.new('media/images/cards/go_to_jail_community_chest.png'),
+            type: :community_chest
+          ),
+          MoneyCard.new(
+            amount: 200,
+            game: self,
+            image: Image.new('media/images/cards/bank_error.png'),
+            type: :community_chest
+          ),
+          MoneyCard.new(
+            amount: 100,
+            game: self,
+            image: Image.new('media/images/cards/xmas_fund.png'),
+            type: :community_chest
+          ),
+          MoneyCard.new(
+            amount: 100,
+            game: self,
+            image: Image.new('media/images/cards/life_insurance.png'),
+            type: :community_chest
+          ),
+          GetOutOfJailFreeCard.new(
+            game: self,
+            image: Image.new('media/images/cards/get_out_of_jail_free_community_chest.png'),
+            type: :community_chest
+          ),
+          MoneyCard.new(
+            amount: -150,
+            game: self,
+            image: Image.new('media/images/cards/school_tax.png'),
+            type: :community_chest
+          ),
+          MoneyCard.new(
+            amount: 10,
+            game: self,
+            image: Image.new('media/images/cards/beauty_contest.png'),
+            type: :community_chest
+          ),
+          PropertyRepairCard.new(
+            cost_per_house: 40,
+            game: self,
+            image: Image.new('media/images/cards/street_repairs.png'),
             type: :community_chest
           )
         ]
