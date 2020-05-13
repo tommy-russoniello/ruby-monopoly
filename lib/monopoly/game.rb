@@ -2885,38 +2885,96 @@ module Monopoly
             amount: -50,
             every_other_player: true,
             game: self,
-            image: Image.new('media/images/cards/chairman_of_the_board.jpg'),
+            image: Image.new('media/images/cards/chairman_of_the_board.png'),
             type: :chance
           ),
-          MoveCard.new(
+          MoneyCard.new(
+            amount: 150,
             game: self,
-            image: Image.new('media/images/cards/go_back_3_spaces.jpg'),
-            move_value: -3,
+            image: Image.new('media/images/cards/building_and_loan.png'),
             type: :chance
           ),
-          MoveCard.new(
+          GetOutOfJailFreeCard.new(
             game: self,
-            image: Image.new('media/images/cards/nearest_utility.jpg'),
-            move_value: UtilityTile,
-            rent_multiplier: 10,
+            image: Image.new('media/images/cards/get_out_of_jail_free_chance.png'),
+            type: :chance
+          ),
+          MoneyCard.new(
+            amount: 50,
+            game: self,
+            image: Image.new('media/images/cards/dividend.png'),
             type: :chance
           ),
           MoneyCard.new(
             amount: -15,
             game: self,
-            image: Image.new('media/images/cards/poor_tax.jpg'),
-            type: :chance
-          ),
-          GetOutOfJailFreeCard.new(
-            game: self,
-            image: Image.new('media/images/cards/get_out_of_jail_free.jpg'),
+            image: Image.new('media/images/cards/poor_tax.png'),
             type: :chance
           ),
           MoveCard.new(
             game: self,
             go_money: true,
-            image: Image.new('media/images/cards/advance_to_boardwalk.jpg'),
+            image: Image.new('media/images/cards/take_a_ride.png'),
+            move_value: tiles[:reading_railroad],
+            type: :chance
+          ),
+          MoveCard.new(
+            game: self,
+            go_money: true,
+            image: Image.new('media/images/cards/advance_to_go_chance.png'),
+            move_value: tiles[:go],
+            type: :chance
+          ),
+          MoveCard.new(
+            game: self,
+            image: Image.new('media/images/cards/go_back_3_spaces.png'),
+            move_value: -3,
+            type: :chance
+          ),
+          MoveCard.new(
+            game: self,
+            go_money: true,
+            image: Image.new('media/images/cards/advance_to_boardwalk.png'),
             move_value: tiles[:boardwalk],
+            type: :chance
+          ),
+          MoveCard.new(
+            game: self,
+            image: Image.new('media/images/cards/nearest_railroad.png'),
+            move_value: RailroadTile,
+            rent_multiplier: 2,
+            type: :chance
+          ),
+          MoveCard.new(
+            game: self,
+            image: Image.new('media/images/cards/nearest_utility.png'),
+            move_value: UtilityTile,
+            rent_multiplier: 10,
+            type: :chance
+          ),
+          MoveCard.new(
+            game: self,
+            image: Image.new('media/images/cards/nearest_railroad.png'),
+            move_value: RailroadTile,
+            rent_multiplier: 2,
+            type: :chance
+          ),
+          MoveCard.new(
+            game: self,
+            go_money: true,
+            image: Image.new('media/images/cards/advance_to_illinois_ave.png'),
+            move_value: tiles[:illinois_avenue],
+            type: :chance
+          ),
+          GoToJailCard.new(
+            game: self,
+            image: Image.new('media/images/cards/go_to_jail_chance.png'),
+            type: :chance
+          ),
+          PropertyRepairCard.new(
+            cost_per_house: 25,
+            game: self,
+            image: Image.new('media/images/cards/general_repairs.png'),
             type: :chance
           )
         ],
@@ -2924,7 +2982,7 @@ module Monopoly
           MoveCard.new(
             game: self,
             go_money: true,
-            image: Image.new('media/images/cards/advance_to_go.png'),
+            image: Image.new('media/images/cards/advance_to_go_community_chest.png'),
             move_value: tiles[:go],
             type: :community_chest
           ),
