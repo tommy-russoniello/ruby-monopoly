@@ -88,11 +88,16 @@ module Monopoly
           game.charge_money(
             amount: -amount,
             on_bankrupt: [[:return_new_card, actions: :end_turn, new_visible_buttons: nil]],
+            on_failure: proc do
+              game.current_card.triggered = false
+              game.set_visible_card_menu_buttons
+            end,
             on_success: :return_new_card,
             player: player,
             reason: :game
           )
         else
+          game.log_event("#{player.name} collected #{game.format_money(amount)}.")
           player.add_money(amount, :game)
           game.return_new_card
         end

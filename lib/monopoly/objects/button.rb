@@ -26,6 +26,7 @@ module Monopoly
     attr_reader :hover_image_height
     attr_reader :hover_image_width
     attr_reader :image
+    attr_accessor :image_angle
     attr_accessor :image_background_color
     attr_accessor :image_background_hover_color
     attr_reader :image_height
@@ -36,6 +37,7 @@ module Monopoly
     attr_reader :image_y
     attr_accessor :maximum_font_size
     attr_reader :text
+    attr_accessor :text_angle
     attr_accessor :text_position_x
     attr_accessor :text_position_y
     attr_accessor :text_relative_position_x
@@ -55,8 +57,10 @@ module Monopoly
       game:,
       height: DEFAULT_HEIGHT,
       hover_color: DEFAULT_HOVER_COLOR,
+      image_angle: 0,
       image_position_x: 0.5,
       image_position_y: 0.5,
+      text_angle: 0,
       text_position_x: 0.5,
       text_position_y: 0.5,
       text_relative_position_x: 0.5,
@@ -86,12 +90,14 @@ module Monopoly
       self.hover_image_height = options[:hover_image_height]
       self.hover_image_width ||= options[:hover_image_width]
       @image = options[:image]
+      self.image_angle = image_angle
       self.image_background_color = options[:image_background_color]
       self.image_background_hover_color = options[:image_background_color]
       self.image_height = options[:image_height]
       self.image_position_x = image_position_x
       self.image_position_y = image_position_y
       self.image_width ||= options[:image_width]
+      self.text_angle = text_angle
       self.text_position_x = text_position_x
       self.text_position_y = text_position_y
       self.text_relative_position_x = text_relative_position_x
@@ -141,10 +147,10 @@ module Monopoly
 
         draw_image_background(hover: true) if image_background_hover_color
 
-        hover_image&.draw(
+        hover_image&.draw_rot(
+          angle: image_angle,
           draw_height: hover_image_height,
           draw_width: hover_image_width,
-          from_center: true,
           x: image_x,
           y: image_y,
           z: z
@@ -154,6 +160,7 @@ module Monopoly
         if text
           font&.draw_text(
             text,
+            angle: text_angle,
             color: font_hover_color,
             rel_x: text_relative_position_x,
             rel_y: text_relative_position_y,
@@ -169,10 +176,10 @@ module Monopoly
 
         draw_image_background if image_background_color
 
-        image&.draw(
+        image&.draw_rot(
+          angle: image_angle,
           draw_height: image_height,
           draw_width: image_width,
-          from_center: true,
           x: image_x,
           y: image_y,
           z: z
@@ -182,6 +189,7 @@ module Monopoly
         if text
           font&.draw_text(
             text,
+            angle: text_angle,
             color: font_color,
             rel_x: text_relative_position_x,
             rel_y: text_relative_position_y,
@@ -403,9 +411,11 @@ module Monopoly
       font_color: DEFAULT_TEXT_COLOR,
       game:,
       hover_color: DEFAULT_HOVER_COLOR,
+      image_angle: 0,
       image_position_x: 0.5,
       image_position_y: 0.5,
       radius:,
+      text_angle: 0,
       text_position_x: 0.5,
       text_position_y: 0.5,
       text_relative_position_x: 0.5,
@@ -434,12 +444,14 @@ module Monopoly
       self.hover_image_height = options[:hover_image_height]
       self.hover_image_width ||= options[:hover_image_width]
       @image = options[:image]
+      self.image_angle = image_angle
       self.image_background_color = options[:image_background_color]
       self.image_background_hover_color = options[:image_background_hover_color]
       self.image_height = options[:image_height]
       self.image_position_x = image_position_x
       self.image_position_y = image_position_y
       self.image_width ||= options[:image_width]
+      self.text_angle = text_angle
       self.text_position_x = text_position_x
       self.text_position_y = text_position_y
       self.text_relative_position_x = text_relative_position_x

@@ -2,7 +2,13 @@ module Monopoly
   class Game < Gosu::Window
     module GameActions
       def charge_money(
-        amount:, on_bankrupt: nil, on_success: nil, player: current_player, reason:, recipient: nil
+        amount:,
+        on_bankrupt: nil,
+        on_failure: nil,
+        on_success: nil,
+        player: current_player,
+        reason:,
+        recipient: nil
       )
         recipient_name = recipient&.name || 'the bank'
 
@@ -13,6 +19,7 @@ module Monopoly
               'in cash but you can afford it by liquidating assets (selling houses ' \
               'and/or mortgaging properties).'
             )
+            execute_actions(format_actions(on_failure)) if on_failure
           else
             display_error("You don't have the cash or assets to pay #{recipient_name}.")
             player.liquidate_assets
@@ -74,7 +81,7 @@ module Monopoly
 
         player.cards = []
         player.money = 0
-        player.eliminated = true
+        player.eliminated_on = turn
         eliminated_players << players.delete(player)
         if player == (current_player_cache || current_player)
           self.current_player_index =
@@ -82,6 +89,8 @@ module Monopoly
         else
           set_visible_player_menu_buttons(refresh: true)
         end
+
+        map_menu_buttons[:tokens].delete(player)
       end
 
       def increment_current_player

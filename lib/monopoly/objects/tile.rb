@@ -4,13 +4,18 @@ module Monopoly
     attr_accessor :name
     attr_accessor :tile_image
 
-    def initialize(icon: nil, name:, tile_image:)
+    def initialize(corner: nil, icon: nil, name:, tile_image:)
+      @corner = corner.nil? ? default_corner : corner
       self.icon = icon
       self.name = name
       self.tile_image = tile_image
     end
 
     def corner?
+      @corner
+    end
+
+    def default_corner
       false
     end
   end
@@ -26,25 +31,25 @@ module Monopoly
   end
 
   class FreeParkingTile < Tile
-    def corner?
+    def default_corner
       true
     end
   end
 
   class GoTile < Tile
-    def corner?
+    def default_corner
       true
     end
   end
 
   class GoToJailTile < Tile
-    def corner?
+    def default_corner
       true
     end
   end
 
   class JailTile < Tile
-    def corner?
+    def default_corner
       true
     end
   end

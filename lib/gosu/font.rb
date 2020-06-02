@@ -84,6 +84,7 @@ module Gosu
     alias _draw_text draw_text
     def draw_text(
       text,
+      angle: 0,
       color: 0xff_ffffff,
       mode: :default,
       rel_x: 0,
@@ -94,7 +95,9 @@ module Gosu
       y:,
       z:
     )
-      draw_text_rel(text, x, y, z, rel_x, rel_y, scale_x, scale_y, color, mode)
+      Gosu.rotate(angle, x, y) do
+        draw_text_rel(text, x, y, z, rel_x, rel_y, scale_x, scale_y, color, mode)
+      end
     end
 
     def truncate_text(text:, trailing_text: nil, width:)

@@ -1,7 +1,7 @@
 module Monopoly
   class Player
     attr_accessor :cards
-    attr_accessor :eliminated
+    attr_accessor :eliminated_on
     attr_accessor :game
     attr_accessor :jail_turns
     attr_accessor :money
@@ -50,7 +50,7 @@ module Monopoly
     end
 
     def eliminated?
-      eliminated
+      !eliminated_on.nil?
     end
 
     def has_assets_for?(amount)

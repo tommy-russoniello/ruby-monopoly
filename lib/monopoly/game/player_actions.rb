@@ -51,9 +51,10 @@ module Monopoly
         current_player.subtract_money(house_cost, :buildings)
         tile.house_count += 1
 
+        set_visible_group_menu_buttons if drawing_group_menu?
+        set_visible_map_menu_buttons if drawing_map_menu?
         set_visible_tile_menu_buttons
         set_visible_player_menu_buttons
-        set_visible_group_menu_buttons if drawing_group_menu?
 
         log_event(
           "#{current_player.name} built a house on #{tile.name} for " \
@@ -126,6 +127,7 @@ module Monopoly
 
       def forfeit
         close_pop_up_menus
+        toggle_map_menu if drawing_map_menu?
         toggle_options_menu if drawing_options_menu?
         return_new_card if current_card
         eliminate_player(current_player)
@@ -138,6 +140,7 @@ module Monopoly
         new_visible_buttons = %i[end_turn]
         new_visible_buttons << :use_get_out_of_jail_free_card if
           current_player.cards.any? { |card| card.is_a?(GetOutOfJailFreeCard) }
+        set_visible_compass_menu_buttons
         set_visible_tile_menu_buttons
         set_visible_player_menu_buttons
         update_visible_buttons(*new_visible_buttons)
@@ -145,7 +148,7 @@ module Monopoly
 
       def mortgage(tile = focused_tile)
         return display_error('Invalid tile to mortgage.') if !tile.is_a?(PropertyTile) ||
-          tile.owner != current_player
+          tile.owner != current_player || tile.mortgaged?
 
         if tile.is_a?(StreetTile)
           if tile.is_a?(StreetTile) && tile.house_count.positive?
@@ -160,9 +163,10 @@ module Monopoly
           "#{current_player.name} mortgaged #{tile.name} for #{format_money(tile.mortgage_cost)}."
         )
 
+        set_visible_group_menu_buttons if drawing_group_menu?
+        set_visible_map_menu_buttons if drawing_map_menu?
         set_visible_tile_menu_buttons
         set_visible_player_menu_buttons
-        set_visible_group_menu_buttons if drawing_group_menu?
       end
 
       def pay_rent
@@ -231,9 +235,10 @@ module Monopoly
         current_player.add_money(house_sell_price, :buildings)
         tile.house_count -= 1
 
+        set_visible_group_menu_buttons if drawing_group_menu?
+        set_visible_map_menu_buttons if drawing_map_menu?
         set_visible_tile_menu_buttons
         set_visible_player_menu_buttons
-        set_visible_group_menu_buttons if drawing_group_menu?
 
         log_event(
           "#{current_player.name} sold a house from #{tile.name} for " \
@@ -292,6 +297,23 @@ module Monopoly
         end
 
         self.drawing_group_menu = !drawing_group_menu
+      end
+
+      def toggle_map_menu
+        if drawing_map_menu?
+          self.current_map_tile = nil
+          self.current_map_tile_button = nil
+          self.map_menu_first_tile_index = nil
+          self.map_menu_last_tile_index = nil
+          self.map_menu_tiles = nil
+        else
+          close_pop_up_menus
+          self.map_menu_first_tile_index = standard_board? ? 0 : tile_indexes[focused_tile]
+
+          set_visible_map_menu_buttons(refresh: true)
+        end
+
+        self.drawing_map_menu = !drawing_map_menu
       end
 
       def toggle_options_menu
@@ -353,7 +375,7 @@ module Monopoly
 
       def unmortgage(tile = focused_tile)
         return display_error('Invalid tile to unmortgage.') if !tile.is_a?(PropertyTile) ||
-          tile.owner != current_player
+          tile.owner != current_player || !tile.mortgaged?
 
         return display_error('You don\'t have enough money to unmortgage this property.') unless
           current_player.money >= tile.unmortgage_cost
@@ -366,6 +388,7 @@ module Monopoly
         )
 
         set_visible_group_menu_buttons if drawing_group_menu?
+        set_visible_map_menu_buttons if drawing_map_menu?
         set_visible_tile_menu_buttons
         set_visible_player_menu_buttons
       end

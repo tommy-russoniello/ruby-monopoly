@@ -3,7 +3,6 @@ module Monopoly
     attr_accessor :animation
     attr_accessor :image
 
-    delegate :draw_rot, to: :image
     delegate :height, to: :image
     delegate :width, to: :image
 
@@ -13,6 +12,10 @@ module Monopoly
 
     def draw(*args)
       animation ? draw_from_animation : image.draw(*args)
+    end
+
+    def draw_rot(*args)
+      animation ? draw_from_animation : image.draw_rot(*args)
     end
 
     def perform_animation(animation_type, **args)
