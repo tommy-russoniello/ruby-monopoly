@@ -96,12 +96,7 @@ module Monopoly
           draw_player_menu
           draw_card_menu
           draw_tile_menu
-
-          coordinates = [draw_mouse_x, draw_mouse_y] unless drawing_pop_up_menu? ||
-            drawing_dialogue_box?
-
-          # Primary buttons
-          visible_buttons.each { |button| button.draw(*coordinates) }
+          draw_action_menu
         end
 
         # Pop up background blur
@@ -137,6 +132,46 @@ module Monopoly
           y: Coordinates::TOP_Y,
           z: ZOrder::POP_UP_MENU_UI
         )
+      end
+
+      def draw_action_menu
+        return unless drawing_action_menu?
+
+        Gosu.draw_rect(action_menu_data[:bottom_border_params])
+        Gosu.draw_rect(action_menu_data[:left_border_params])
+        action_menu_data[:rounded_corner_circle].draw(
+          action_menu_data[:rounded_corner_circle_params]
+        )
+        Gosu.draw_rect(action_menu_data[:right_border_params])
+        Gosu.draw_rect(action_menu_data[:top_border_params])
+
+        coordinates = [draw_mouse_x, draw_mouse_y] unless drawing_pop_up_menu? ||
+          drawing_dialogue_box?
+
+        action_menu_buttons[:minimap].draw(*coordinates) if standard_board?
+        Gosu.draw_rect(action_menu_data[:minimap_current_tile_highlight_params])
+        action_menu_data[:minimap_current_tile_dot_circle].draw(
+          action_menu_data[:minimap_current_tile_dot_circle_params]
+        )
+        Gosu.draw_rect(action_menu_data[:background_params])
+        Gosu.draw_rect(action_menu_data[:dice_background_params])
+
+        if action_menu_data[:message]
+          fonts[:default][:type].draw_text(
+            action_menu_data[:message],
+            color: action_menu_data[:message_color],
+            rel_x: 1,
+            rel_y: 1,
+            x: Coordinates::ACTION_MENU_RIGHT_X - 10,
+            y: Coordinates::ACTION_MENU_TOP_Y - 10,
+            z: ZOrder::MENU_UI
+          )
+        end
+
+        action_menu_data[:die_images][die_a].draw(action_menu_data[:die_a_params]) if die_a
+        action_menu_data[:die_images][die_b].draw(action_menu_data[:die_b_params]) if die_b
+
+        visible_action_menu_buttons.each { |button| button.draw(*coordinates) }
       end
 
       def draw_card_menu
@@ -397,7 +432,7 @@ module Monopoly
 
       def draw_options_menu
         coordinates = [draw_mouse_x, draw_mouse_y] unless drawing_dialogue_box?
-        buttons[:options].draw(*coordinates)
+        action_menu_buttons[:options].draw(*coordinates)
         return unless drawing_options_menu?
 
 
@@ -491,12 +526,37 @@ module Monopoly
       def set_options_menu_button_coordinates
         options_menu_buttons.values.each.with_index do |options_menu_button, index|
           options_menu_button.update_coordinates(
-            x: buttons[:options].x - Button::DEFAULT_WIDTH + 10,
-            y: buttons[:options].y + (index * (Button::DEFAULT_HEIGHT + 1)) +
-              buttons[:options].height + 1,
+            x: action_menu_buttons[:options].x - Button::DEFAULT_WIDTH + 10,
+            y: action_menu_buttons[:options].y + (index * (Button::DEFAULT_HEIGHT + 1)) +
+              action_menu_buttons[:options].height + 1,
             z: ZOrder::POP_UP_MENU_UI
           )
         end
+      end
+
+      def set_visible_action_menu_buttons
+        self.visible_action_menu_buttons = []
+
+        action_menu_data[:minimap_current_tile_highlight_params].merge!(
+          x: action_menu_buttons[:minimap].x +
+            action_menu_data[:minimap_coordinates][current_tile][:x],
+          y: action_menu_buttons[:minimap].y +
+            action_menu_data[:minimap_coordinates][current_tile][:y]
+        )
+        action_menu_data[:minimap_current_tile_dot_circle_params].merge!(
+          x: action_menu_buttons[:minimap].x +
+            action_menu_data[:minimap_coordinates][current_tile][:x] +
+            (Coordinates::THUMBNAIL_HEIGHT / 2),
+          y: action_menu_buttons[:minimap].y +
+            action_menu_data[:minimap_coordinates][current_tile][:y] +
+            (Coordinates::THUMBNAIL_HEIGHT / 2)
+        )
+
+        visible_action_menu_buttons << action_menu_buttons[:show_card] if current_card &&
+          !drawing_card_menu?
+        visible_action_menu_buttons << action_menu_buttons[next_action] if next_action
+        visible_action_menu_buttons << action_menu_buttons[:no_action] if
+          [nil, :draw_card, :go_to_jail].include?(next_action)
       end
 
       def set_visible_card_menu_buttons
@@ -846,6 +906,8 @@ module Monopoly
 
           if map_tiles.size < tile_count
             visible_map_menu_buttons << map_menu_buttons[:left]
+            visible_map_menu_buttons << map_menu_buttons[:page_left]
+            visible_map_menu_buttons << map_menu_buttons[:page_right]
             visible_map_menu_buttons << map_menu_buttons[:right]
           end
 
@@ -1248,8 +1310,6 @@ module Monopoly
           visible_tile_menu_buttons << tile_menu_buttons[:back]
         end
 
-        visible_tile_menu_buttons << tile_menu_buttons[:show_card] if current_card
-
         if players.count { |player| player.tile == focused_tile }.positive?
           data = tile_menu_data[:show_players][tile_type]
           data = data[focused_tile.is_a?(PropertyTile) ? :property : :non_property] if
@@ -1334,10 +1394,6 @@ module Monopoly
 
       def tile_width(tile)
         tile.corner? ? Coordinates::TILE_HEIGHT : Coordinates::TILE_WIDTH
-      end
-
-      def update_visible_buttons(*button_names)
-        self.visible_buttons = button_names.map { |button_name| buttons[button_name] }
       end
 
       private

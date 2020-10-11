@@ -2,12 +2,14 @@ module Monopoly
   class Tile
     attr_accessor :icon
     attr_accessor :name
+    attr_accessor :thumbnail
     attr_accessor :tile_image
 
-    def initialize(corner: nil, icon: nil, name:, tile_image:)
+    def initialize(corner: nil, icon: nil, name:, thumbnail: nil, tile_image:)
       @corner = corner.nil? ? default_corner : corner
       self.icon = icon
       self.name = name
+      self.thumbnail = thumbnail
       self.tile_image = tile_image
     end
 

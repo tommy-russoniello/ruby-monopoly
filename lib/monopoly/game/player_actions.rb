@@ -78,7 +78,7 @@ module Monopoly
 
         set_visible_tile_menu_buttons
         set_visible_player_menu_buttons
-        update_visible_buttons(:end_turn)
+        set_next_action(:end_turn)
       end
 
       def close_error_dialogue
@@ -90,7 +90,7 @@ module Monopoly
         current_card.player = current_player
         card_menu_buttons[:continue].text = current_card.continue_button_text
         toggle_card_menu
-        update_visible_buttons
+        set_next_action(nil)
       end
 
       def end_turn
@@ -105,19 +105,13 @@ module Monopoly
         if current_player.in_jail?
           current_player.stats[:turns_in_jail] += 1
           current_player.jail_turns -= 1
-          new_visible_buttons = %i[end_turn]
-          if current_player.in_jail?
-            new_visible_buttons << :use_get_out_of_jail_free_card if
-              current_player.cards.any? { |card| card.is_a?(GetOutOfJailFreeCard) }
-          else
-            log_event("#{current_player.name} got out of jail.")
-          end
+          log_event("#{current_player.name} got out of jail.") unless current_player.in_jail?
 
           set_visible_tile_menu_buttons
           set_visible_player_menu_buttons
-          update_visible_buttons(*new_visible_buttons)
+          set_next_action(:end_turn)
         else
-          update_visible_buttons(:roll_dice_for_move)
+          set_next_action(:roll_dice_for_move)
         end
       end
 
@@ -137,13 +131,10 @@ module Monopoly
       def go_to_jail
         send_player_to_jail(current_player)
         self.current_tile = self.focused_tile = tiles[:jail]
-        new_visible_buttons = %i[end_turn]
-        new_visible_buttons << :use_get_out_of_jail_free_card if
-          current_player.cards.any? { |card| card.is_a?(GetOutOfJailFreeCard) }
         set_visible_compass_menu_buttons
         set_visible_tile_menu_buttons
         set_visible_player_menu_buttons
-        update_visible_buttons(*new_visible_buttons)
+        set_next_action(:end_turn)
       end
 
       def mortgage(tile = focused_tile)
@@ -173,7 +164,7 @@ module Monopoly
         charge_money(
           amount: current_tile.rent,
           on_bankrupt: :end_turn,
-          on_success: [:update_visible_buttons, :end_turn],
+          on_success: [:set_next_action, :end_turn],
           reason: :rent,
           recipient: current_tile.owner
         )
@@ -186,7 +177,7 @@ module Monopoly
         charge_money(
           amount: current_tile.tax_amount,
           on_bankrupt: :end_turn,
-          on_success: [:update_visible_buttons, :end_turn],
+          on_success: [:set_next_action, :end_turn],
           player: current_player,
           reason: :game
         )
@@ -250,6 +241,8 @@ module Monopoly
         set_visible_card_menu_buttons unless drawing_card_menu?
 
         self.drawing_card_menu = !drawing_card_menu
+
+        set_visible_action_menu_buttons
       end
 
       def toggle_deed_menu
@@ -317,7 +310,7 @@ module Monopoly
       end
 
       def toggle_options_menu
-        options_button = buttons[:options]
+        options_button = action_menu_buttons[:options]
         if drawing_options_menu?
           options_button.color = nil
           options_button.hover_color = nil
@@ -394,6 +387,8 @@ module Monopoly
       end
 
       def use_get_out_of_jail_free_card
+        return unless current_player.in_jail?
+
         card = current_player.cards.find { |card| card.is_a?(GetOutOfJailFreeCard) }
         return unless card
 
@@ -403,8 +398,6 @@ module Monopoly
         cards[card.type] << card
 
         set_visible_player_menu_buttons
-
-        update_visible_buttons(:end_turn)
       end
 
       def use_new_card
@@ -414,7 +407,7 @@ module Monopoly
           toggle_card_menu
           set_visible_tile_menu_buttons
           set_visible_player_menu_buttons
-          update_visible_buttons(:end_turn)
+          set_next_action(:end_turn)
         else
           current_card.triggered = true
           set_visible_card_menu_buttons

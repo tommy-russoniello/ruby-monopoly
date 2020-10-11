@@ -12,7 +12,8 @@ module Monopoly
     RESOLUTION_HEIGHT = ENV['RESOLUTION_HEIGHT'].to_i
     RESOLUTION_WIDTH = ENV['RESOLUTION_WIDTH'].to_i
 
-    attr_accessor :buttons
+    attr_accessor :action_menu_buttons
+    attr_accessor :action_menu_data
     attr_accessor :card_menu_buttons
     attr_accessor :cards
     attr_accessor :color_groups
@@ -34,6 +35,7 @@ module Monopoly
     attr_accessor :dialogue_box_buttons
     attr_accessor :die_a
     attr_accessor :die_b
+    attr_accessor :drawing_action_menu
     attr_accessor :drawing_card_menu
     attr_accessor :drawing_compass_menu
     attr_accessor :drawing_deed_menu
@@ -68,6 +70,7 @@ module Monopoly
     attr_accessor :map_menu_first_tile_index
     attr_accessor :map_menu_last_tile_index
     attr_accessor :map_menu_tiles
+    attr_accessor :next_action
     attr_accessor :next_players
     attr_accessor :options_menu_buttons
     attr_accessor :options_menu_bar_paramaters
@@ -98,8 +101,7 @@ module Monopoly
     attr_accessor :tiles
     attr_accessor :turn
     attr_accessor :utility_groups
-    attr_accessor :visible_buttons_cache
-    attr_accessor :visible_buttons
+    attr_accessor :visible_action_menu_buttons
     attr_accessor :visible_card_menu_buttons
     attr_accessor :visible_compass_menu_buttons
     attr_accessor :visible_deed_menu_buttons
@@ -118,6 +120,7 @@ module Monopoly
 
       self.colors = {
         blur: Gosu::Color.new(200, 200, 200, 200),
+        button_hover_highlight_light: Gosu::Color.new(25, 255, 255, 255),
         clickable_text: Gosu::Color.new(255, 159, 224, 222),
         clickable_text_hover: Gosu::Color::WHITE,
         deed: Gosu::Color::WHITE,
@@ -127,7 +130,8 @@ module Monopoly
         default_button_hover: Gosu::Color.new(255, 219, 219, 219),
         default_button_hover_highlight: Gosu::Color.new(100, 255, 255, 255),
         default_text: Gosu::Color::BLACK,
-        dialogue_box_background: Gosu::Color::BLACK,
+        dialogue_box_background: Gosu::Color.new(255, 29, 102, 99),
+        dialogue_box_button_hover: Gosu::Color.new(255, 219, 219, 219),
         dialogue_box_text: Gosu::Color::WHITE,
         house_count: Gosu::Color.new(255, 33, 203, 103),
         jail: Gosu::Color.new(255, 217, 52, 52),
@@ -148,6 +152,7 @@ module Monopoly
         property_button_selected: Gosu::Color.new(255, 127, 158, 209),
         property_button_selected_hover: Gosu::Color.new(255, 105, 130, 170),
         shadow: Gosu::Color.new(255, 75, 75, 75),
+        tile_background: Gosu::Color.new(255, 205, 230, 208),
         tile_button: Gosu::Color.new(25, 0, 0, 0),
         tile_button_hover: Gosu::Color.new(75, 0, 0, 0),
         warning: Gosu::Color.new(255, 214, 19, 19)
@@ -188,7 +193,18 @@ module Monopoly
         checkbox_unchecked: 'user_interface/checkbox_unchecked.png',
         checkbox_unchecked_hover: 'user_interface/checkbox_unchecked_hover.png',
         community_chest: 'tiles/icons/community_chest.png',
+        dice: 'user_interface/dice.png',
+        die_1: 'user_interface/die_1.png',
+        die_2: 'user_interface/die_2.png',
+        die_3: 'user_interface/die_3.png',
+        die_4: 'user_interface/die_4.png',
+        die_5: 'user_interface/die_5.png',
+        die_6: 'user_interface/die_6.png',
         dollar_sign: 'user_interface/dollar_sign.png',
+        double_arrow_left: 'user_interface/double_arrow_left.png',
+        double_arrow_left_hover: 'user_interface/double_arrow_left_hover.png',
+        double_arrow_right: 'user_interface/double_arrow_right.png',
+        double_arrow_right_hover: 'user_interface/double_arrow_right_hover.png',
         exclamation_point: 'user_interface/exclamation_point.png',
         expand: 'user_interface/expand.png',
         expand_hover: 'user_interface/expand_hover.png',
@@ -201,6 +217,7 @@ module Monopoly
         jail_cell: 'user_interface/jail_cell.png',
         key: 'user_interface/key.png',
         list: 'user_interface/list.png',
+        map: 'user_interface/map.png',
         message: 'user_interface/message.png',
         mortgage: 'user_interface/mortgage.png',
         mortgage_hover: 'user_interface/mortgage_hover.png',
@@ -612,6 +629,8 @@ module Monopoly
         else
           tiles[tile.name.downcase.tr(' ', '_').to_sym] = tile
         end
+
+        tile.thumbnail = generate_tile_thumbnail(tile)
       end
 
       self.players = [
@@ -647,46 +666,186 @@ module Monopoly
       dialogue_box_button_width =
         (Coordinates::DIALOGUE_BOX_WIDTH - (DIALOGUE_BOX_BUTTON_GAP * 3)) / 2
 
-      self.buttons = {
-        consecutive_charge: Button.new(
-          actions: nil,
-          font: fonts[:default][:type],
-          game: self,
-          text: 'Pay',
-          x: Coordinates::BUTTON_1_X,
-          y: Coordinates::BUTTON_1_Y
+      action_menu_inner_border_width = 10
+      action_menu_outer_border_width = 20
+      transluscent_white = Gosu::Color::WHITE.dup
+      transluscent_white.alpha = 175
+      self.action_menu_data = {
+        background_params: {
+          color: colors[:pop_up_menu_background],
+          height: Coordinates::ACTION_MENU_HEIGHT - (Coordinates::THUMBNAIL_HEIGHT * 2) -
+            action_menu_inner_border_width - action_menu_outer_border_width,
+          width: Coordinates::ACTION_MENU_WIDTH - (Coordinates::THUMBNAIL_HEIGHT * 2) -
+            action_menu_inner_border_width - action_menu_outer_border_width,
+          x: Coordinates::ACTION_MENU_LEFT_X + Coordinates::THUMBNAIL_HEIGHT + 20,
+          y: Coordinates::ACTION_MENU_TOP_Y + Coordinates::THUMBNAIL_HEIGHT + 20,
+          z: ZOrder::MENU_BACKGROUND
+        },
+        bottom_border_params: {
+          color: colors[:pop_up_menu_border],
+          height: 10,
+          width: Coordinates::ACTION_MENU_WIDTH,
+          x: Coordinates::ACTION_MENU_LEFT_X,
+          y: Coordinates::ACTION_MENU_BOTTOM_Y - action_menu_inner_border_width,
+          z: ZOrder::MENU_BACKGROUND
+        },
+        left_border_params: {
+          color: colors[:pop_up_menu_border],
+          height: Coordinates::ACTION_MENU_HEIGHT,
+          width: action_menu_outer_border_width,
+          x: Coordinates::ACTION_MENU_LEFT_X,
+          y: Coordinates::ACTION_MENU_TOP_Y + PLAYER_MENU_ROUNDED_CORNER_RADIUS,
+          z: ZOrder::MENU_BACKGROUND
+        },
+        minimap_current_tile_dot_circle: Image.new(
+          Gosu::Circle.new(
+            color: Gosu::Color::BLACK,
+            radius: 10
+          )
         ),
-        continue: Button.new(
-          actions: :end_turn,
-          font: fonts[:default][:type],
+        minimap_current_tile_dot_circle_params: {
+          from_center: true,
+          z: ZOrder::MENU_UI
+        },
+        minimap_current_tile_highlight_params: {
+          color: transluscent_white,
+          height: Coordinates::THUMBNAIL_HEIGHT,
+          width: Coordinates::THUMBNAIL_HEIGHT,
+          z: ZOrder::MENU_UI
+        },
+        rounded_corner_circle: Image.new(
+          Gosu::Circle.new(
+            color: colors[:pop_up_menu_border],
+            radius: PLAYER_MENU_ROUNDED_CORNER_RADIUS
+          )
+        ),
+        rounded_corner_circle_params: {
+          from_center: true,
+          x: Coordinates::ACTION_MENU_LEFT_X + PLAYER_MENU_ROUNDED_CORNER_RADIUS,
+          y: Coordinates::ACTION_MENU_TOP_Y + PLAYER_MENU_ROUNDED_CORNER_RADIUS,
+          z: ZOrder::MENU_BACKGROUND
+        },
+        right_border_params: {
+          color: colors[:pop_up_menu_border],
+          height: Coordinates::ACTION_MENU_HEIGHT,
+          width: action_menu_inner_border_width,
+          x: Coordinates::ACTION_MENU_RIGHT_X - action_menu_inner_border_width,
+          y: Coordinates::ACTION_MENU_TOP_Y,
+          z: ZOrder::MENU_BACKGROUND
+        },
+        top_border_params: {
+          color: colors[:pop_up_menu_border],
+          height: PLAYER_MENU_ROUNDED_CORNER_RADIUS,
+          width: Coordinates::ACTION_MENU_WIDTH - PLAYER_MENU_ROUNDED_CORNER_RADIUS,
+          x: Coordinates::ACTION_MENU_LEFT_X + PLAYER_MENU_ROUNDED_CORNER_RADIUS,
+          y: Coordinates::ACTION_MENU_TOP_Y,
+          z: ZOrder::MENU_BACKGROUND
+        }
+      }
+
+      minimap_image = Image.new(generate_minimap_image)
+      minimap_center_x = Coordinates::ACTION_MENU_LEFT_X + action_menu_outer_border_width +
+        (minimap_image.width / 2)
+      minimap_center_y = Coordinates::ACTION_MENU_TOP_Y + action_menu_outer_border_width +
+        (minimap_image.height / 2)
+      self.action_menu_data.merge!(
+        dice_background_params: {
+          color: colors[:pop_up_menu_border],
+          height: DEFAULT_TILE_BUTTON_HEIGHT + (TILE_BUTTON_GAP * 2),
+          width: (DEFAULT_TILE_BUTTON_HEIGHT * 2) + (TILE_BUTTON_GAP * 4),
+          x: minimap_center_x - (TILE_BUTTON_GAP * 2) - DEFAULT_TILE_BUTTON_HEIGHT,
+          y: minimap_center_y,
+          z: ZOrder::MENU_UI
+        },
+        die_a_params: {
+          draw_height: DEFAULT_TILE_BUTTON_HEIGHT,
+          draw_width: DEFAULT_TILE_BUTTON_HEIGHT,
+          x: minimap_center_x - TILE_BUTTON_GAP - DEFAULT_TILE_BUTTON_HEIGHT,
+          y: minimap_center_y + TILE_BUTTON_GAP,
+          z: ZOrder::MENU_UI
+        },
+        die_b_params: {
+          draw_height: DEFAULT_TILE_BUTTON_HEIGHT,
+          draw_width: DEFAULT_TILE_BUTTON_HEIGHT,
+          x: minimap_center_x + TILE_BUTTON_GAP,
+          y: minimap_center_y + TILE_BUTTON_GAP,
+          z: ZOrder::MENU_UI
+        },
+        die_images: {
+          1 => Image.new(images[:die_1]),
+          2 => Image.new(images[:die_2]),
+          3 => Image.new(images[:die_3]),
+          4 => Image.new(images[:die_4]),
+          5 => Image.new(images[:die_5]),
+          6 => Image.new(images[:die_6])
+        }
+      )
+
+      unless standard_board?
+        action_menu_data[:background_params].merge!(
+          height: Coordinates::ACTION_MENU_HEIGHT - action_menu_inner_border_width -
+            action_menu_outer_border_width,
+          width: Coordinates::ACTION_MENU_WIDTH - action_menu_inner_border_width -
+            action_menu_outer_border_width,
+          x: Coordinates::ACTION_MENU_LEFT_X + 20,
+          y: Coordinates::ACTION_MENU_TOP_Y + 20
+        )
+      end
+
+      self.action_menu_buttons = {
+        consecutive_charge: CircularButton.new(
+          actions: nil,
+          color: colors[:tile_button],
           game: self,
-          text: 'Continue',
-          x: Coordinates::BUTTON_1_X,
-          y: Coordinates::BUTTON_1_Y
+          hover_color: colors[:tile_button_hover],
+          hover_image: Image.new(images[:dollar_sign]),
+          image: Image.new(images[:dollar_sign]),
+          image_height: DEFAULT_TILE_BUTTON_HEIGHT * 0.75,
+          radius: DEFAULT_TILE_BUTTON_HEIGHT * 0.7,
+          x: minimap_center_x,
+          y: minimap_center_y - TILE_BUTTON_GAP - (DEFAULT_TILE_BUTTON_HEIGHT  * 0.7),
+          z: ZOrder::MENU_UI
         ),
         draw_card: Button.new(
           actions: :draw_card,
           font: fonts[:default][:type],
           game: self,
           text: 'Draw Card',
-          x: Coordinates::BUTTON_1_X,
-          y: Coordinates::BUTTON_1_Y
+          x: Coordinates::CENTER_X - (Button::DEFAULT_WIDTH / 2),
+          y: Coordinates::CENTER_Y + (Coordinates::TILE_HEIGHT / 2) + TILE_BUTTON_GAP,
+          z: ZOrder::MENU_UI
         ),
-        end_turn: Button.new(
+        end_turn: CircularButton.new(
           actions: :end_turn,
-          font: fonts[:default][:type],
+          color: colors[:tile_button],
           game: self,
-          text: 'End Turn',
-          x: Coordinates::BUTTON_1_X,
-          y: Coordinates::BUTTON_1_Y
+          hover_color: colors[:tile_button_hover],
+          hover_image: Image.new(images[:checkbox_checked]),
+          image: Image.new(images[:checkbox_checked]),
+          image_height: DEFAULT_TILE_BUTTON_HEIGHT * 0.7,
+          radius: DEFAULT_TILE_BUTTON_HEIGHT * 0.7,
+          x: minimap_center_x,
+          y: minimap_center_y - TILE_BUTTON_GAP - (DEFAULT_TILE_BUTTON_HEIGHT  * 0.7),
+          z: ZOrder::MENU_UI
         ),
         go_to_jail: Button.new(
           actions: :go_to_jail,
           font: fonts[:default][:type],
           game: self,
           text: 'Go To Jail',
-          x: Coordinates::BUTTON_1_X,
-          y: Coordinates::BUTTON_1_Y
+          x: Coordinates::CENTER_X - (Button::DEFAULT_WIDTH / 2),
+          y: Coordinates::CENTER_Y + (Coordinates::TILE_HEIGHT / 2) + TILE_BUTTON_GAP,
+          z: ZOrder::MENU_UI
+        ),
+        no_action: CircularButton.new(
+          actions: nil,
+          color: colors[:tile_button],
+          game: self,
+          hover_color: colors[:tile_button],
+          radius: DEFAULT_TILE_BUTTON_HEIGHT * 0.7,
+          x: minimap_center_x,
+          y: minimap_center_y - TILE_BUTTON_GAP - (DEFAULT_TILE_BUTTON_HEIGHT  * 0.7),
+          z: ZOrder::MENU_UI
         ),
         options: Button.new(
           actions: :toggle_options_menu,
@@ -703,47 +862,85 @@ module Monopoly
           y: Coordinates::TOP_Y,
           z: ZOrder::POP_UP_MENU_UI
         ),
-        pay_rent: Button.new(
+        pay_rent: CircularButton.new(
           actions: :pay_rent,
-          font: fonts[:default][:type],
+          color: colors[:tile_button],
           game: self,
-          text: 'Pay Rent',
-          x: Coordinates::BUTTON_1_X,
-          y: Coordinates::BUTTON_1_Y
+          hover_color: colors[:tile_button_hover],
+          hover_image: Image.new(images[:dollar_sign]),
+          image: Image.new(images[:dollar_sign]),
+          image_height: DEFAULT_TILE_BUTTON_HEIGHT * 0.75,
+          radius: DEFAULT_TILE_BUTTON_HEIGHT * 0.7,
+          x: minimap_center_x,
+          y: minimap_center_y - TILE_BUTTON_GAP - (DEFAULT_TILE_BUTTON_HEIGHT  * 0.7),
+          z: ZOrder::MENU_UI
         ),
-        pay_tax: Button.new(
+        pay_tax: CircularButton.new(
           actions: :pay_tax,
-          font: fonts[:default][:type],
+          color: colors[:tile_button],
           game: self,
-          text: 'Pay Tax',
-          x: Coordinates::BUTTON_1_X,
-          y: Coordinates::BUTTON_1_Y
+          hover_color: colors[:tile_button_hover],
+          hover_image: Image.new(images[:dollar_sign]),
+          image: Image.new(images[:dollar_sign]),
+          image_height: DEFAULT_TILE_BUTTON_HEIGHT * 0.75,
+          radius: DEFAULT_TILE_BUTTON_HEIGHT * 0.7,
+          x: minimap_center_x,
+          y: minimap_center_y - TILE_BUTTON_GAP - (DEFAULT_TILE_BUTTON_HEIGHT  * 0.7),
+          z: ZOrder::MENU_UI
         ),
-        roll_dice_for_move: Button.new(
+        roll_dice_for_move: CircularButton.new(
           actions: [[:roll_dice], [:move], [:land]],
-          font: fonts[:default][:type],
+          color: colors[:tile_button],
           game: self,
-          text: 'Roll Dice',
-          x: Coordinates::BUTTON_1_X,
-          y: Coordinates::BUTTON_1_Y
+          hover_color: colors[:tile_button_hover],
+          hover_image: Image.new(images[:dice]),
+          image: Image.new(images[:dice]),
+          image_height: DEFAULT_TILE_BUTTON_HEIGHT * 0.7,
+          radius: DEFAULT_TILE_BUTTON_HEIGHT * 0.7,
+          x: minimap_center_x,
+          y: minimap_center_y - TILE_BUTTON_GAP - (DEFAULT_TILE_BUTTON_HEIGHT  * 0.7),
+          z: ZOrder::MENU_UI
         ),
-        roll_dice_for_rent: Button.new(
+        roll_dice_for_rent: CircularButton.new(
           actions: [[:roll_dice], [:land]],
-          font: fonts[:default][:type],
+          color: colors[:tile_button],
           game: self,
-          text: 'Roll Dice',
-          x: Coordinates::BUTTON_1_X,
-          y: Coordinates::BUTTON_1_Y
+          hover_color: colors[:tile_button_hover],
+          hover_image: Image.new(images[:dice]),
+          image: Image.new(images[:dice]),
+          image_height: DEFAULT_TILE_BUTTON_HEIGHT * 0.7,
+          radius: DEFAULT_TILE_BUTTON_HEIGHT * 0.7,
+          x: minimap_center_x,
+          y: minimap_center_y - TILE_BUTTON_GAP - (DEFAULT_TILE_BUTTON_HEIGHT  * 0.7),
+          z: ZOrder::MENU_UI
         ),
-        use_get_out_of_jail_free_card: Button.new(
-          actions: :use_get_out_of_jail_free_card,
+        show_card: Button.new(
+          actions: :toggle_card_menu,
           font: fonts[:default][:type],
           game: self,
-          text: 'Use Get Out Of Jail Free Card',
-          x: Coordinates::BUTTON_2_X,
-          y: Coordinates::BUTTON_2_Y
+          text: 'Show Card',
+          x: Coordinates::CENTER_X - (Button::DEFAULT_WIDTH / 2),
+          y: Coordinates::CENTER_Y + (Coordinates::TILE_HEIGHT / 2) + TILE_BUTTON_GAP,
+          z: ZOrder::MENU_UI
         )
       }
+      if standard_board?
+        action_menu_buttons[:minimap] = Button.new(
+          actions: :toggle_map_menu,
+          color: nil,
+          deadzones: [action_menu_data[:background_params].slice(:height, :width, :x, :y)],
+          game: self,
+          height: minimap_image.height,
+          highlight_hover_color: colors[:button_hover_highlight_light],
+          hover_color: nil,
+          hover_image: minimap_image,
+          image: minimap_image,
+          width: minimap_image.width,
+          x: Coordinates::ACTION_MENU_LEFT_X + action_menu_outer_border_width,
+          y: Coordinates::ACTION_MENU_TOP_Y + action_menu_outer_border_width,
+          z: ZOrder::MENU_BACKGROUND
+        )
+      end
 
       self.options_menu_buttons = {
         save: Button.new(
@@ -779,6 +976,7 @@ module Monopoly
           actions: :toggle_dialogue_box,
           font: fonts[:default][:type],
           game: self,
+          hover_color: colors[:dialogue_box_button_hover],
           text: 'Cancel',
           width: dialogue_box_button_width,
           x: Coordinates::DIALOGUE_BOX_LEFT_X + DIALOGUE_BOX_BUTTON_GAP,
@@ -789,6 +987,7 @@ module Monopoly
           actions: :toggle_dialogue_box,
           font: fonts[:default][:type],
           game: self,
+          hover_color: colors[:dialogue_box_button_hover],
           text: 'Cancel',
           width: dialogue_box_button_width,
           x: Coordinates::DIALOGUE_BOX_RIGHT_X - DIALOGUE_BOX_BUTTON_GAP -
@@ -951,16 +1150,6 @@ module Monopoly
           x: Coordinates::FIRST_HOUSE_BUTTON_X,
           y: Coordinates::FIRST_HOUSE_BUTTON_Y + (DEFAULT_TILE_BUTTON_HEIGHT * 1.45),
           z: ZOrder::MAIN_UI
-        ),
-
-        # TODO: Move to action menu once it is implemented
-        show_card: Button.new(
-          actions: :toggle_card_menu,
-          font: fonts[:default][:type],
-          game: self,
-          text: 'Show Card',
-          x: Coordinates::BUTTON_2_X,
-          y: Coordinates::BUTTON_2_Y
         ),
         show_deed: CircularButton.new(
           actions: :toggle_deed_menu,
@@ -1662,11 +1851,26 @@ module Monopoly
           height: HEADER_HEIGHT,
           hover_color: colors[:pop_up_menu_background],
           hover_image: Image.new(images[:list]),
+          image: Image.new(images[:list]),
           image_height: HEADER_HEIGHT * 0.6,
           image_width: HEADER_HEIGHT * 0.6,
-          image: Image.new(images[:list]),
           width: HEADER_HEIGHT,
           x: Coordinates::LEFT_X,
+          y: Coordinates::TOP_Y,
+          z: ZOrder::MENU_UI
+        ),
+        map: Button.new(
+          actions: :toggle_map_menu,
+          color: nil,
+          game: self,
+          height: HEADER_HEIGHT,
+          hover_color: colors[:pop_up_menu_background],
+          hover_image: Image.new(images[:map]),
+          image: Image.new(images[:map]),
+          image_height: HEADER_HEIGHT * 0.6,
+          image_width: HEADER_HEIGHT * 0.6,
+          width: HEADER_HEIGHT,
+          x: Coordinates::LEFT_X + (HEADER_HEIGHT * 2),
           y: Coordinates::TOP_Y,
           z: ZOrder::MENU_UI
         ),
@@ -1677,22 +1881,11 @@ module Monopoly
           height: HEADER_HEIGHT,
           hover_color: colors[:pop_up_menu_background],
           hover_image: Image.new(images[:people]),
+          image: Image.new(images[:people]),
           image_height: HEADER_HEIGHT * 0.6,
           image_width: HEADER_HEIGHT * 0.6,
-          image: Image.new(images[:people]),
           width: HEADER_HEIGHT,
           x: Coordinates::LEFT_X + HEADER_HEIGHT,
-          y: Coordinates::TOP_Y,
-          z: ZOrder::MENU_UI
-        ),
-        temp_map: Button.new(
-          actions: :toggle_map_menu,
-          color: nil,
-          game: self,
-          height: HEADER_HEIGHT,
-          hover_color: colors[:pop_up_menu_background],
-          width: HEADER_HEIGHT,
-          x: Coordinates::LEFT_X + (HEADER_HEIGHT * 2),
           y: Coordinates::TOP_Y,
           z: ZOrder::MENU_UI
         )
@@ -2361,7 +2554,50 @@ module Monopoly
           image_height: DEFAULT_TILE_BUTTON_HEIGHT * 0.4,
           radius: DEFAULT_TILE_BUTTON_HEIGHT * 0.3,
           x: Coordinates::LEFT_X + DEFAULT_TILE_BUTTON_HEIGHT * 0.3 + 5,
-          y: Coordinates::MAP_MENU_CENTER_Y,
+          y: Coordinates::MAP_MENU_CENTER_Y - (DEFAULT_TILE_BUTTON_HEIGHT * 0.35),
+          z: ZOrder::MAIN_UI
+        )
+        map_menu_buttons[:page_left] = CircularButton.new(
+          actions: [
+            proc do
+              return unless drawing_map_menu?
+
+              self.map_menu_last_tile_index = nil
+              self.map_menu_first_tile_index =
+                (tile_indexes[map_menu_tiles.first] - 10) % tile_count
+              set_visible_map_menu_buttons(refresh: true)
+            end
+          ],
+          color: colors[:tile_button],
+          game: self,
+          hover_color: colors[:tile_button],
+          hover_image: Image.new(images[:double_arrow_left_hover]),
+          image: Image.new(images[:double_arrow_left]),
+          image_height: DEFAULT_TILE_BUTTON_HEIGHT * 0.4,
+          radius: DEFAULT_TILE_BUTTON_HEIGHT * 0.3,
+          x: Coordinates::LEFT_X + DEFAULT_TILE_BUTTON_HEIGHT * 0.3 + 5,
+          y: Coordinates::MAP_MENU_CENTER_Y + (DEFAULT_TILE_BUTTON_HEIGHT * 0.35),
+          z: ZOrder::MAIN_UI
+        )
+        map_menu_buttons[:page_right] = CircularButton.new(
+          actions: [
+            proc do
+              return unless drawing_map_menu?
+
+              self.map_menu_first_tile_index = nil
+              self.map_menu_last_tile_index = (tile_indexes[map_menu_tiles.last] + 10) % tile_count
+              set_visible_map_menu_buttons(refresh: true)
+            end
+          ],
+          color: colors[:tile_button],
+          game: self,
+          hover_color: colors[:tile_button],
+          hover_image: Image.new(images[:double_arrow_right_hover]),
+          image: Image.new(images[:double_arrow_right]),
+          image_height: DEFAULT_TILE_BUTTON_HEIGHT * 0.4,
+          radius: DEFAULT_TILE_BUTTON_HEIGHT * 0.3,
+          x: Coordinates::RIGHT_X - DEFAULT_TILE_BUTTON_HEIGHT * 0.3 - 5,
+          y: Coordinates::MAP_MENU_CENTER_Y  + (DEFAULT_TILE_BUTTON_HEIGHT * 0.35),
           z: ZOrder::MAIN_UI
         )
         map_menu_buttons[:right] = CircularButton.new(
@@ -2382,7 +2618,7 @@ module Monopoly
           image_height: DEFAULT_TILE_BUTTON_HEIGHT * 0.4,
           radius: DEFAULT_TILE_BUTTON_HEIGHT * 0.3,
           x: Coordinates::RIGHT_X - DEFAULT_TILE_BUTTON_HEIGHT * 0.3 - 5,
-          y: Coordinates::MAP_MENU_CENTER_Y,
+          y: Coordinates::MAP_MENU_CENTER_Y - (DEFAULT_TILE_BUTTON_HEIGHT * 0.35),
           z: ZOrder::MAIN_UI
         )
 
@@ -3194,7 +3430,6 @@ module Monopoly
           player_list_menu_button_gap
       }
 
-
       player_menu_button_gap = PLAYER_MENU_BUTTON_HEIGHT * 0.1
       color_group_offset = PLAYER_MENU_BUTTON_HEIGHT + player_menu_button_gap
       color_group_initial_x = Coordinates::PLAYER_MENU_LEFT_X + color_group_offset
@@ -3290,7 +3525,7 @@ module Monopoly
           z: ZOrder::MENU_UI
         ),
         get_out_of_jail_free: CircularButton.new(
-          actions: nil,
+          actions: :use_get_out_of_jail_free_card,
           color: nil,
           game: self,
           hover_color: colors[:tile_button],
@@ -3895,9 +4130,6 @@ module Monopoly
       self.turn = 1
       log_event('Turn 1 began.')
 
-      self.die_a = 1
-      self.die_b = 1
-
       self.deed_data = {}
       self.deed_rent_line_index = 1
 
@@ -3917,11 +4149,11 @@ module Monopoly
       self.player_inspector_utility_groups =
         ScrollingList.new(items: utility_groups.values, view_size: 1)
       self.player_list_menu_players = ScrollingList.new(items: [], view_size: 8)
+      self.drawing_action_menu = true
       self.drawing_compass_menu = true
       self.drawing_game_menu = true
       self.drawing_player_menu = true
       self.next_players = ScrollingList.new(items: players[1..-1], view_size: 4)
-      self.visible_buttons = [buttons[:roll_dice_for_move]]
       self.visible_card_menu_buttons = []
       self.visible_deed_menu_buttons = []
       self.visible_event_history_menu_buttons = []
@@ -3929,12 +4161,13 @@ module Monopoly
       self.visible_map_menu_buttons = []
       self.visible_player_inspector_buttons = []
       self.visible_player_list_menu_buttons = []
+      set_next_action(:roll_dice_for_move)
       set_visible_compass_menu_buttons
       set_visible_tile_menu_buttons
       set_visible_player_menu_buttons
     end
 
-    %i[current_player current_tile visible_buttons].each do |value|
+    %i[current_player current_tile].each do |value|
       define_method(:"cache_#{value}") do
         send(:"#{value}_cache=", send(value))
       end
@@ -3946,6 +4179,7 @@ module Monopoly
     end
 
     %i[
+      action_menu
       card_menu
       compass_menu
       deed_menu
@@ -3979,7 +4213,7 @@ module Monopoly
       if drawing_dialogue_box?
         temp_buttons += dialogue_box_buttons.values
       else
-        temp_buttons = [buttons[:options]]
+        temp_buttons = [action_menu_buttons[:options]]
         temp_buttons += options_menu_buttons.values.reverse if drawing_options_menu?
 
         if drawing_event_history_menu?
@@ -3998,11 +4232,14 @@ module Monopoly
           temp_buttons +=
             (drawing_card_menu? ? visible_card_menu_buttons : visible_tile_menu_buttons).reverse
 
+          if drawing_action_menu?
+            temp_buttons << action_menu_buttons[:minimap] if standard_board?
+            temp_buttons += visible_action_menu_buttons.reverse
+          end
+
           temp_buttons += visible_player_menu_buttons.reverse if drawing_player_menu?
           temp_buttons += visible_compass_menu_buttons.reverse if drawing_compass_menu?
           temp_buttons += game_menu_buttons.values.reverse if drawing_game_menu?
-
-          temp_buttons += visible_buttons.reverse
         end
       end
 
@@ -4148,6 +4385,77 @@ module Monopoly
       number.to_s(:delimited)
     end
 
+    def generate_minimap_image
+      action_menu_data[:minimap_coordinates] = {}
+      Gosu.render(Coordinates::THUMBNAIL_HEIGHT * 11, Coordinates::THUMBNAIL_HEIGHT * 11) do
+        x = Coordinates::THUMBNAIL_HEIGHT * 10
+        y = Coordinates::THUMBNAIL_HEIGHT * 10
+
+        x_offsets = [-Coordinates::THUMBNAIL_HEIGHT, 0, Coordinates::THUMBNAIL_HEIGHT, 0]
+        y_offsets = [0, -Coordinates::THUMBNAIL_HEIGHT, 0, Coordinates::THUMBNAIL_HEIGHT]
+
+        tiles_to_draw = tile_indexes.keys
+        tiles_to_draw.each_slice(10).with_index do |sub_tiles_to_draw, index|
+          sub_tiles_to_draw.each do |tile|
+            action_menu_data[:minimap_coordinates][tile] = { x: x, y: y }
+            tile.thumbnail.draw(x: x, y: y, z: 0)
+            x += x_offsets[index]
+            y += y_offsets[index]
+          end
+        end
+      end
+    end
+
+    def generate_tile_thumbnail(tile)
+      Gosu.render(Coordinates::THUMBNAIL_HEIGHT, Coordinates::THUMBNAIL_HEIGHT) do
+        Gosu.draw_rect(
+          color: Gosu::Color::BLACK,
+          height: Coordinates::THUMBNAIL_HEIGHT,
+          width: Coordinates::THUMBNAIL_HEIGHT,
+          x: 0,
+          y: 0,
+          z: 0
+        )
+
+        offset = 1
+        Gosu.draw_rect(
+          color: colors[:tile_background],
+          height: Coordinates::THUMBNAIL_HEIGHT - (offset * 2),
+          width: Coordinates::THUMBNAIL_HEIGHT - (offset * 2),
+          x: offset,
+          y: offset,
+          z: 0
+        )
+        offset += 2
+
+        if tile.icon
+          dimension_params =
+            if tile.icon.height > tile.icon.width
+              { draw_height: Coordinates::THUMBNAIL_HEIGHT - (offset * 2) }
+            else
+              { draw_width: Coordinates::THUMBNAIL_HEIGHT - (offset * 2) }
+            end
+
+          tile.icon.draw(
+            **dimension_params,
+            from_center: true,
+            x: Coordinates::THUMBNAIL_HEIGHT / 2,
+            y: Coordinates::THUMBNAIL_HEIGHT / 2,
+            z: 0
+          )
+        else
+          Gosu.draw_rect(
+            color: tile.group.color,
+            height: Coordinates::THUMBNAIL_HEIGHT - (offset * 4),
+            width: Coordinates::THUMBNAIL_HEIGHT - (offset * 4),
+            x: offset * 2,
+            y: offset * 2,
+            z: 0
+          )
+        end
+      end
+    end
+
     def go_money_amount
       DEFAULT_GO_MONEY_AMOUNT
     end
@@ -4197,6 +4505,14 @@ module Monopoly
       puts
       puts('--------------------------')
       puts
+    end
+
+    def set_next_action(action, message: nil, warning: false)
+      action_menu_data[:message] = message
+      action_menu_data[:message_color] = warning ? colors[:warning] : colors[:default_text]
+
+      self.next_action = action
+      set_visible_action_menu_buttons
     end
 
     def standard_board?

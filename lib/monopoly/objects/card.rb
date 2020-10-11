@@ -79,15 +79,14 @@ module Monopoly
         game.process_consecutive_charges(
           charges,
           actions: :return_new_card,
-          on_current_player_eliminated:
-            [[:return_new_card, actions: :end_turn, new_visible_buttons: nil]],
+          on_current_player_eliminated: [[:return_new_card, actions: :end_turn, next_action: nil]],
           reason: :game
         )
       else
         if amount.negative?
           game.charge_money(
             amount: -amount,
-            on_bankrupt: [[:return_new_card, actions: :end_turn, new_visible_buttons: nil]],
+            on_bankrupt: [[:return_new_card, actions: :end_turn, next_action: nil]],
             on_failure: proc do
               game.current_card.triggered = false
               game.set_visible_card_menu_buttons
@@ -160,11 +159,14 @@ module Monopoly
         !player.tile.mortgaged? && player.tile.is_a?(PropertyTile)
       if multiply_rent
         game.temporary_rent_multiplier = rent_multiplier
-        return game.return_new_card(new_visible_buttons: :roll_dice_for_rent) if
-          player.tile.is_a?(UtilityTile)
+        if player.tile.is_a?(UtilityTile)
+          return game.return_new_card(
+            next_action: [:roll_dice_for_rent, message: 'Roll Dice To Determine Rent']
+          )
+        end
       end
 
-      game.return_new_card(actions: :land, new_visible_buttons: nil)
+      game.return_new_card(actions: :land, next_action: nil)
     end
   end
 
@@ -189,7 +191,7 @@ module Monopoly
     end
 
     def perform_action
-      game.return_new_card(actions: :go_to_jail, new_visible_buttons: nil)
+      game.return_new_card(actions: :go_to_jail, next_action: nil)
     end
   end
 
@@ -214,7 +216,11 @@ module Monopoly
     def perform_action
       game.charge_money(
         amount: total_cost,
-        on_bankrupt: :return_new_card,
+        on_bankrupt: [[:return_new_card, actions: :end_turn, next_action: nil]],
+        on_failure: proc do
+          game.current_card.triggered = false
+          game.set_visible_card_menu_buttons
+        end,
         on_success: :return_new_card,
         player: player,
         reason: :game

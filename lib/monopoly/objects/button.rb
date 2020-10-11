@@ -14,6 +14,7 @@ module Monopoly
     attr_reader :center_x
     attr_reader :center_y
     attr_accessor :color
+    attr_accessor :deadzones
     attr_accessor :font
     attr_accessor :font_color
     attr_accessor :font_hover_color
@@ -79,6 +80,7 @@ module Monopoly
       self.border_hover_color = options[:border_hover_color]
       self.border_width = options[:border_width]
       self.color = color
+      self.deadzones = options[:deadzones]
       self.font = options[:font]
       self.font_color = font_color
       self.font_hover_color = options[:font_hover_color] || font_color
@@ -344,6 +346,8 @@ module Monopoly
     end
 
     def within?(_x, _y)
+      return false if deadzones && within_deadzones?(_x, _y)
+
       border = border_width || 0
       _x >= x - border && _x < (x + width + border) && _y >= y - border &&
         _y < (y + height + border)
@@ -394,6 +398,15 @@ module Monopoly
 
       Gosu.draw_rect(color: color_to_draw, height: height, width: width, x: x, y: y, z: z)
     end
+
+    def within_deadzones?(_x, _y)
+      deadzones.each do |deadzone|
+        return true if _x >= deadzone[:x] && _x < deadzone[:x] + deadzone[:width] &&
+          _y >= deadzone[:y] && _y < deadzone[:y] + deadzone[:height]
+      end
+
+      false
+    end
   end
 
   class CircularButton < Button
@@ -434,6 +447,7 @@ module Monopoly
       self.border_color = options[:border_color]
       self.border_hover_color = options[:border_hover_color]
       self.color = color
+      self.deadzones = options[:deadzones]
       self.font = options[:font]
       self.font_color = font_color
       self.font_hover_color = options[:font_hover_color] || font_color
@@ -558,6 +572,8 @@ module Monopoly
     end
 
     def within?(_x, _y)
+      return false if deadzones && within_deadzones?(_x, _y)
+
       Math.sqrt((_x - x).abs**2 + (_y - y).abs**2) < (radius + (border_width || 0))
     end
 

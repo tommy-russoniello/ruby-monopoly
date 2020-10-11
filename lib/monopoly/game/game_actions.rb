@@ -98,6 +98,7 @@ module Monopoly
         self.current_player = players[current_player_index]
         self.current_tile = self.focused_tile = current_player.tile
         self.current_player_landed = false
+        self.die_a = self.die_b = nil
 
         close_error_dialogue
         set_visible_compass_menu_buttons
@@ -113,30 +114,36 @@ module Monopoly
         set_visible_tile_menu_buttons
         case current_tile
         when CardTile
-          update_visible_buttons(:draw_card)
+          set_next_action(:draw_card)
         when FreeParkingTile
-          update_visible_buttons(:end_turn)
+          set_next_action(:end_turn)
         when GoTile
-          update_visible_buttons(:end_turn)
+          set_next_action(:end_turn)
         when GoToJailTile
-          update_visible_buttons(:go_to_jail)
+          set_next_action(:go_to_jail)
         when JailTile
-          update_visible_buttons(:end_turn)
+          set_next_action(:end_turn)
         when PropertyTile
           if current_tile.owner
             if current_tile.owner == current_player || current_tile.mortgaged?
-              update_visible_buttons(:end_turn)
+              set_next_action(:end_turn)
             else
               current_tile.dice_roll = die_a + die_b if current_tile.is_a?(UtilityTile)
-              buttons[:pay_rent].text = "Pay Rent (#{format_money(current_tile.rent)})"
-              update_visible_buttons(:pay_rent)
+              set_next_action(
+                :pay_rent,
+                message: "Rent Due: #{format_money(current_tile.rent)}",
+                warning: true
+              )
             end
           else
-            update_visible_buttons(:end_turn)
+            set_next_action(:end_turn)
           end
         when TaxTile
-          buttons[:pay_tax].text = "Pay Tax (#{format_money(current_tile.tax_amount)})"
-          update_visible_buttons(:pay_tax)
+          set_next_action(
+            :pay_tax,
+            message: "Tax Due: #{format_money(current_tile.tax_amount)}",
+            warning: true
+          )
         else
           pp('WARNING: INVALID TILE TYPE')
         end
@@ -163,18 +170,17 @@ module Monopoly
         process_consecutive_charges_helper(charges, actions, on_current_player_eliminated, reason)
       end
 
-      def return_new_card(actions: nil, new_visible_buttons: [])
+      def return_new_card(actions: nil, next_action: :end_turn)
         toggle_card_menu if drawing_card_menu?
         current_card.clear_transient_attributes
         cards[current_card.type] << current_card
         self.current_card = nil
         execute_actions(format_actions(actions)) if actions
-        return unless new_visible_buttons
+        return unless next_action
 
         set_visible_tile_menu_buttons
         set_visible_player_menu_buttons
-        new_visible_buttons = [:end_turn] if new_visible_buttons.empty?
-        update_visible_buttons(*new_visible_buttons)
+        set_next_action(*next_action)
       end
 
       def roll_die
@@ -238,12 +244,14 @@ module Monopoly
 
         charge = charges.first
         self.current_player = charge[:player]
-        buttons[:consecutive_charge].text =
-          "Pay #{format_money(charge[:amount])} to #{charge[:recipient].name}"
-        buttons[:consecutive_charge].actions =
+        action_menu_buttons[:consecutive_charge].actions =
           [[:process_consecutive_charge, charges, actions, on_current_player_eliminated, reason]]
         set_visible_player_menu_buttons
-        update_visible_buttons(:consecutive_charge)
+        set_next_action(
+          :consecutive_charge,
+          message: "Payment Due: #{format_money(charge[:amount])}",
+          warning: true
+        )
       end
     end
   end
