@@ -310,7 +310,6 @@ module Monopoly
       end
 
       def toggle_options_menu
-        options_button = action_menu_buttons[:options]
         if drawing_options_menu?
           options_button.color = nil
           options_button.hover_color = nil

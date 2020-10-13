@@ -36,13 +36,13 @@ module Monopoly
 
         error_dialogue_data[:font] = wrapped_text_data[:font]
         compacted_lines = wrapped_text_data[:lines].compact
-        initial_offset = fonts[:error_dialogue][:offset] *
+        initial_offset = fonts[:default][:offset] *
           ((wrapped_text_data[:lines].size - compacted_lines.size) / 2.0)
         error_dialogue_data[:lines] = compacted_lines.map.with_index do |line, index|
           {
             text: line,
             y: initial_offset + Coordinates::ERROR_DIALOGUE_TOP_Y +
-              Coordinates::ERROR_DIALOGUE_BORDER_WIDTH + (fonts[:error_dialogue][:offset] * index)
+              Coordinates::ERROR_DIALOGUE_BORDER_WIDTH + (fonts[:default][:offset] * index)
           }
         end
 
@@ -118,6 +118,7 @@ module Monopoly
         draw_player_inspector
         draw_player_list_menu
 
+        draw_clock
         draw_options_menu
         draw_dialogue_box
         draw_error_dialogue
@@ -128,7 +129,7 @@ module Monopoly
           color: colors[:default_text],
           rel_x: 1,
           rel_y: 0,
-          x: Coordinates::RIGHT_X * 0.85,
+          x: Coordinates::RIGHT_X * 0.8,
           y: Coordinates::TOP_Y,
           z: ZOrder::POP_UP_MENU_UI
         )
@@ -188,6 +189,10 @@ module Monopoly
 
         coordinates = [draw_mouse_x, draw_mouse_y] unless drawing_dialogue_box?
         visible_card_menu_buttons.each { |button| button.draw(*coordinates) }
+      end
+
+      def draw_clock
+        clock_data[:font].draw_text("Turn #{turn} | #{time_elapsed}", **clock_data[:text_params])
       end
 
       def draw_compass_menu
@@ -285,7 +290,7 @@ module Monopoly
           z: ZOrder::DIALOGUE_BACKGROUND
         )
 
-        fonts[:dialogue][:type].draw_text(
+        fonts[:extra_large][:type].draw_text(
           'Are You Sure?',
           color: colors[:dialogue_box_text],
           rel_x: 0.5,
@@ -432,7 +437,7 @@ module Monopoly
 
       def draw_options_menu
         coordinates = [draw_mouse_x, draw_mouse_y] unless drawing_dialogue_box?
-        action_menu_buttons[:options].draw(*coordinates)
+        options_button.draw(*coordinates)
         return unless drawing_options_menu?
 
 
@@ -521,17 +526,6 @@ module Monopoly
         end
 
         visible_tile_menu_buttons.each { |button| button.draw(*coordinates) }
-      end
-
-      def set_options_menu_button_coordinates
-        options_menu_buttons.values.each.with_index do |options_menu_button, index|
-          options_menu_button.update_coordinates(
-            x: action_menu_buttons[:options].x - Button::DEFAULT_WIDTH + 10,
-            y: action_menu_buttons[:options].y + (index * (Button::DEFAULT_HEIGHT + 1)) +
-              action_menu_buttons[:options].height + 1,
-            z: ZOrder::POP_UP_MENU_UI
-          )
-        end
       end
 
       def set_visible_action_menu_buttons
@@ -1021,6 +1015,8 @@ module Monopoly
         visible_player_inspector_buttons << player_inspector_buttons[:close]
 
         if player_inspector_show_stats
+          update_current_player_time_played
+
           player_inspector_buttons[:stats][0...-1].each do |data|
             visible_player_inspector_buttons << data[:name]
             data[:value].text = data[:function].call(inspected_player)

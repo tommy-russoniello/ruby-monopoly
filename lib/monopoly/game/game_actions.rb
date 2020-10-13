@@ -94,6 +94,8 @@ module Monopoly
       end
 
       def increment_current_player
+        update_current_player_time_played
+
         self.current_player_index = (current_player_index + 1) % players.size
         self.current_player = players[current_player_index]
         self.current_tile = self.focused_tile = current_player.tile

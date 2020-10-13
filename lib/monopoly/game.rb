@@ -16,6 +16,7 @@ module Monopoly
     attr_accessor :action_menu_data
     attr_accessor :card_menu_buttons
     attr_accessor :cards
+    attr_accessor :clock_data
     attr_accessor :color_groups
     attr_accessor :colors
     attr_accessor :compass_menu_buttons
@@ -27,6 +28,7 @@ module Monopoly
     attr_accessor :current_player_cache
     attr_accessor :current_player_index
     attr_accessor :current_player_landed
+    attr_accessor :current_player_start_time
     attr_accessor :current_tile
     attr_accessor :current_tile_cache
     attr_accessor :deed_data
@@ -72,6 +74,7 @@ module Monopoly
     attr_accessor :map_menu_tiles
     attr_accessor :next_action
     attr_accessor :next_players
+    attr_accessor :options_button
     attr_accessor :options_menu_buttons
     attr_accessor :options_menu_bar_paramaters
     attr_accessor :player_inspector_buttons
@@ -89,10 +92,12 @@ module Monopoly
     attr_accessor :player_menu_railroad_groups
     attr_accessor :player_menu_utility_groups
     attr_accessor :players
+    attr_accessor :previous_time_elapsed
     attr_accessor :previous_player_number
     attr_accessor :property_button_color_cache
     attr_accessor :property_button_hover_color_cache
     attr_accessor :railroad_groups
+    attr_accessor :start_time
     attr_accessor :temporary_rent_multiplier
     attr_accessor :tile_count
     attr_accessor :tile_indexes
@@ -160,15 +165,15 @@ module Monopoly
 
       monopoly_font = 'media/fonts/JosefinSans-Regular.ttf'
       self.fonts = {
-        big_title: { type: Gosu::Font.new(80), offset: 80 },
-        deed: { type: Gosu::Font.new(28, name: monopoly_font), offset: 35 },
-        deed_name: { type: Gosu::Font.new(30, name: monopoly_font), offset: 35 },
-        dialogue: { type: Gosu::Font.new(50), offset: 55 },
+        small: { type: Gosu::Font.new(25), offset: 30 },
         default: { type: Gosu::Font.new(DEFAULT_FONT_SIZE), offset: 35 },
-        error_dialogue: { type: Gosu::Font.new(30), offset: 35 },
-        map_house_count: { type: Gosu::Font.new(25), offset: 30 },
-        tile_house_count: { type: Gosu::Font.new(45), offset: 50 },
-        title: { type: Gosu::Font.new(55), offset: 55 }
+        large: { type: Gosu::Font.new(45), offset: 50 },
+        extra_large: { type: Gosu::Font.new(50), offset: 55 },
+        title: { type: Gosu::Font.new(55), offset: 55 },
+        big_title: { type: Gosu::Font.new(80), offset: 80 },
+
+        deed_name: { type: Gosu::Font.new(30, name: monopoly_font), offset: 35 },
+        deed: { type: Gosu::Font.new(28, name: monopoly_font), offset: 35 }
       }
 
       self.images = {
@@ -847,21 +852,6 @@ module Monopoly
           y: minimap_center_y - TILE_BUTTON_GAP - (DEFAULT_TILE_BUTTON_HEIGHT  * 0.7),
           z: ZOrder::MENU_UI
         ),
-        options: Button.new(
-          actions: :toggle_options_menu,
-          color: nil,
-          game: self,
-          height: HEADER_HEIGHT,
-          hover_color: nil,
-          hover_image: Image.new(images[:options_gear_hover]),
-          image_height: HEADER_HEIGHT * 0.9,
-          image_width: HEADER_HEIGHT * 0.9,
-          image: Image.new(images[:options_gear]),
-          width: HEADER_HEIGHT,
-          x: Coordinates::RIGHT_X - HEADER_HEIGHT,
-          y: Coordinates::TOP_Y,
-          z: ZOrder::POP_UP_MENU_UI
-        ),
         pay_rent: CircularButton.new(
           actions: :pay_rent,
           color: colors[:tile_button],
@@ -942,6 +932,21 @@ module Monopoly
         )
       end
 
+      self.options_button = Button.new(
+        actions: :toggle_options_menu,
+        color: nil,
+        game: self,
+        height: HEADER_HEIGHT,
+        hover_color: nil,
+        hover_image: Image.new(images[:options_gear_hover]),
+        image_height: HEADER_HEIGHT * 0.9,
+        image_width: HEADER_HEIGHT * 0.9,
+        image: Image.new(images[:options_gear]),
+        width: HEADER_HEIGHT,
+        x: Coordinates::RIGHT_X - HEADER_HEIGHT,
+        y: Coordinates::TOP_Y,
+        z: ZOrder::POP_UP_MENU_UI
+      )
       self.options_menu_buttons = {
         save: Button.new(
           actions: :save_game,
@@ -969,7 +974,14 @@ module Monopoly
         )
       }
 
-      set_options_menu_button_coordinates
+      options_menu_buttons.values.each.with_index do |options_menu_button, index|
+        options_menu_button.update_coordinates(
+          x: options_button.x - Button::DEFAULT_WIDTH + 10,
+          y: options_button.y + (index * (Button::DEFAULT_HEIGHT + 1)) +
+            options_button.height + 1,
+          z: ZOrder::POP_UP_MENU_UI
+        )
+      end
 
       self.dialogue_box_buttons = {
         cancel: Button.new(
@@ -1094,7 +1106,7 @@ module Monopoly
         house_with_number: Button.new(
           actions: nil,
           color: nil,
-          font: fonts[:tile_house_count][:type],
+          font: fonts[:large][:type],
           font_color: colors[:house_count],
           game: self,
           height: DEFAULT_TILE_BUTTON_HEIGHT,
@@ -1330,7 +1342,7 @@ module Monopoly
             house_big: Button.new(
               actions: nil,
               color: nil,
-              font: fonts[:tile_house_count][:type],
+              font: fonts[:large][:type],
               font_color: colors[:house_count],
               game: self,
               height: DEFAULT_TILE_BUTTON_HEIGHT,
@@ -1347,7 +1359,7 @@ module Monopoly
             house_small: Button.new(
               actions: nil,
               color: nil,
-              font: fonts[:tile_house_count][:type],
+              font: fonts[:large][:type],
               font_color: colors[:house_count],
               game: self,
               height: DEFAULT_TILE_BUTTON_HEIGHT * 0.45,
@@ -1977,7 +1989,7 @@ module Monopoly
         house: Button.new(
           actions: nil,
           color: nil,
-          font: fonts[:tile_house_count][:type],
+          font: fonts[:large][:type],
           font_color: colors[:house_count],
           game: self,
           height: DEFAULT_TILE_BUTTON_HEIGHT / 2,
@@ -2292,7 +2304,7 @@ module Monopoly
       # TODO: Update this check once hotels are implemented
       if max_house_count >= DEFAULT_MAX_HOUSE_COUNT
         map_menu_houses_button_params.merge!(
-          font: fonts[:map_house_count][:type],
+          font: fonts[:small][:type],
           font_color: colors[:house_count],
           height: house_height * 1.5,
           hover_image: Image.new(images[:house]),
@@ -2871,7 +2883,7 @@ module Monopoly
         jail_turns: CircularButton.new(
           actions: nil,
           color: colors[:pop_up_menu_background_light],
-          font: fonts[:tile_house_count][:type],
+          font: fonts[:large][:type],
           font_color: colors[:default_text],
           game: self,
           radius: player_inspector_button_height / 2,
@@ -3147,18 +3159,7 @@ module Monopoly
             name: 'Spent in trades'
           },
           {
-            function: lambda do |player|
-              total_seconds = player.stats[:time_played]
-              hours = total_seconds / (60 * 60)
-              minutes = total_seconds / 60 % 60
-              seconds = total_seconds % 60
-
-              hours = "#{hours} hour#{'s' unless hours == 1}"
-              minutes = "#{minutes} minute#{'s' unless minutes == 1}"
-              seconds = "#{seconds} second#{'s' unless seconds == 1}"
-
-              "#{hours}, #{minutes}, and #{seconds}"
-            end,
+            function: lambda { |player| Duration.new(player.stats[:time_played]).to_words },
             name: 'Time played'
           },
           {
@@ -3823,7 +3824,7 @@ module Monopoly
           border_color: colors[:jail],
           border_hover_color: colors[:jail],
           border_width: DEFAULT_TILE_BUTTON_BORDER_WIDTH,
-          font: fonts[:tile_house_count][:type],
+          font: fonts[:large][:type],
           font_color: colors[:default_text]
         )
       end
@@ -3920,6 +3921,18 @@ module Monopoly
             z: ZOrder::POP_UP_MENU_BACKGROUND
           }
         ]
+      }
+
+      self.clock_data = {
+        font: fonts[:small][:type],
+        text_params: {
+          color: colors[:default_text],
+          rel_x: 1,
+          rel_y: 0.5,
+          x: options_button.x - (DEFAULT_TILE_BUTTON_HEIGHT / 2),
+          y: options_button.y + (HEADER_HEIGHT / 2),
+          z: ZOrder::MENU_UI
+        }
       }
 
       self.cards = {
@@ -4165,6 +4178,9 @@ module Monopoly
       set_visible_compass_menu_buttons
       set_visible_tile_menu_buttons
       set_visible_player_menu_buttons
+
+      self.previous_time_elapsed = 0
+      self.start_time = self.current_player_start_time = current_time
     end
 
     %i[current_player current_tile].each do |value|
@@ -4213,7 +4229,7 @@ module Monopoly
       if drawing_dialogue_box?
         temp_buttons += dialogue_box_buttons.values
       else
-        temp_buttons = [action_menu_buttons[:options]]
+        temp_buttons = [options_button]
         temp_buttons += options_menu_buttons.values.reverse if drawing_options_menu?
 
         if drawing_event_history_menu?
@@ -4248,6 +4264,10 @@ module Monopoly
 
     def building_sell_percentage
       DEFAULT_BUILDING_SELL_PERCENTAGE
+    end
+
+    def current_time
+      Process.clock_gettime(Process::CLOCK_MONOTONIC)
     end
 
     def drawing_error_dialogue?
@@ -4525,6 +4545,15 @@ module Monopoly
 
     def ticks_for_seconds(seconds)
       seconds * 60
+    end
+
+    def time_elapsed
+      Duration.new((previous_time_elapsed + current_time - start_time).floor).to_numbers
+    end
+
+    def update_current_player_time_played
+      current_player.stats[:time_played] += (current_time - current_player_start_time).floor
+      self.current_player_start_time = current_time
     end
   end
 end

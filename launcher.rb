@@ -17,6 +17,7 @@ else
   ENV['RESOLUTION_WIDTH'] = '1920'
 end
 
+require_relative 'lib/core'
 require_relative 'lib/gosu'
 require_relative 'lib/monopoly'
 

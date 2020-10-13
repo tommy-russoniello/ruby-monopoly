@@ -8,7 +8,6 @@ require_relative 'monopoly/objects/button'
 require_relative 'monopoly/objects/card'
 require_relative 'monopoly/objects/image'
 require_relative 'monopoly/objects/player'
-require_relative 'monopoly/objects/scrolling_list'
 require_relative 'monopoly/objects/tile'
 require_relative 'monopoly/objects/tile_group'
 
