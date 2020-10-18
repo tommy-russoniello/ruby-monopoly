@@ -46,7 +46,7 @@ module Monopoly
         toggle_event_history_menu if drawing_event_history_menu?
         toggle_group_menu if drawing_group_menu?
         toggle_player_inspector if drawing_player_inspector?
-        toggle_player_list_menu if drawing_player_list_menu?
+        player_list_menu.close if player_list_menu.drawing?
       end
 
       def collect_go_money(times_passed_go, player: current_player)
@@ -90,7 +90,7 @@ module Monopoly
           set_visible_player_menu_buttons(refresh: true)
         end
 
-        map_menu_buttons[:tokens].delete(player)
+        map_menu.buttons[:tokens].delete(player)
       end
 
       def increment_current_player
@@ -246,7 +246,7 @@ module Monopoly
 
         charge = charges.first
         self.current_player = charge[:player]
-        action_menu_buttons[:consecutive_charge].actions =
+        action_menu.buttons[:consecutive_charge].actions =
           [[:process_consecutive_charge, charges, actions, on_current_player_eliminated, reason]]
         set_visible_player_menu_buttons
         set_next_action(

@@ -8,10 +8,6 @@ module Monopoly
       DEFAULT_TILE_BUTTON_HEIGHT = 100
       DIALOGUE_BOX_BUTTON_GAP = 20
       HEADER_HEIGHT = 50
-      MAP_MENU_BUTTON_GAP = DEFAULT_TILE_BUTTON_HEIGHT * 0.05
-      MAP_MENU_BUTTON_HEIGHT = DEFAULT_TILE_BUTTON_HEIGHT * 0.4
-      MAP_MENU_TILES_MAX_WIDTH = Coordinates::RIGHT_X - Coordinates::LEFT_X -
-        (DEFAULT_TILE_BUTTON_HEIGHT * 1.8)
       MAX_DEED_ICON_HEIGHT = Coordinates::DEED_HEIGHT * 0.27
       MAX_DEED_ICON_WIDTH = Coordinates::DEED_HEIGHT * 0.5
       MAX_DEED_NAME_LINES = 3
@@ -53,9 +49,9 @@ module Monopoly
       end
 
       def display_tile(tile)
-        if drawing_map_menu?
-          self.current_map_tile = tile
-          set_visible_map_menu_buttons
+        if map_menu.drawing?
+          map_menu.current_tile = tile
+          map_menu.update
         else
           self.focused_tile = tile
           set_visible_tile_menu_buttons
@@ -70,7 +66,7 @@ module Monopoly
         self.draw_mouse_x = mouse_x
         self.draw_mouse_y = mouse_y
 
-        unless drawing_map_menu?
+        unless map_menu.drawing?
           # Background
           Gosu.draw_rect(
             color: colors[:main_background],
@@ -96,7 +92,7 @@ module Monopoly
           draw_player_menu
           draw_card_menu
           draw_tile_menu
-          draw_action_menu
+          action_menu.draw
         end
 
         # Pop up background blur
@@ -114,9 +110,9 @@ module Monopoly
         draw_deed_menu
         draw_event_history_menu
         draw_group_menu
-        draw_map_menu
+        map_menu.draw
         draw_player_inspector
-        draw_player_list_menu
+        player_list_menu.draw
 
         draw_clock
         draw_options_menu
@@ -133,46 +129,6 @@ module Monopoly
           y: Coordinates::TOP_Y,
           z: ZOrder::POP_UP_MENU_UI
         )
-      end
-
-      def draw_action_menu
-        return unless drawing_action_menu?
-
-        Gosu.draw_rect(action_menu_data[:bottom_border_params])
-        Gosu.draw_rect(action_menu_data[:left_border_params])
-        action_menu_data[:rounded_corner_circle].draw(
-          action_menu_data[:rounded_corner_circle_params]
-        )
-        Gosu.draw_rect(action_menu_data[:right_border_params])
-        Gosu.draw_rect(action_menu_data[:top_border_params])
-
-        coordinates = [draw_mouse_x, draw_mouse_y] unless drawing_pop_up_menu? ||
-          drawing_dialogue_box?
-
-        action_menu_buttons[:minimap].draw(*coordinates) if standard_board?
-        Gosu.draw_rect(action_menu_data[:minimap_current_tile_highlight_params])
-        action_menu_data[:minimap_current_tile_dot_circle].draw(
-          action_menu_data[:minimap_current_tile_dot_circle_params]
-        )
-        Gosu.draw_rect(action_menu_data[:background_params])
-        Gosu.draw_rect(action_menu_data[:dice_background_params])
-
-        if action_menu_data[:message]
-          fonts[:default][:type].draw_text(
-            action_menu_data[:message],
-            color: action_menu_data[:message_color],
-            rel_x: 1,
-            rel_y: 1,
-            x: Coordinates::ACTION_MENU_RIGHT_X - 10,
-            y: Coordinates::ACTION_MENU_TOP_Y - 10,
-            z: ZOrder::MENU_UI
-          )
-        end
-
-        action_menu_data[:die_images][die_a].draw(action_menu_data[:die_a_params]) if die_a
-        action_menu_data[:die_images][die_b].draw(action_menu_data[:die_b_params]) if die_b
-
-        visible_action_menu_buttons.each { |button| button.draw(*coordinates) }
       end
 
       def draw_card_menu
@@ -243,7 +199,7 @@ module Monopoly
           z: ZOrder::POP_UP_MENU_BACKGROUND
         )
 
-        tile = current_map_tile || focused_tile
+        tile = map_menu.current_tile || focused_tile
         if tile.deed_image
           tile.deed_image.draw(
             draw_height: Coordinates::DEED_HEIGHT,
@@ -385,56 +341,6 @@ module Monopoly
         visible_group_menu_buttons.each { |button| button.draw(*coordinates) }
       end
 
-      def draw_map_menu
-        return unless drawing_map_menu?
-
-        coordinates = [draw_mouse_x, draw_mouse_y] unless drawing_dialogue_box? ||
-          drawing_pop_up_menu?
-
-        map_menu_data[:rectangles].each { |data| Gosu.draw_rect(data) }
-
-        visible_map_menu_buttons.each { |button| button.draw(*coordinates) }
-
-        # Current map tile border
-        if current_map_tile_button
-          color = colors[:neutral_yellow]
-          width = 5
-
-          Gosu.draw_rect(
-            color: color,
-            height: width,
-            width: current_map_tile_button.width,
-            x: current_map_tile_button.x,
-            y: current_map_tile_button.y,
-            z: ZOrder::MAIN_UI
-          )
-          Gosu.draw_rect(
-            color: color,
-            height: width,
-            width: current_map_tile_button.width,
-            x: current_map_tile_button.x,
-            y: current_map_tile_button.y + current_map_tile_button.height - width,
-            z: ZOrder::MAIN_UI
-          )
-          Gosu.draw_rect(
-            color: color,
-            height: current_map_tile_button.height,
-            width: width,
-            x: current_map_tile_button.x,
-            y: current_map_tile_button.y,
-            z: ZOrder::MAIN_UI
-          )
-          Gosu.draw_rect(
-            color: color,
-            height: current_map_tile_button.height,
-            width: width,
-            x: current_map_tile_button.x + current_map_tile_button.width - width,
-            y: current_map_tile_button.y,
-            z: ZOrder::MAIN_UI
-          )
-        end
-      end
-
       def draw_options_menu
         coordinates = [draw_mouse_x, draw_mouse_y] unless drawing_dialogue_box?
         options_button.draw(*coordinates)
@@ -457,33 +363,6 @@ module Monopoly
         visible_player_inspector_buttons.each { |button| button.draw(*coordinates) }
       end
 
-      def draw_player_list_menu
-        return unless drawing_player_list_menu?
-
-        coordinates = [draw_mouse_x, draw_mouse_y] unless drawing_dialogue_box?
-
-        Gosu.draw_rect(
-          color: colors[:pop_up_menu_border],
-          height: Coordinates::PLAYER_LIST_MENU_HEIGHT,
-          width: Coordinates::PLAYER_LIST_MENU_WIDTH,
-          x: Coordinates::PLAYER_LIST_MENU_LEFT_X,
-          y: Coordinates::PLAYER_LIST_MENU_TOP_Y,
-          z: ZOrder::POP_UP_MENU_BACKGROUND
-        )
-        Gosu.draw_rect(
-          color: colors[:pop_up_menu_background],
-          height: Coordinates::PLAYER_LIST_MENU_HEIGHT -
-            (Coordinates::PLAYER_LIST_MENU_BORDER_WIDTH * 2),
-          width: Coordinates::PLAYER_LIST_MENU_WIDTH -
-            (Coordinates::PLAYER_LIST_MENU_BORDER_WIDTH * 2),
-          x: Coordinates::PLAYER_LIST_MENU_LEFT_X + Coordinates::PLAYER_LIST_MENU_BORDER_WIDTH,
-          y: Coordinates::PLAYER_LIST_MENU_TOP_Y + Coordinates::PLAYER_LIST_MENU_BORDER_WIDTH,
-          z: ZOrder::POP_UP_MENU_BACKGROUND
-        )
-
-        visible_player_list_menu_buttons.each { |button| button.draw(*coordinates) }
-      end
-
       def draw_player_menu
         coordinates = [draw_mouse_x, draw_mouse_y] unless drawing_pop_up_menu? ||
           drawing_dialogue_box?
@@ -501,7 +380,7 @@ module Monopoly
       end
 
       def draw_tile_menu
-        return if drawing_map_menu? || drawing_card_menu? || drawing_pop_up_menu?
+        return if map_menu.drawing? || drawing_card_menu? || drawing_pop_up_menu?
 
         coordinates = [draw_mouse_x, draw_mouse_y] unless drawing_dialogue_box?
 
@@ -526,31 +405,6 @@ module Monopoly
         end
 
         visible_tile_menu_buttons.each { |button| button.draw(*coordinates) }
-      end
-
-      def set_visible_action_menu_buttons
-        self.visible_action_menu_buttons = []
-
-        action_menu_data[:minimap_current_tile_highlight_params].merge!(
-          x: action_menu_buttons[:minimap].x +
-            action_menu_data[:minimap_coordinates][current_tile][:x],
-          y: action_menu_buttons[:minimap].y +
-            action_menu_data[:minimap_coordinates][current_tile][:y]
-        )
-        action_menu_data[:minimap_current_tile_dot_circle_params].merge!(
-          x: action_menu_buttons[:minimap].x +
-            action_menu_data[:minimap_coordinates][current_tile][:x] +
-            (Coordinates::THUMBNAIL_HEIGHT / 2),
-          y: action_menu_buttons[:minimap].y +
-            action_menu_data[:minimap_coordinates][current_tile][:y] +
-            (Coordinates::THUMBNAIL_HEIGHT / 2)
-        )
-
-        visible_action_menu_buttons << action_menu_buttons[:show_card] if current_card &&
-          !drawing_card_menu?
-        visible_action_menu_buttons << action_menu_buttons[next_action] if next_action
-        visible_action_menu_buttons << action_menu_buttons[:no_action] if
-          [nil, :draw_card, :go_to_jail].include?(next_action)
       end
 
       def set_visible_card_menu_buttons
@@ -616,7 +470,7 @@ module Monopoly
         self.deed_data = {}
         visible_deed_menu_buttons << deed_menu_buttons[:close]
 
-        tile = current_map_tile || focused_tile
+        tile = map_menu.current_tile || focused_tile
         set_deed_base_data
         wrapped_text_data = Gosu::Font.wrap_text(
           max_lines: MAX_DEED_NAME_LINES,
@@ -736,278 +590,6 @@ module Monopoly
         end
 
         shift_group_menu_buttons
-      end
-
-      def set_visible_map_menu_buttons(refresh: false)
-        self.visible_map_menu_buttons = []
-        self.current_map_tile_button = nil
-
-        visible_map_menu_buttons << map_menu_buttons[:close]
-
-        map_menu_buttons[:player_token].hover_image = current_player.token_image.clone
-        map_menu_buttons[:player_token].image = current_player.token_image.clone
-        map_menu_buttons[:player_token].maximize_images_in_square(TOKEN_HEIGHT)
-        visible_map_menu_buttons << map_menu_buttons[:player_token]
-
-        map_menu_buttons[:money].text = format_money(current_player.money)
-        visible_map_menu_buttons << map_menu_buttons[:money]
-
-        visible_map_menu_buttons <<
-          if map_menu_data[:show_player_tokens][current_player]
-            map_menu_buttons[:player_tokens_hide]
-          else
-            map_menu_buttons[:player_tokens_show]
-          end
-
-        if standard_board?
-          visible_map_menu_buttons << map_menu_buttons[:rotate_clockwise]
-          visible_map_menu_buttons << map_menu_buttons[:rotate_counterclockwise]
-
-          self.map_menu_tiles = []
-          (
-            (map_menu_first_tile_index...tile_count).to_a + (0...map_menu_first_tile_index).to_a
-          ).each.with_index do |tile_index, index|
-            tile = tiles[tile_index]
-            map_menu_tiles << tile
-            buttons = map_menu_buttons[:tiles][index]
-            self.current_map_tile_button = buttons[:tile] if tile == current_map_tile
-
-            if refresh
-              buttons[:tile].image = tile.tile_image.clone
-              buttons[:tile].hover_image = tile.tile_image.clone
-            end
-
-            if tile.is_a?(PropertyTile) && tile.owner
-              buttons[:owner].image = tile.owner.token_image.clone
-              buttons[:owner].hover_image = tile.owner.token_image.clone
-              buttons[:owner].maximize_images_in_square(MAP_MENU_BUTTON_HEIGHT * 0.625)
-              visible_map_menu_buttons << buttons[:owner]
-              visible_map_menu_buttons << buttons[:tile]
-
-              visible_map_menu_buttons << buttons[:mortgage_lock] if tile.mortgaged?
-
-              if tile.group.monopolized?
-                buttons[:owner].color = buttons[:owner].hover_color = colors[:positive_green]
-
-                if tile.is_a?(StreetTile) && tile.house_count.positive?
-                  # TODO: Update this check once hotels are implemented
-                  if max_house_count < DEFAULT_MAX_HOUSE_COUNT
-                    image = images[:"houses_#{tile.house_count}"]
-                    buttons[:houses].image = Image.new(image)
-                    buttons[:houses].hover_image = Image.new(image)
-                  else
-                    buttons[:houses].text = tile.house_count
-                  end
-
-                  visible_map_menu_buttons << buttons[:houses]
-                end
-              else
-                buttons[:owner].color = buttons[:owner].hover_color = Gosu::Color::WHITE
-              end
-            else
-              visible_map_menu_buttons << buttons[:tile]
-            end
-
-            set_map_menu_token_buttons(buttons: buttons, tile: tile) if
-              map_menu_data[:show_player_tokens][current_player]
-          end
-        else
-          ratio = Coordinates::TILE_HEIGHT / (DEFAULT_TILE_BUTTON_HEIGHT * 1.4)
-
-          total_width = 0
-          tile_index = map_menu_first_tile_index || map_menu_last_tile_index
-          next_tile_width = tile_width(tiles[tile_index]) / ratio
-          map_tiles = []
-          while total_width + next_tile_width < MAP_MENU_TILES_MAX_WIDTH
-            tile = tiles[tile_index]
-            total_width += next_tile_width
-
-            increment =
-              if map_menu_first_tile_index
-                map_tiles << tile
-                1
-              else
-                map_tiles.unshift(tile)
-                -1
-              end
-
-            tile_index = (tile_index + increment) % tile_count
-            next_tile_width = tile_width(tiles[tile_index]) / ratio
-          end
-
-          initial_x = Coordinates::CENTER_X - (total_width / 2)
-          offset = 0
-          map_tiles.each.with_index do |tile, index|
-            buttons = map_menu_buttons[:tiles][index]
-            self.current_map_tile_button = buttons[:tile] if tile == current_map_tile
-            x = initial_x + offset
-            tile_width = tile_width(tile) / ratio
-            if refresh
-              buttons[:tile].image = tile.tile_image.clone
-              buttons[:tile].hover_image = tile.tile_image.clone
-              buttons[:tile].width = buttons[:tile].image_width = tile_width
-              buttons[:tile].hover_image_width = tile_width
-              buttons[:tile].update_coordinates(x: x)
-            end
-
-            if tile.is_a?(PropertyTile) && tile.owner
-              buttons[:owner].image = tile.owner.token_image.clone
-              buttons[:owner].hover_image = tile.owner.token_image.clone
-              buttons[:owner].maximize_images_in_square(MAP_MENU_BUTTON_HEIGHT * 0.625)
-              center_of_tile_x = buttons[:tile].x + (tile_width / 2)
-              buttons[:owner].update_coordinates(x: center_of_tile_x)
-              visible_map_menu_buttons << buttons[:owner]
-              visible_map_menu_buttons << buttons[:tile]
-
-              if tile.mortgaged?
-                buttons[:mortgage_lock].update_coordinates(
-                  x: buttons[:tile].x + buttons[:tile].width - MAP_MENU_BUTTON_GAP -
-                    buttons[:mortgage_lock].radius
-                )
-                visible_map_menu_buttons << buttons[:mortgage_lock]
-              end
-
-              if tile.group.monopolized?
-                buttons[:owner].color = buttons[:owner].hover_color = colors[:positive_green]
-
-                if tile.is_a?(StreetTile) && tile.house_count.positive?
-                  # TODO: Update this check once hotels are implemented
-                  if max_house_count < DEFAULT_MAX_HOUSE_COUNT
-                    image = images[:"houses_#{tile.house_count}"]
-                    buttons[:houses].image = Image.new(image)
-                    buttons[:houses].hover_image = Image.new(image)
-                  else
-                    buttons[:houses].text = tile.house_count
-                  end
-
-                  buttons[:houses].update_coordinates(
-                    x: center_of_tile_x - (buttons[:houses].width / 2)
-                  )
-                  visible_map_menu_buttons << buttons[:houses]
-                end
-              else
-                buttons[:owner].color = buttons[:owner].hover_color = Gosu::Color::WHITE
-              end
-            else
-              visible_map_menu_buttons << buttons[:tile]
-            end
-
-            set_map_menu_token_buttons(buttons: buttons, tile: tile) if
-              map_menu_data[:show_player_tokens][current_player]
-
-            offset += tile_width
-          end
-
-          if map_tiles.size < tile_count
-            visible_map_menu_buttons << map_menu_buttons[:left]
-            visible_map_menu_buttons << map_menu_buttons[:page_left]
-            visible_map_menu_buttons << map_menu_buttons[:page_right]
-            visible_map_menu_buttons << map_menu_buttons[:right]
-          end
-
-          self.map_menu_tiles = map_tiles
-        end
-
-        if current_map_tile
-          visible_map_menu_buttons << map_menu_buttons[:back]
-          visible_map_menu_buttons << map_menu_buttons[:open_in_tile_menu]
-
-          map_menu_buttons[:tile_name].text = current_map_tile.name
-          visible_map_menu_buttons << map_menu_buttons[:tile_name]
-
-          if current_map_tile.icon
-            map_menu_buttons[:tile_icon].hover_image = current_map_tile.icon.clone
-            map_menu_buttons[:tile_icon].image = current_map_tile.icon.clone
-          else
-            map_menu_buttons[:tile_icon].hover_image = current_map_tile.tile_image.clone
-            map_menu_buttons[:tile_icon].image = current_map_tile.tile_image.clone
-          end
-
-          map_menu_buttons[:tile_icon].maximize_images_in_square(TOKEN_HEIGHT * 2)
-
-          map_menu_buttons[:tile_icon].border_color =
-            map_menu_buttons[:tile_icon].border_hover_color =
-              if current_map_tile.is_a?(StreetTile)
-                current_map_tile.group.color
-              else
-                colors[:pop_up_menu_border]
-              end
-
-          visible_map_menu_buttons << map_menu_buttons[:tile_icon]
-
-          visible_map_menu_buttons << map_menu_buttons[:show_players] if
-            players.count { |player| player.tile == current_map_tile }.positive?
-
-          if current_map_tile.is_a?(PropertyTile)
-            map_menu_tiles.each.with_index do |tile, index|
-              map_menu_buttons[:tiles][index][:tile].highlight_color =
-                if current_map_tile.group.tiles.include?(tile)
-                  if current_map_tile.group.is_a?(ColorGroup)
-                    color = current_map_tile.group.color
-                    Gosu::Color.new(100, color.red, color.green, color.blue)
-                  else
-                    colors[:tile_button_hover]
-                  end
-                else
-                  nil
-                end
-            end
-
-            map_menu_buttons[:show_group].hover_image = current_map_tile.group.image.clone
-            map_menu_buttons[:show_group].image = current_map_tile.group.image.clone
-            map_menu_buttons[:show_group].maximize_images_in_square(TOKEN_HEIGHT)
-            visible_map_menu_buttons << map_menu_buttons[:show_group]
-
-            visible_map_menu_buttons << map_menu_buttons[:show_deed]
-
-            if current_map_tile.owner
-              map_menu_buttons[:owner].hover_image = current_map_tile.owner.token_image.clone
-              map_menu_buttons[:owner].image = current_map_tile.owner.token_image.clone
-              map_menu_buttons[:owner].color, map_menu_buttons[:owner].hover_color =
-                if current_map_tile.group.monopolized?
-                  colors.values_at(:monopoly_button_background, :monopoly_button_background_hover)
-                else
-                  colors.values_at(:tile_button, :tile_button_hover)
-                end
-
-              map_menu_buttons[:owner].maximize_images_in_square(TOKEN_HEIGHT)
-              visible_map_menu_buttons << map_menu_buttons[:owner]
-
-              if current_map_tile.owner == current_player
-                mortgage_button = current_map_tile.mortgaged? ? :unmortgage : :mortgage
-                visible_map_menu_buttons << map_menu_buttons[mortgage_button]
-              elsif current_map_tile.mortgaged?
-                visible_map_menu_buttons << map_menu_buttons[:mortgage_lock]
-              end
-            end
-
-            if current_map_tile.is_a?(StreetTile)
-              color = current_map_tile.group.color
-              map_menu_buttons[:show_group].image_background_color = color
-              map_menu_buttons[:show_group].image_background_hover_color = color
-              map_menu_buttons[:show_group].hover_color =
-                Gosu::Color.new(100, color.red, color.green, color.blue)
-
-              if current_map_tile.group.monopolized?
-                map_menu_buttons[:house].text = current_map_tile.house_count
-                visible_map_menu_buttons << map_menu_buttons[:house]
-
-                if current_map_tile.owner == current_player
-                  visible_map_menu_buttons << map_menu_buttons[:build_house]
-                  visible_map_menu_buttons << map_menu_buttons[:sell_house]
-                end
-              end
-            else
-              map_menu_buttons[:show_group].hover_color = colors[:tile_button_hover]
-              map_menu_buttons[:show_group].image_background_color = nil
-              map_menu_buttons[:show_group].image_background_hover_color = nil
-            end
-          else
-            map_menu_buttons[:tiles].each { |buttons| buttons[:tile].highlight_color = nil }
-          end
-        else
-          map_menu_buttons[:tiles].each { |buttons| buttons[:tile].highlight_color = nil }
-        end
       end
 
       def set_visible_player_inspector_buttons(refresh: false)
@@ -1137,48 +719,6 @@ module Monopoly
         unless inspected_player == current_player || inspected_player.eliminated?
           visible_player_inspector_buttons << player_inspector_buttons[:message]
           visible_player_inspector_buttons << player_inspector_buttons[:trade]
-        end
-      end
-
-      def set_visible_player_list_menu_buttons
-        self.visible_player_list_menu_buttons = []
-
-        visible_player_list_menu_buttons << player_list_menu_buttons[:close]
-        visible_player_list_menu_buttons << player_list_menu_buttons[:left] if
-          player_list_menu_players.previous?
-        visible_player_list_menu_buttons << player_list_menu_buttons[:right] if
-          player_list_menu_players.next?
-
-        initial_offset = player_list_menu_data[:initial_x] + player_list_menu_data[:offset] *
-          ((player_list_menu_players.view_size - player_list_menu_players.items.size) / 2.0)
-
-        player_list_menu_players.items.each.with_index do |player, index|
-          buttons = player_list_menu_buttons[:players][index]
-          buttons[:token].hover_image = player.token_image.clone
-          buttons[:token].image = player.token_image.clone
-          buttons[:token].maximize_images_in_square(TOKEN_HEIGHT * 2)
-          buttons[:token].actions = proc do
-            self.inspected_player = player
-            toggle_player_inspector
-          end
-
-          x = initial_offset + (player_list_menu_data[:offset] * index)
-          buttons[:token].update_coordinates(x: x)
-          buttons[:token].highlight_color = buttons[:token].highlight_hover_color =
-            player.eliminated? ? colors[:blur] : nil
-          visible_player_list_menu_buttons << buttons[:token]
-
-          buttons[:name].text = player.name
-          buttons[:name].update_coordinates(x: x - DEFAULT_TILE_BUTTON_HEIGHT)
-          visible_player_list_menu_buttons << buttons[:name]
-
-          unless player == current_player || player.eliminated?
-            buttons[:message].update_coordinates(x: x - (DEFAULT_TILE_BUTTON_HEIGHT * 0.4))
-            visible_player_list_menu_buttons << buttons[:message]
-
-            buttons[:trade].update_coordinates(x: x + (DEFAULT_TILE_BUTTON_HEIGHT * 0.4))
-            visible_player_list_menu_buttons << buttons[:trade]
-          end
         end
       end
 
@@ -1488,67 +1028,6 @@ module Monopoly
         font.draw_text(*deed_data[:unmortgage_cost_params][:right])
       end
 
-      def map_token_coordinates(count:, jail: false, number:, tile_button:, visiting: false)
-        if visiting
-          offset = MAP_MENU_BUTTON_HEIGHT + (MAP_MENU_BUTTON_GAP * 1.5)
-          x, y =
-            case number
-            when 1
-              [-offset, offset]
-            when 2
-              [offset, -offset]
-            when 3
-              [0, offset]
-            when 4
-              [offset, 0]
-            end
-
-          x = y = offset if count == 1 || number == 5
-          x += tile_button.height / 2
-          y += tile_button.height / 2
-
-          case tile_button.image_angle
-          when 90
-            x = tile_button.width - x
-          when 180
-            x = tile_button.width - x
-            y = tile_button.height - y
-          when 270
-            y = tile_button.height - y
-          end
-        else
-          offset = (MAP_MENU_BUTTON_HEIGHT + MAP_MENU_BUTTON_GAP / 2) / 2
-          x = tile_button.width / 2
-          if number.even?
-            x += offset
-          elsif count != number
-            x -= offset
-          end
-
-          y = tile_button.height / 2
-          y += number > 2 ? offset : -offset if count > 2
-
-          if jail
-            case tile_button.image_angle
-            when 0
-              x -= offset
-              y -= offset
-            when 90
-              x += offset
-              y -= offset
-            when 180
-              x += offset
-              y += offset
-            when 270
-              x -= offset
-              y += offset
-            end
-          end
-        end
-
-        { x: tile_button.x + x, y: tile_button.y + y }
-      end
-
       def set_deed_base_data
         deed_data[:outer_border_params] = {
           color: colors[:deed],
@@ -1577,75 +1056,6 @@ module Monopoly
           y: Coordinates::CENTER_Y,
           z: ZOrder::POP_UP_MENU_BACKGROUND
         }
-      end
-
-      def set_map_menu_token_buttons(buttons:, tile:)
-        players_to_show = players.select { |player| player.tile == tile }
-        players_to_show.each do |player|
-          map_menu_buttons[:tokens][player].actions = buttons[:tile].actions
-        end
-
-        if tile.is_a?(JailTile) && tile.corner?
-          players_in_jail, players_just_visiting =
-            players_to_show.partition { |player| player.in_jail? }
-
-          set_map_menu_token_buttons_helper(
-            jail: true,
-            maximum_players: map_menu_data[:max_token_buttons_per_tile][:jail],
-            player_plus_button: buttons[:player_plus],
-            players_to_show: players_in_jail,
-            tile_button: buttons[:tile]
-          )
-          set_map_menu_token_buttons_helper(
-            jail: true,
-            maximum_players: map_menu_data[:max_token_buttons_per_tile][:jail_visiting],
-            player_plus_button: buttons[:player_plus_visiting_jail],
-            players_to_show: players_just_visiting,
-            tile_button: buttons[:tile],
-            visiting: true
-          )
-        else
-          set_map_menu_token_buttons_helper(
-            maximum_players: map_menu_data[:max_token_buttons_per_tile][:normal],
-            player_plus_button: buttons[:player_plus],
-            players_to_show: players_to_show,
-            tile_button: buttons[:tile]
-          )
-        end
-      end
-
-      def set_map_menu_token_buttons_helper(
-        jail: false,
-        maximum_players:,
-        player_plus_button:,
-        players_to_show:,
-        tile_button:,
-        visiting: false
-      )
-        total_players = players_to_show.size
-        buttons_to_align = []
-        if players_to_show.size > maximum_players
-          not_shown_players = players_to_show.size - (maximum_players - 1)
-          players_to_show = players_to_show.first(maximum_players - 1)
-          player_plus_button.text = "+#{not_shown_players}"
-          buttons_to_align += [player_plus_button]
-        end
-
-        buttons_to_align =
-          map_menu_buttons[:tokens].values_at(*players_to_show) + buttons_to_align
-        buttons_to_align.each.with_index do |button, index|
-          button.update_coordinates(
-            map_token_coordinates(
-              jail: jail,
-              count: total_players,
-              number: index + 1,
-              tile_button: tile_button,
-              visiting: visiting
-            )
-          )
-
-          visible_map_menu_buttons << button
-        end
       end
 
       def set_railroad_tile_deed_data(tile)

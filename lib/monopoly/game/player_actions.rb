@@ -52,9 +52,12 @@ module Monopoly
         tile.house_count += 1
 
         set_visible_group_menu_buttons if drawing_group_menu?
-        set_visible_map_menu_buttons if drawing_map_menu?
-        set_visible_tile_menu_buttons
-        set_visible_player_menu_buttons
+        if map_menu.drawing?
+          map_menu.update
+        else
+          set_visible_tile_menu_buttons
+          set_visible_player_menu_buttons
+        end
 
         log_event(
           "#{current_player.name} built a house on #{tile.name} for " \
@@ -121,7 +124,7 @@ module Monopoly
 
       def forfeit
         close_pop_up_menus
-        toggle_map_menu if drawing_map_menu?
+        map_menu.close if map_menu.drawing?
         toggle_options_menu if drawing_options_menu?
         return_new_card if current_card
         eliminate_player(current_player)
@@ -155,9 +158,12 @@ module Monopoly
         )
 
         set_visible_group_menu_buttons if drawing_group_menu?
-        set_visible_map_menu_buttons if drawing_map_menu?
-        set_visible_tile_menu_buttons
-        set_visible_player_menu_buttons
+        if map_menu.drawing?
+          map_menu.update
+        else
+          set_visible_tile_menu_buttons
+          set_visible_player_menu_buttons
+        end
       end
 
       def pay_rent
@@ -227,9 +233,12 @@ module Monopoly
         tile.house_count -= 1
 
         set_visible_group_menu_buttons if drawing_group_menu?
-        set_visible_map_menu_buttons if drawing_map_menu?
-        set_visible_tile_menu_buttons
-        set_visible_player_menu_buttons
+        if map_menu.drawing?
+          map_menu.update
+        else
+          set_visible_tile_menu_buttons
+          set_visible_player_menu_buttons
+        end
 
         log_event(
           "#{current_player.name} sold a house from #{tile.name} for " \
@@ -242,7 +251,7 @@ module Monopoly
 
         self.drawing_card_menu = !drawing_card_menu
 
-        set_visible_action_menu_buttons
+        action_menu.update
       end
 
       def toggle_deed_menu
@@ -292,23 +301,6 @@ module Monopoly
         self.drawing_group_menu = !drawing_group_menu
       end
 
-      def toggle_map_menu
-        if drawing_map_menu?
-          self.current_map_tile = nil
-          self.current_map_tile_button = nil
-          self.map_menu_first_tile_index = nil
-          self.map_menu_last_tile_index = nil
-          self.map_menu_tiles = nil
-        else
-          close_pop_up_menus
-          self.map_menu_first_tile_index = standard_board? ? 0 : tile_indexes[focused_tile]
-
-          set_visible_map_menu_buttons(refresh: true)
-        end
-
-        self.drawing_map_menu = !drawing_map_menu
-      end
-
       def toggle_options_menu
         if drawing_options_menu?
           options_button.color = nil
@@ -352,19 +344,6 @@ module Monopoly
         self.drawing_player_inspector = !drawing_player_inspector
       end
 
-      def toggle_player_list_menu(given_players = nil)
-        if drawing_player_list_menu?
-          self.player_list_menu_players.items = []
-        else
-          close_pop_up_menus
-          self.player_list_menu_players.items = given_players ||
-            (players + eliminated_players).sort_by(&:number)
-          set_visible_player_list_menu_buttons
-        end
-
-        self.drawing_player_list_menu = !drawing_player_list_menu
-      end
-
       def unmortgage(tile = focused_tile)
         return display_error('Invalid tile to unmortgage.') if !tile.is_a?(PropertyTile) ||
           tile.owner != current_player || !tile.mortgaged?
@@ -380,9 +359,12 @@ module Monopoly
         )
 
         set_visible_group_menu_buttons if drawing_group_menu?
-        set_visible_map_menu_buttons if drawing_map_menu?
-        set_visible_tile_menu_buttons
-        set_visible_player_menu_buttons
+        if map_menu.drawing?
+          map_menu.update
+        else
+          set_visible_tile_menu_buttons
+          set_visible_player_menu_buttons
+        end
       end
 
       def use_get_out_of_jail_free_card

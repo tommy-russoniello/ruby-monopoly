@@ -9,11 +9,8 @@ class Duration
   def initialize(seconds)
     self.hours = seconds / SECONDS_IN_HOUR
     seconds %= SECONDS_IN_HOUR
-
     self.minutes = seconds / SECONDS_IN_MINUTE
-    seconds %= SECONDS_IN_MINUTE
-
-    self.seconds = seconds
+    self.seconds = seconds % SECONDS_IN_MINUTE
   end
 
   def to_numbers
