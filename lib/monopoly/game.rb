@@ -31,17 +31,15 @@ module Monopoly
     attr_accessor :deed_data
     attr_accessor :deed_menu_buttons
     attr_accessor :deed_rent_line_index
-    attr_accessor :dialogue_box_buttons
+    attr_accessor :dialogue_box_menu
     attr_accessor :die_a
     attr_accessor :die_b
     attr_accessor :drawing_card_menu
     attr_accessor :drawing_compass_menu
     attr_accessor :drawing_deed_menu
-    attr_accessor :drawing_dialogue_box
     attr_accessor :drawing_event_history_menu
     attr_accessor :drawing_game_menu
     attr_accessor :drawing_group_menu
-    attr_accessor :drawing_options_menu
     attr_accessor :drawing_player_inspector
     attr_accessor :drawing_player_menu
     attr_accessor :draw_mouse_x
@@ -64,9 +62,7 @@ module Monopoly
     attr_accessor :map_menu
     attr_accessor :next_action
     attr_accessor :next_players
-    attr_accessor :options_button
-    attr_accessor :options_menu_buttons
-    attr_accessor :options_menu_bar_paramaters
+    attr_accessor :options_menu
     attr_accessor :player_inspector_buttons
     attr_accessor :player_inspector_color_groups
     attr_accessor :player_inspector_data
@@ -652,86 +648,6 @@ module Monopoly
       self.current_player_index = 0
       self.previous_player_number = -1
       self.current_player = players.first
-
-      dialogue_box_button_width =
-        (Coordinates::DIALOGUE_BOX_WIDTH - (DIALOGUE_BOX_BUTTON_GAP * 3)) / 2
-
-      self.options_button = Button.new(
-        actions: :toggle_options_menu,
-        color: nil,
-        game: self,
-        height: HEADER_HEIGHT,
-        hover_color: nil,
-        hover_image: Image.new(images[:options_gear_hover]),
-        image_height: HEADER_HEIGHT * 0.9,
-        image_width: HEADER_HEIGHT * 0.9,
-        image: Image.new(images[:options_gear]),
-        width: HEADER_HEIGHT,
-        x: Coordinates::RIGHT_X - HEADER_HEIGHT,
-        y: Coordinates::TOP_Y,
-        z: ZOrder::POP_UP_MENU_UI
-      )
-      self.options_menu_buttons = {
-        save: Button.new(
-          actions: :save_game,
-          color: colors[:options_menu_button],
-          font: fonts[:default][:type],
-          game: self,
-          hover_color: colors[:options_menu_button_hover],
-          text: 'Save'
-        ),
-        exit: Button.new(
-          actions: [[:toggle_dialogue_box, actions: :exit_game, button_text: 'Exit']],
-          color: colors[:options_menu_button],
-          font: fonts[:default][:type],
-          game: self,
-          hover_color: colors[:options_menu_button_hover],
-          text: 'Exit'
-        ),
-        forfeit: Button.new(
-          actions: [[:toggle_dialogue_box, actions: :forfeit, button_text: 'Forfeit']],
-          color: colors[:options_menu_button],
-          font: fonts[:default][:type],
-          game: self,
-          hover_color: colors[:warning],
-          text: 'Forfeit'
-        )
-      }
-
-      options_menu_buttons.values.each.with_index do |options_menu_button, index|
-        options_menu_button.update_coordinates(
-          x: options_button.x - Button::DEFAULT_WIDTH + 10,
-          y: options_button.y + (index * (Button::DEFAULT_HEIGHT + 1)) +
-            options_button.height + 1,
-          z: ZOrder::POP_UP_MENU_UI
-        )
-      end
-
-      self.dialogue_box_buttons = {
-        cancel: Button.new(
-          actions: :toggle_dialogue_box,
-          font: fonts[:default][:type],
-          game: self,
-          hover_color: colors[:dialogue_box_button_hover],
-          text: 'Cancel',
-          width: dialogue_box_button_width,
-          x: Coordinates::DIALOGUE_BOX_LEFT_X + DIALOGUE_BOX_BUTTON_GAP,
-          y: Coordinates::DIALOGUE_BOX_BOTTOM_Y - Button::DEFAULT_HEIGHT - 10,
-          z: ZOrder::DIALOGUE_UI
-        ),
-        action: Button.new(
-          actions: :toggle_dialogue_box,
-          font: fonts[:default][:type],
-          game: self,
-          hover_color: colors[:dialogue_box_button_hover],
-          text: 'Cancel',
-          width: dialogue_box_button_width,
-          x: Coordinates::DIALOGUE_BOX_RIGHT_X - DIALOGUE_BOX_BUTTON_GAP -
-            dialogue_box_button_width,
-          y: Coordinates::DIALOGUE_BOX_BOTTOM_Y - Button::DEFAULT_HEIGHT - 10,
-          z: ZOrder::DIALOGUE_UI
-        )
-      }
 
       house_button_options = {
         actions: nil,
@@ -2726,18 +2642,6 @@ module Monopoly
         ]
       }
 
-      self.clock_data = {
-        font: fonts[:small][:type],
-        text_params: {
-          color: colors[:default_text],
-          rel_x: 1,
-          rel_y: 0.5,
-          x: options_button.x - (DEFAULT_TILE_BUTTON_HEIGHT / 2),
-          y: options_button.y + (HEADER_HEIGHT / 2),
-          z: ZOrder::MENU_UI
-        }
-      }
-
       self.cards = {
         chance: [
           MoneyCard.new(
@@ -2978,8 +2882,22 @@ module Monopoly
       set_visible_player_menu_buttons
 
       self.action_menu = ActionMenu.new(self)
+      self.dialogue_box_menu = DialogueBoxMenu.new(self)
       self.map_menu = MapMenu.new(self)
+      self.options_menu = OptionsMenu.new(self)
       self.player_list_menu = PlayerListMenu.new(self)
+
+      self.clock_data = {
+        font: fonts[:small][:type],
+        text_params: {
+          color: colors[:default_text],
+          rel_x: 1,
+          rel_y: 0.5,
+          x: options_menu.buttons[:toggle].x - (DEFAULT_TILE_BUTTON_HEIGHT / 2),
+          y: options_menu.buttons[:toggle].y + (HEADER_HEIGHT / 2),
+          z: ZOrder::MENU_UI
+        }
+      }
 
       set_next_action(:roll_dice_for_move)
 
@@ -3002,11 +2920,9 @@ module Monopoly
       card_menu
       compass_menu
       deed_menu
-      dialogue_box
       event_history_menu
       game_menu
       group_menu
-      options_menu
       player_inspector
       player_menu
     ].each do |value|
@@ -3027,11 +2943,10 @@ module Monopoly
           y < Coordinates::ERROR_DIALOGUE_BOTTOM_Y
       end
 
-      if drawing_dialogue_box?
-        temp_buttons += dialogue_box_buttons.values
+      if dialogue_box_menu.drawing?
+        temp_buttons += dialogue_box_menu.visible_buttons.reverse
       else
-        temp_buttons = [options_button]
-        temp_buttons += options_menu_buttons.values.reverse if drawing_options_menu?
+        temp_buttons += options_menu.visible_buttons.reverse
 
         if drawing_event_history_menu?
           temp_buttons += visible_event_history_menu_buttons.reverse
@@ -3098,7 +3013,7 @@ module Monopoly
         if ctrl_cmd_down?
           return_new_card if current_card
           close_pop_up_menus
-          toggle_dialogue_box if drawing_dialogue_box?
+          dialogue_box_menu.close if dialogue_box_menu.drawing?
           move(spaces: -1, collect: false)
           land
           map_menu.update if map_menu.drawing?
@@ -3109,7 +3024,7 @@ module Monopoly
         if ctrl_cmd_down?
           return_new_card if current_card
           close_pop_up_menus
-          toggle_dialogue_box if drawing_dialogue_box?
+          dialogue_box_menu.close if dialogue_box_menu.drawing?
           land
           map_menu.update if map_menu.drawing?
         end
@@ -3119,7 +3034,7 @@ module Monopoly
         if ctrl_cmd_down?
           return_new_card if current_card
           close_pop_up_menus
-          toggle_dialogue_box if drawing_dialogue_box?
+          dialogue_box_menu.close if dialogue_box_menu.drawing?
           move(spaces: 1, collect: false)
           land
           map_menu.update if map_menu.drawing?
@@ -3145,7 +3060,7 @@ module Monopoly
     end
 
     def close
-      toggle_dialogue_box(actions: :exit_game, button_text: 'Exit')
+      dialogue_box_menu.open(actions: :exit_game, button_text: 'Exit')
     end
 
     def ctrl_cmd_down?

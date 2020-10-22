@@ -329,8 +329,6 @@ module Monopoly
     end
 
     def update
-      super
-
       self.visible_buttons = []
 
       if buttons[:minimap]
@@ -352,6 +350,8 @@ module Monopoly
       visible_buttons << buttons[game.next_action] if game.next_action
       visible_buttons << buttons[:no_action] if
         [nil, :draw_card, :go_to_jail].include?(game.next_action)
+
+      super
     end
 
     private

@@ -6,7 +6,6 @@ module Monopoly
       DEFAULT_FONT_SIZE = 30
       DEFAULT_TILE_BUTTON_BORDER_WIDTH = 5
       DEFAULT_TILE_BUTTON_HEIGHT = 100
-      DIALOGUE_BOX_BUTTON_GAP = 20
       HEADER_HEIGHT = 50
       MAX_DEED_ICON_HEIGHT = Coordinates::DEED_HEIGHT * 0.27
       MAX_DEED_ICON_WIDTH = Coordinates::DEED_HEIGHT * 0.5
@@ -96,7 +95,7 @@ module Monopoly
         end
 
         # Pop up background blur
-        if drawing_pop_up_menu? && !drawing_dialogue_box?
+        if drawing_pop_up_menu? && !dialogue_box_menu.drawing?
           Gosu.draw_rect(
             color: colors[:blur],
             height: Coordinates::BOTTOM_Y - Coordinates::TOP_Y,
@@ -115,8 +114,8 @@ module Monopoly
         player_list_menu.draw
 
         draw_clock
-        draw_options_menu
-        draw_dialogue_box
+        options_menu.draw
+        dialogue_box_menu.draw
         draw_error_dialogue
 
         # Mouse coordinates
@@ -143,7 +142,7 @@ module Monopoly
           z: ZOrder::MENU_UI
         )
 
-        coordinates = [draw_mouse_x, draw_mouse_y] unless drawing_dialogue_box?
+        coordinates = [draw_mouse_x, draw_mouse_y] unless dialogue_box_menu.drawing?
         visible_card_menu_buttons.each { |button| button.draw(*coordinates) }
       end
 
@@ -169,7 +168,7 @@ module Monopoly
         Gosu.draw_rect(compass_menu_data[:tile_background])
 
         coordinates = [draw_mouse_x, draw_mouse_y] unless drawing_pop_up_menu? ||
-          drawing_dialogue_box?
+          dialogue_box_menu.drawing?
         visible_compass_menu_buttons.each { |button| button.draw(*coordinates) }
 
         Gosu.draw_rect(compass_menu_data[:bottom_border])
@@ -180,7 +179,7 @@ module Monopoly
       def draw_deed_menu
         return unless drawing_deed_menu?
 
-        coordinates = [draw_mouse_x, draw_mouse_y] unless drawing_dialogue_box?
+        coordinates = [draw_mouse_x, draw_mouse_y] unless dialogue_box_menu.drawing?
 
         Gosu.draw_rect(
           color: colors[:pop_up_menu_border],
@@ -224,41 +223,6 @@ module Monopoly
         visible_deed_menu_buttons.each { |button| button.draw(*coordinates) }
       end
 
-      def draw_dialogue_box
-        return unless drawing_dialogue_box?
-
-        # Background blur
-        Gosu.draw_rect(
-          color: colors[:blur],
-          height: Coordinates::BOTTOM_Y - Coordinates::TOP_Y,
-          width: Coordinates::RIGHT_X - Coordinates::LEFT_X,
-          x: Coordinates::LEFT_X,
-          y: Coordinates::TOP_Y,
-          z: ZOrder::DIALOGUE_BLUR
-        )
-
-        Gosu.draw_rect(
-          color: colors[:dialogue_box_background],
-          height: Coordinates::DIALOGUE_BOX_HEIGHT,
-          width: Coordinates::DIALOGUE_BOX_WIDTH,
-          x: Coordinates::DIALOGUE_BOX_LEFT_X,
-          y: Coordinates::DIALOGUE_BOX_TOP_Y,
-          z: ZOrder::DIALOGUE_BACKGROUND
-        )
-
-        fonts[:extra_large][:type].draw_text(
-          'Are You Sure?',
-          color: colors[:dialogue_box_text],
-          rel_x: 0.5,
-          rel_y: 0,
-          x: Coordinates::CENTER_X,
-          y: Coordinates::DIALOGUE_BOX_TOP_Y + (Coordinates::DIALOGUE_BOX_HEIGHT / 3),
-          z: ZOrder::DIALOGUE_UI
-        )
-
-        dialogue_box_buttons.values.each { |button| button.draw(mouse_x, mouse_y) }
-      end
-
       def draw_error_dialogue
         return unless drawing_error_dialogue?
 
@@ -275,7 +239,7 @@ module Monopoly
           )
         end
 
-        coordinates = [draw_mouse_x, draw_mouse_y] unless drawing_dialogue_box?
+        coordinates = [draw_mouse_x, draw_mouse_y] unless dialogue_box_menu.drawing?
         error_dialogue_buttons[:close].draw(*coordinates)
 
         self.error_ticks -= 1
@@ -304,7 +268,7 @@ module Monopoly
           z: ZOrder::POP_UP_MENU_BACKGROUND
         )
 
-        coordinates = [draw_mouse_x, draw_mouse_y] unless drawing_dialogue_box?
+        coordinates = [draw_mouse_x, draw_mouse_y] unless dialogue_box_menu.drawing?
         visible_event_history_menu_buttons.each { |button| button.draw(*coordinates) }
       end
 
@@ -312,14 +276,14 @@ module Monopoly
         return unless drawing_game_menu?
 
         coordinates = [draw_mouse_x, draw_mouse_y] unless drawing_pop_up_menu? ||
-          drawing_dialogue_box?
+          dialogue_box_menu.drawing?
         game_menu_buttons.values.each { |button| button.draw(*coordinates) }
       end
 
       def draw_group_menu
         return unless drawing_group_menu?
 
-        coordinates = [draw_mouse_x, draw_mouse_y] unless drawing_dialogue_box?
+        coordinates = [draw_mouse_x, draw_mouse_y] unless dialogue_box_menu.drawing?
 
         Gosu.draw_rect(
           color: colors[:pop_up_menu_border],
@@ -341,20 +305,10 @@ module Monopoly
         visible_group_menu_buttons.each { |button| button.draw(*coordinates) }
       end
 
-      def draw_options_menu
-        coordinates = [draw_mouse_x, draw_mouse_y] unless drawing_dialogue_box?
-        options_button.draw(*coordinates)
-        return unless drawing_options_menu?
-
-
-        Gosu.draw_rect(**options_menu_bar_paramaters)
-        options_menu_buttons.each_value { |button| button.draw(*coordinates) }
-      end
-
       def draw_player_inspector
         return unless drawing_player_inspector?
 
-        coordinates = [draw_mouse_x, draw_mouse_y] unless drawing_dialogue_box?
+        coordinates = [draw_mouse_x, draw_mouse_y] unless dialogue_box_menu.drawing?
 
         player_inspector_data[:rectangles].each do |data|
           Gosu.draw_rect(data.except(:stats)) unless !data[:stats] && player_inspector_show_stats
@@ -365,7 +319,7 @@ module Monopoly
 
       def draw_player_menu
         coordinates = [draw_mouse_x, draw_mouse_y] unless drawing_pop_up_menu? ||
-          drawing_dialogue_box?
+          dialogue_box_menu.drawing?
 
         Gosu.draw_rect(player_menu_data[:right_border_params])
         Gosu.draw_rect(player_menu_data[:background_params])
@@ -382,7 +336,7 @@ module Monopoly
       def draw_tile_menu
         return if map_menu.drawing? || drawing_card_menu? || drawing_pop_up_menu?
 
-        coordinates = [draw_mouse_x, draw_mouse_y] unless drawing_dialogue_box?
+        coordinates = [draw_mouse_x, draw_mouse_y] unless dialogue_box_menu.drawing?
 
         if focused_tile.is_a?(PropertyTile)
           focused_tile.tile_image.draw(

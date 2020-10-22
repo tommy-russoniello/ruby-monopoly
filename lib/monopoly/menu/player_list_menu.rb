@@ -167,8 +167,6 @@ module Monopoly
     end
 
     def update
-      super
-
       self.visible_buttons = []
 
       visible_buttons << buttons[:close]
@@ -209,6 +207,8 @@ module Monopoly
           visible_buttons << player_buttons[:trade]
         end
       end
+
+      super
     end
   end
 end

@@ -125,7 +125,7 @@ module Monopoly
       def forfeit
         close_pop_up_menus
         map_menu.close if map_menu.drawing?
-        toggle_options_menu if drawing_options_menu?
+        options_menu.close if options_menu.drawing?
         return_new_card if current_card
         eliminate_player(current_player)
         end_turn
@@ -265,19 +265,6 @@ module Monopoly
         self.drawing_deed_menu = !drawing_deed_menu
       end
 
-      def toggle_dialogue_box(actions: nil, button_text: nil)
-        if drawing_dialogue_box?
-          toggle_options_menu if drawing_options_menu?
-        else
-          dialogue_box_buttons[:action].actions = actions
-          dialogue_box_buttons[:action].actions =
-            [[:toggle_dialogue_box]] + dialogue_box_buttons[:action].actions
-          dialogue_box_buttons[:action].text = button_text
-        end
-
-        self.drawing_dialogue_box = !drawing_dialogue_box
-      end
-
       def toggle_event_history_menu
         if drawing_event_history_menu?
           self.event_history_view = nil
@@ -299,37 +286,6 @@ module Monopoly
         end
 
         self.drawing_group_menu = !drawing_group_menu
-      end
-
-      def toggle_options_menu
-        if drawing_options_menu?
-          options_button.color = nil
-          options_button.hover_color = nil
-
-          options_button.perform_image_animation(:spin, length: ticks_for_seconds(0.25),
-            times: 0.25)
-        else
-          bottom_of_options_menu_button_y = options_button.y + options_button.height
-          bottom_of_last_option_button_y =
-            options_menu_buttons.values.last.y + options_menu_buttons.values.last.height
-
-          self.options_menu_bar_paramaters = {
-            color: colors[:pop_up_menu_border],
-            height: bottom_of_last_option_button_y - bottom_of_options_menu_button_y,
-            width:
-              options_button.x - options_menu_buttons.values.first.x + options_button.width + 1,
-            x: options_menu_buttons.values.first.x,
-            y: options_menu_buttons.values.first.y - 1,
-            z: ZOrder::POP_UP_MENU_UI
-          }
-          options_button.color = colors[:pop_up_menu_border]
-          options_button.hover_color = colors[:pop_up_menu_border]
-
-          options_button.perform_image_animation(:spin, counterclockwise: true,
-            length: ticks_for_seconds(0.25), times: 0.25)
-        end
-
-        self.drawing_options_menu = !drawing_options_menu
       end
 
       def toggle_player_inspector

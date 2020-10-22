@@ -18,12 +18,11 @@ module Monopoly
 
     def close
       self.drawing = false
+      self.visible_buttons = []
     end
 
     def draw
       return unless drawing?
-
-      coordinates = [game.draw_mouse_x, game.draw_mouse_y] unless game.drawing_dialogue_box?
 
       rectangles.values.each { |params| Gosu.draw_rect(**params) }
       images.values.each { |data| data[:image]&.draw(**data[:params]) }
@@ -31,7 +30,7 @@ module Monopoly
         data[:font].draw_text(data[:text], **data[:params]) if data[:text]
       end
 
-      visible_buttons.each { |button| button.draw(*coordinates) }
+      draw_buttons(visible_buttons)
     end
 
     def drawing?
@@ -43,5 +42,12 @@ module Monopoly
     end
 
     def update; end
+
+    private
+
+    def draw_buttons(buttons_to_draw)
+      coordinates = [game.draw_mouse_x, game.draw_mouse_y] unless game.dialogue_box_menu.drawing?
+      buttons_to_draw.each { |button| button.draw(*coordinates) }
+    end
   end
 end

@@ -837,8 +837,6 @@ module Monopoly
     end
 
     def update(refresh: false)
-      super()
-
       self.visible_buttons = []
       self.current_tile_button = nil
 
@@ -1113,6 +1111,8 @@ module Monopoly
       else
         buttons[:tiles].each { |tile_buttons| tile_buttons[:tile].highlight_color = nil }
       end
+
+      super()
     end
 
     private
