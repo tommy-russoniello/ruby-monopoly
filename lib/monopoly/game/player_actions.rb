@@ -254,17 +254,6 @@ module Monopoly
         action_menu.update
       end
 
-      def toggle_deed_menu
-        if drawing_deed_menu?
-          self.deed_rent_line_index = 1
-        else
-          close_pop_up_menus
-          set_visible_deed_menu_buttons
-        end
-
-        self.drawing_deed_menu = !drawing_deed_menu
-      end
-
       def toggle_event_history_menu
         if drawing_event_history_menu?
           self.event_history_view = nil

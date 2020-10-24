@@ -18,11 +18,10 @@ module Monopoly
       transluscent_white = Gosu::Color::WHITE.dup
       transluscent_white.alpha = 175
 
-      minimap_image = Image.new(generate_minimap_image)
       minimap_center_x = Coordinates::ACTION_MENU_LEFT_X + outer_border_width +
-        (minimap_image.width / 2)
+        (Coordinates::THUMBNAIL_HEIGHT * 5.5)
       minimap_center_y = Coordinates::ACTION_MENU_TOP_Y + outer_border_width +
-        (minimap_image.height / 2)
+        (Coordinates::THUMBNAIL_HEIGHT * 5.5)
 
       self.rectangles = {
         background: {
@@ -50,12 +49,6 @@ module Monopoly
           x: minimap_center_x - (game.class::TILE_BUTTON_GAP * 2) -
             game.class::DEFAULT_TILE_BUTTON_HEIGHT,
           y: minimap_center_y,
-          z: ZOrder::MENU_UI
-        },
-        minimap_current_tile_highlight: {
-          color: transluscent_white,
-          height: Coordinates::THUMBNAIL_HEIGHT,
-          width: Coordinates::THUMBNAIL_HEIGHT,
           z: ZOrder::MENU_UI
         },
         left_border: {
@@ -104,18 +97,6 @@ module Monopoly
             z: ZOrder::MENU_UI
           }
         },
-        minimap_current_tile_dot_circle: {
-          image: Image.new(
-            Gosu::Circle.new(
-              color: Gosu::Color::BLACK,
-              radius: 10
-            )
-          ),
-          params: {
-            from_center: true,
-            z: ZOrder::MENU_UI
-          }
-        },
         rounded_corner_circle: {
           image: Image.new(
             Gosu::Circle.new(
@@ -153,15 +134,6 @@ module Monopoly
           }
         }
       }
-
-      unless game.standard_board?
-        rectangles[:background].merge!(
-          height: Coordinates::ACTION_MENU_HEIGHT - inner_border_width - outer_border_width,
-          width: Coordinates::ACTION_MENU_WIDTH - inner_border_width - outer_border_width,
-          x: Coordinates::ACTION_MENU_LEFT_X + 20,
-          y: Coordinates::ACTION_MENU_TOP_Y + 20
-        )
-      end
 
       self.buttons = {
         consecutive_charge: CircularButton.new(
@@ -288,6 +260,8 @@ module Monopoly
         )
       }
       if game.standard_board?
+        minimap_image = Image.new(generate_minimap_image)
+
         buttons[:minimap] = Button.new(
           actions: proc { game.map_menu.open },
           color: nil,
@@ -302,6 +276,33 @@ module Monopoly
           x: Coordinates::ACTION_MENU_LEFT_X + outer_border_width,
           y: Coordinates::ACTION_MENU_TOP_Y + outer_border_width,
           z: ZOrder::MENU_BACKGROUND
+        )
+
+        rectangles[:minimap_current_tile_highlight] = {
+          color: transluscent_white,
+          height: Coordinates::THUMBNAIL_HEIGHT,
+          width: Coordinates::THUMBNAIL_HEIGHT,
+          z: ZOrder::MENU_UI
+        }
+
+        images[:minimap_current_tile_dot_circle] = {
+          image: Image.new(
+            Gosu::Circle.new(
+              color: Gosu::Color::BLACK,
+              radius: 10
+            )
+          ),
+          params: {
+            from_center: true,
+            z: ZOrder::MENU_UI
+          }
+        }
+      else
+        rectangles[:background].merge!(
+          height: Coordinates::ACTION_MENU_HEIGHT - inner_border_width - outer_border_width,
+          width: Coordinates::ACTION_MENU_WIDTH - inner_border_width - outer_border_width,
+          x: Coordinates::ACTION_MENU_LEFT_X + 20,
+          y: Coordinates::ACTION_MENU_TOP_Y + 20
         )
       end
 

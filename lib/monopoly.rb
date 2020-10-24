@@ -19,6 +19,7 @@ require_relative 'monopoly/game'
 
 require_relative 'monopoly/menu'
 require_relative 'monopoly/menu/action_menu'
+require_relative 'monopoly/menu/deed_menu'
 require_relative 'monopoly/menu/dialogue_box_menu'
 require_relative 'monopoly/menu/group_menu'
 require_relative 'monopoly/menu/map_menu'

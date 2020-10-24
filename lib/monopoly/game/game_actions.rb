@@ -42,7 +42,7 @@ module Monopoly
       end
 
       def close_pop_up_menus
-        toggle_deed_menu if drawing_deed_menu?
+        deed_menu.close if deed_menu.drawing?
         toggle_event_history_menu if drawing_event_history_menu?
         group_menu.close if group_menu.drawing?
         toggle_player_inspector if drawing_player_inspector?

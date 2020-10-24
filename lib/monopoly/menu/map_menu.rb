@@ -237,7 +237,7 @@ module Monopoly
           z: ZOrder::MAIN_UI
         ),
         show_deed: CircularButton.new(
-          actions: :toggle_deed_menu,
+          actions: proc { game.deed_menu.open },
           color: game.colors[:tile_button],
           game: game,
           hover_color: game.colors[:tile_button_hover],

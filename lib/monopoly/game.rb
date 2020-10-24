@@ -28,15 +28,12 @@ module Monopoly
     attr_accessor :current_player_start_time
     attr_accessor :current_tile
     attr_accessor :current_tile_cache
-    attr_accessor :deed_data
-    attr_accessor :deed_menu_buttons
-    attr_accessor :deed_rent_line_index
+    attr_accessor :deed_menu
     attr_accessor :dialogue_box_menu
     attr_accessor :die_a
     attr_accessor :die_b
     attr_accessor :drawing_card_menu
     attr_accessor :drawing_compass_menu
-    attr_accessor :drawing_deed_menu
     attr_accessor :drawing_event_history_menu
     attr_accessor :drawing_game_menu
     attr_accessor :drawing_player_inspector
@@ -88,7 +85,6 @@ module Monopoly
     attr_accessor :utility_groups
     attr_accessor :visible_card_menu_buttons
     attr_accessor :visible_compass_menu_buttons
-    attr_accessor :visible_deed_menu_buttons
     attr_accessor :visible_event_history_menu_buttons
     attr_accessor :visible_player_inspector_buttons
     attr_accessor :visible_player_menu_buttons
@@ -642,63 +638,6 @@ module Monopoly
       self.current_player_index = 0
       self.previous_player_number = -1
       self.current_player = players.first
-
-      self.deed_menu_buttons = {
-        close: Button.new(
-          actions: :toggle_deed_menu,
-          color: nil,
-          game: self,
-          height: 40,
-          hover_color: nil,
-          hover_image: Image.new(images[:x_hover]),
-          image: Image.new(images[:x]),
-          image_height: 40,
-          width: 40,
-          x: Coordinates::DEED_MENU_LEFT_X + Coordinates::DEED_MENU_BORDER_WIDTH + 5,
-          y: Coordinates::DEED_MENU_TOP_Y + Coordinates::DEED_MENU_BORDER_WIDTH + 5,
-          z: ZOrder::POP_UP_MENU_UI
-        ),
-        down: Button.new(
-          actions: [
-            proc do
-              self.deed_rent_line_index += 1
-              set_visible_deed_menu_buttons if drawing_deed_menu?
-            end
-          ],
-          color: nil,
-          game: self,
-          height: fonts[:deed][:offset],
-          hover_color: nil,
-          hover_image: Image.new(images[:arrow_down_hover]),
-          image: Image.new(images[:arrow_down]),
-          image_height: fonts[:deed][:offset],
-          width: Coordinates::DEED_WIDTH * 0.75,
-          x: Coordinates::CENTER_X - Coordinates::DEED_WIDTH * 0.4,
-          y: Coordinates::CENTER_Y - (Coordinates::DEED_HEIGHT * 0.125) +
-            (fonts[:deed][:offset] * 5),
-          z: ZOrder::POP_UP_MENU_UI
-        ),
-        up: Button.new(
-          actions: [
-            proc do
-              self.deed_rent_line_index -= 1
-              set_visible_deed_menu_buttons if drawing_deed_menu?
-            end
-          ],
-          color: nil,
-          game: self,
-          height: fonts[:deed][:offset],
-          hover_color: nil,
-          hover_image: Image.new(images[:arrow_up_hover]),
-          image: Image.new(images[:arrow_up]),
-          image_height: fonts[:deed][:offset],
-          width: Coordinates::DEED_WIDTH * 0.75,
-          x: Coordinates::CENTER_X - Coordinates::DEED_WIDTH * 0.4,
-          y: Coordinates::CENTER_Y - (Coordinates::DEED_HEIGHT * 0.125) +
-            (fonts[:deed][:offset] * 2),
-          z: ZOrder::POP_UP_MENU_UI
-        )
-      }
 
       self.card_menu_buttons = {
         back: CircularButton.new(
@@ -2391,9 +2330,6 @@ module Monopoly
       self.turn = 1
       log_event('Turn 1 began.')
 
-      self.deed_data = {}
-      self.deed_rent_line_index = 1
-
       self.eliminated_players = []
 
       self.player_menu_color_groups = ScrollingList.new(items: color_groups.values, view_size: 8)
@@ -2412,13 +2348,13 @@ module Monopoly
       self.drawing_player_menu = true
       self.next_players = ScrollingList.new(items: players[1..-1], view_size: 4)
       self.visible_card_menu_buttons = []
-      self.visible_deed_menu_buttons = []
       self.visible_event_history_menu_buttons = []
       self.visible_player_inspector_buttons = []
       set_visible_compass_menu_buttons
       set_visible_player_menu_buttons
 
       self.action_menu = ActionMenu.new(self)
+      self.deed_menu = DeedMenu.new(self)
       self.dialogue_box_menu = DialogueBoxMenu.new(self)
       self.group_menu = GroupMenu.new(self)
       self.map_menu = MapMenu.new(self)
@@ -2458,7 +2394,6 @@ module Monopoly
     %i[
       card_menu
       compass_menu
-      deed_menu
       event_history_menu
       game_menu
       player_inspector
@@ -2490,8 +2425,8 @@ module Monopoly
           temp_buttons += visible_event_history_menu_buttons.reverse
         elsif group_menu.drawing?
           temp_buttons += group_menu.visible_buttons.reverse
-        elsif drawing_deed_menu?
-          temp_buttons += visible_deed_menu_buttons.reverse
+        elsif deed_menu.drawing?
+          temp_buttons += deed_menu.visible_buttons.reverse
         elsif player_list_menu.drawing?
           temp_buttons += player_list_menu.visible_buttons.reverse
         elsif drawing_player_inspector?
@@ -2529,7 +2464,7 @@ module Monopoly
     end
 
     def drawing_pop_up_menu?
-      drawing_deed_menu? || drawing_event_history_menu? || group_menu.drawing? ||
+      deed_menu.drawing? || drawing_event_history_menu? || group_menu.drawing? ||
         drawing_player_inspector? || player_list_menu.drawing?
     end
 
