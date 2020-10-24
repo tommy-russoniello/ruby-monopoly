@@ -108,7 +108,7 @@ module Monopoly
 
         draw_deed_menu
         draw_event_history_menu
-        draw_group_menu
+        group_menu.draw
         map_menu.draw
         draw_player_inspector
         player_list_menu.draw
@@ -280,31 +280,6 @@ module Monopoly
         game_menu_buttons.values.each { |button| button.draw(*coordinates) }
       end
 
-      def draw_group_menu
-        return unless drawing_group_menu?
-
-        coordinates = [draw_mouse_x, draw_mouse_y] unless dialogue_box_menu.drawing?
-
-        Gosu.draw_rect(
-          color: colors[:pop_up_menu_border],
-          height: Coordinates::GROUP_MENU_HEIGHT,
-          width: Coordinates::GROUP_MENU_WIDTH,
-          x: Coordinates::GROUP_MENU_LEFT_X,
-          y: Coordinates::GROUP_MENU_TOP_Y,
-          z: ZOrder::POP_UP_MENU_BACKGROUND
-        )
-        Gosu.draw_rect(
-          color: colors[:pop_up_menu_background],
-          height: Coordinates::GROUP_MENU_HEIGHT - (Coordinates::GROUP_MENU_BORDER_WIDTH * 2),
-          width: Coordinates::GROUP_MENU_WIDTH - (Coordinates::GROUP_MENU_BORDER_WIDTH * 2),
-          x: Coordinates::GROUP_MENU_LEFT_X + Coordinates::GROUP_MENU_BORDER_WIDTH,
-          y: Coordinates::GROUP_MENU_TOP_Y + Coordinates::GROUP_MENU_BORDER_WIDTH,
-          z: ZOrder::POP_UP_MENU_BACKGROUND
-        )
-
-        visible_group_menu_buttons.each { |button| button.draw(*coordinates) }
-      end
-
       def draw_player_inspector
         return unless drawing_player_inspector?
 
@@ -462,60 +437,6 @@ module Monopoly
 
           visible_event_history_menu_buttons << button
         end
-      end
-
-      def set_visible_group_menu_buttons
-        self.visible_group_menu_buttons = []
-
-        visible_group_menu_buttons << group_menu_buttons[:close]
-        visible_group_menu_buttons << group_menu_buttons[:left] if group_menu_tiles.previous?
-        visible_group_menu_buttons << group_menu_buttons[:right] if group_menu_tiles.next?
-
-        index_offset = group_menu_tiles.all_items.size <= 2 ? 1 : 0
-        group_menu_tiles.items.each.with_index do |tile, index|
-          buttons = group_menu_buttons[:tiles][index + index_offset]
-          buttons[:tile].hover_image = tile.tile_image.clone
-          buttons[:tile].image = tile.tile_image.clone
-          buttons[:tile].actions = [[:display_tile, tile]]
-          visible_group_menu_buttons << buttons[:tile]
-
-          if tile.owner
-            buttons[:owner].hover_image = tile.owner.token_image.clone
-            buttons[:owner].image = tile.owner.token_image.clone
-            buttons[:owner].maximize_images_in_square(TOKEN_HEIGHT)
-            visible_group_menu_buttons << buttons[:owner]
-
-            if tile.group.monopolized? && tile.is_a?(StreetTile)
-              if tile.owner == current_player
-                buttons[:house_small].text = tile.house_count
-                visible_group_menu_buttons << buttons[:house_small]
-
-                buttons[:build_house].actions = [[:build_house, tile]]
-                visible_group_menu_buttons << buttons[:build_house]
-
-                buttons[:sell_house].actions = [[:sell_house, tile]]
-                visible_group_menu_buttons << buttons[:sell_house]
-              else
-                buttons[:house_big].text = tile.house_count
-                visible_group_menu_buttons << buttons[:house_big]
-              end
-            end
-
-            if tile.owner == current_player
-              if tile.mortgaged?
-                buttons[:unmortgage].actions = [[:unmortgage, tile]]
-                visible_group_menu_buttons << buttons[:unmortgage]
-              else
-                buttons[:mortgage].actions = [[:mortgage, tile]]
-                visible_group_menu_buttons << buttons[:mortgage]
-              end
-            else
-              visible_group_menu_buttons << buttons[:mortgage_lock] if tile.mortgaged?
-            end
-          end
-        end
-
-        shift_group_menu_buttons
       end
 
       def set_visible_player_inspector_buttons(refresh: false)
@@ -1537,22 +1458,6 @@ module Monopoly
             z: ZOrder::POP_UP_MENU_BACKGROUND
           ]
         }
-      end
-
-      def shift_group_menu_buttons
-        if [1, 3].include?(group_menu_tiles.all_items.size)
-          return if group_menu_alt_button_positions
-
-          self.group_menu_alt_button_positions = true
-          group_menu_buttons[:tiles].map(&:values).flatten.each do |button|
-            button.update_coordinates(x: button.x + Coordinates::GROUP_MENU_FIRST_TILE_ALT_X_OFFSET)
-          end
-        elsif group_menu_alt_button_positions
-          self.group_menu_alt_button_positions = false
-          group_menu_buttons[:tiles].map(&:values).flatten.each do |button|
-            button.update_coordinates(x: button.x - Coordinates::GROUP_MENU_FIRST_TILE_ALT_X_OFFSET)
-          end
-        end
       end
     end
   end

@@ -51,7 +51,7 @@ module Monopoly
         current_player.subtract_money(house_cost, :buildings)
         tile.house_count += 1
 
-        set_visible_group_menu_buttons if drawing_group_menu?
+        group_menu.update if group_menu.drawing?
         if map_menu.drawing?
           map_menu.update
         else
@@ -157,7 +157,7 @@ module Monopoly
           "#{current_player.name} mortgaged #{tile.name} for #{format_money(tile.mortgage_cost)}."
         )
 
-        set_visible_group_menu_buttons if drawing_group_menu?
+        group_menu.update if group_menu.drawing?
         if map_menu.drawing?
           map_menu.update
         else
@@ -232,7 +232,7 @@ module Monopoly
         current_player.add_money(house_sell_price, :buildings)
         tile.house_count -= 1
 
-        set_visible_group_menu_buttons if drawing_group_menu?
+        group_menu.update if group_menu.drawing?
         if map_menu.drawing?
           map_menu.update
         else
@@ -276,18 +276,6 @@ module Monopoly
         self.drawing_event_history_menu = !drawing_event_history_menu
       end
 
-      def toggle_group_menu(tiles = nil)
-        if drawing_group_menu?
-          self.group_menu_tiles.items = []
-        else
-          close_pop_up_menus
-          self.group_menu_tiles.items = (tiles || focused_tile.group.tiles)
-          set_visible_group_menu_buttons
-        end
-
-        self.drawing_group_menu = !drawing_group_menu
-      end
-
       def toggle_player_inspector
         if drawing_player_inspector?
           self.inspected_player = nil
@@ -314,7 +302,7 @@ module Monopoly
           "unmortgage #{tile.name}."
         )
 
-        set_visible_group_menu_buttons if drawing_group_menu?
+        group_menu.update if group_menu.drawing?
         if map_menu.drawing?
           map_menu.update
         else

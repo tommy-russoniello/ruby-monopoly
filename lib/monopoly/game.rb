@@ -39,7 +39,6 @@ module Monopoly
     attr_accessor :drawing_deed_menu
     attr_accessor :drawing_event_history_menu
     attr_accessor :drawing_game_menu
-    attr_accessor :drawing_group_menu
     attr_accessor :drawing_player_inspector
     attr_accessor :drawing_player_menu
     attr_accessor :draw_mouse_x
@@ -54,9 +53,7 @@ module Monopoly
     attr_accessor :focused_tile
     attr_accessor :fonts
     attr_accessor :game_menu_buttons
-    attr_accessor :group_menu_alt_button_positions
-    attr_accessor :group_menu_buttons
-    attr_accessor :group_menu_tiles
+    attr_accessor :group_menu
     attr_accessor :images
     attr_accessor :inspected_player
     attr_accessor :map_menu
@@ -93,7 +90,6 @@ module Monopoly
     attr_accessor :visible_compass_menu_buttons
     attr_accessor :visible_deed_menu_buttons
     attr_accessor :visible_event_history_menu_buttons
-    attr_accessor :visible_group_menu_buttons
     attr_accessor :visible_player_inspector_buttons
     attr_accessor :visible_player_menu_buttons
 
@@ -647,225 +643,6 @@ module Monopoly
       self.previous_player_number = -1
       self.current_player = players.first
 
-      group_menu_tile_button_options = {
-        actions: nil,
-        color: nil,
-        game: self,
-        height: Coordinates::GROUP_MENU_TILE_BUTTON_HEIGHT,
-        hover_color: colors[:blur],
-        width: Coordinates::GROUP_MENU_TILE_BUTTON_WIDTH,
-        z: ZOrder::POP_UP_MENU_UI
-      }
-      group_menu_sub_button_edge = group_menu_tile_button_options[:width] -
-        (DEFAULT_TILE_BUTTON_HEIGHT * 3) - (TILE_BUTTON_GAP * 2)
-      group_menu_sub_button_edge /= 2
-      group_menu_sub_button_y = Coordinates::GROUP_MENU_FIRST_TILE_Y +
-        Coordinates::GROUP_MENU_TILE_BUTTON_HEIGHT + TILE_BUTTON_GAP
-
-      arrow_button_x_offset =
-        (
-          Coordinates::GROUP_MENU_FIRST_TILE_X -
-          Coordinates::GROUP_MENU_LEFT_X -
-          Coordinates::GROUP_MENU_BORDER_WIDTH
-        ) / 2 + Coordinates::GROUP_MENU_BORDER_WIDTH
-
-      self.group_menu_buttons = {
-        close: Button.new(
-          actions: :toggle_group_menu,
-          color: nil,
-          game: self,
-          height: 40,
-          hover_color: nil,
-          hover_image: Image.new(images[:x_hover]),
-          image: Image.new(images[:x]),
-          image_height: 40,
-          width: 40,
-          x: Coordinates::GROUP_MENU_LEFT_X + Coordinates::GROUP_MENU_BORDER_WIDTH + 5,
-          y: Coordinates::GROUP_MENU_TOP_Y + Coordinates::GROUP_MENU_BORDER_WIDTH + 5,
-          z: ZOrder::POP_UP_MENU_UI
-        ),
-        left: CircularButton.new(
-          actions: [
-            proc do
-              group_menu_tiles.shift_back
-              set_visible_group_menu_buttons if drawing_group_menu?
-            end
-          ],
-          color: colors[:tile_button],
-          game: self,
-          hover_color: colors[:tile_button],
-          hover_image: Image.new(images[:arrow_left_hover]),
-          image: Image.new(images[:arrow_left]),
-          image_height: 40,
-          radius: 30,
-          x: Coordinates::GROUP_MENU_LEFT_X + arrow_button_x_offset,
-          y: Coordinates::GROUP_MENU_FIRST_TILE_Y +
-            (Coordinates::GROUP_MENU_TILE_BUTTON_HEIGHT / 2),
-          z: ZOrder::POP_UP_MENU_UI
-        ),
-        right: CircularButton.new(
-          actions: [
-            proc do
-              group_menu_tiles.shift_forward
-              set_visible_group_menu_buttons if drawing_group_menu?
-            end
-          ],
-          color: colors[:tile_button],
-          game: self,
-          hover_color: colors[:tile_button],
-          hover_image: Image.new(images[:arrow_right_hover]),
-          image: Image.new(images[:arrow_right]),
-          image_height: 40,
-          radius: 30,
-          x: Coordinates::GROUP_MENU_RIGHT_X - arrow_button_x_offset,
-          y: Coordinates::GROUP_MENU_FIRST_TILE_Y +
-            (Coordinates::GROUP_MENU_TILE_BUTTON_HEIGHT / 2),
-          z: ZOrder::POP_UP_MENU_UI
-        ),
-        tiles: (0...4).map do |number|
-          x = Coordinates::GROUP_MENU_FIRST_TILE_X +
-            (
-              (Coordinates::GROUP_MENU_TILE_BUTTON_WIDTH + Coordinates::GROUP_MENU_TILE_GAP) *
-              number
-            )
-          {
-            build_house: Button.new(
-              actions: nil,
-              color: nil,
-              game: self,
-              height: DEFAULT_TILE_BUTTON_HEIGHT * 0.25,
-              hover_color: nil,
-              hover_image: Image.new(images[:arrow_up_hover]),
-              image: Image.new(images[:arrow_up]),
-              image_height: DEFAULT_TILE_BUTTON_HEIGHT * 0.25,
-              width: DEFAULT_TILE_BUTTON_HEIGHT,
-              x: x + group_menu_sub_button_edge,
-              y: group_menu_sub_button_y,
-              z: group_menu_tile_button_options[:z]
-            ),
-            house_big: Button.new(
-              actions: nil,
-              color: nil,
-              font: fonts[:large][:type],
-              font_color: colors[:house_count],
-              game: self,
-              height: DEFAULT_TILE_BUTTON_HEIGHT,
-              hover_color: nil,
-              hover_image: Image.new(images[:house]),
-              image: Image.new(images[:house]),
-              image_height: DEFAULT_TILE_BUTTON_HEIGHT,
-              text_relative_position_y: 0.4,
-              width: DEFAULT_TILE_BUTTON_HEIGHT,
-              x: x + group_menu_sub_button_edge,
-              y: group_menu_sub_button_y,
-              z: group_menu_tile_button_options[:z]
-            ),
-            house_small: Button.new(
-              actions: nil,
-              color: nil,
-              font: fonts[:large][:type],
-              font_color: colors[:house_count],
-              game: self,
-              height: DEFAULT_TILE_BUTTON_HEIGHT * 0.45,
-              hover_color: nil,
-              hover_image: Image.new(images[:house]),
-              image: Image.new(images[:house]),
-              image_height: DEFAULT_TILE_BUTTON_HEIGHT * 0.45,
-              text_relative_position_y: 0.4,
-              width: DEFAULT_TILE_BUTTON_HEIGHT * 0.45,
-              x: x + group_menu_sub_button_edge + ((DEFAULT_TILE_BUTTON_HEIGHT * 0.55) / 2),
-              y: group_menu_sub_button_y + DEFAULT_TILE_BUTTON_HEIGHT * 0.25,
-              z: group_menu_tile_button_options[:z]
-            ),
-            owner: CircularButton.new(
-              actions: proc do
-                index = number
-                index -= 1 if group_menu_tiles.all_items.size <= 2
-                self.inspected_player = group_menu_tiles.items[index].owner
-                toggle_player_inspector
-              end,
-              color: colors[:tile_button],
-              game: self,
-              hover_color: colors[:tile_button_hover],
-              radius: DEFAULT_TILE_BUTTON_HEIGHT / 2,
-              x: x + group_menu_sub_button_edge + DEFAULT_TILE_BUTTON_HEIGHT + TILE_BUTTON_GAP +
-                (DEFAULT_TILE_BUTTON_HEIGHT / 2),
-              y: group_menu_sub_button_y + (DEFAULT_TILE_BUTTON_HEIGHT / 2),
-              z: group_menu_tile_button_options[:z]
-            ),
-            mortgage: Button.new(
-              actions: nil,
-              color: nil,
-              game: self,
-              height: DEFAULT_TILE_BUTTON_HEIGHT,
-              hover_color: nil,
-              hover_image: Image.new(images[:mortgage_hover]),
-              image: Image.new(images[:mortgage]),
-              image_height: DEFAULT_TILE_BUTTON_HEIGHT,
-              image_width: 70,
-              width: 70,
-              x: x + group_menu_sub_button_edge + (TILE_BUTTON_GAP * 2) +
-                (DEFAULT_TILE_BUTTON_HEIGHT * 2),
-              y: group_menu_sub_button_y,
-              z: group_menu_tile_button_options[:z]
-            ),
-            mortgage_lock: Button.new(
-              actions: nil,
-              color: nil,
-              game: self,
-              height: DEFAULT_TILE_BUTTON_HEIGHT,
-              hover_color: nil,
-              hover_image: Image.new(images[:mortgage_lock]),
-              image: Image.new(images[:mortgage_lock]),
-              image_height: DEFAULT_TILE_BUTTON_HEIGHT,
-              image_width: 70,
-              width: 70,
-              x: x + group_menu_sub_button_edge + (TILE_BUTTON_GAP * 2) +
-                (DEFAULT_TILE_BUTTON_HEIGHT * 2),
-              y: group_menu_sub_button_y,
-              z: group_menu_tile_button_options[:z]
-            ),
-            sell_house: Button.new(
-              actions: nil,
-              color: nil,
-              game: self,
-              height: DEFAULT_TILE_BUTTON_HEIGHT * 0.25,
-              hover_color: nil,
-              hover_image: Image.new(images[:arrow_down_hover]),
-              image: Image.new(images[:arrow_down]),
-              image_height: DEFAULT_TILE_BUTTON_HEIGHT * 0.25,
-              width: DEFAULT_TILE_BUTTON_HEIGHT,
-              x: x + group_menu_sub_button_edge,
-              y: group_menu_sub_button_y + DEFAULT_TILE_BUTTON_HEIGHT * 0.75,
-              z: group_menu_tile_button_options[:z]
-            ),
-            tile: Button.new(
-              group_menu_tile_button_options.merge(
-                image_height: Coordinates::GROUP_MENU_TILE_BUTTON_HEIGHT * 0.9,
-                x: x,
-                y: Coordinates::GROUP_MENU_FIRST_TILE_Y
-              )
-            ),
-            unmortgage: Button.new(
-              actions: nil,
-              color: nil,
-              game: self,
-              height: DEFAULT_TILE_BUTTON_HEIGHT,
-              hover_color: nil,
-              hover_image: Image.new(images[:unmortgage_hover]),
-              image: Image.new(images[:unmortgage]),
-              image_height: DEFAULT_TILE_BUTTON_HEIGHT,
-              image_width: 70,
-              width: 70,
-              x: x + group_menu_sub_button_edge + (TILE_BUTTON_GAP * 2) +
-                (DEFAULT_TILE_BUTTON_HEIGHT * 2),
-              y: group_menu_sub_button_y,
-              z: group_menu_tile_button_options[:z]
-            ),
-          }
-        end
-      }
-
       self.deed_menu_buttons = {
         close: Button.new(
           actions: :toggle_deed_menu,
@@ -1342,7 +1119,7 @@ module Monopoly
       player_inspector_stats_indent = player_inspector_button_height / 2
       self.player_inspector_buttons = {
         all_properties: CircularButton.new(
-          actions: proc { toggle_group_menu(inspected_player.properties) },
+          actions: proc { group_menu.open(inspected_player.properties) },
           color: colors[:tile_button],
           game: self,
           hover_color: colors[:tile_button_hover],
@@ -1395,7 +1172,7 @@ module Monopoly
             ),
             count: CircularButton.new(
               actions:
-                proc { toggle_group_menu(player_inspector_color_groups.items[number].tiles) },
+                proc { group_menu.open(player_inspector_color_groups.items[number].tiles) },
               color: colors[:tile_button],
               font: fonts[:default][:type],
               font_color: colors[:clickable_text],
@@ -1550,7 +1327,7 @@ module Monopoly
           z: ZOrder::POP_UP_MENU_UI
         ),
         mortgaged_properties: CircularButton.new(
-          actions: proc { toggle_group_menu(inspected_player.properties.select(&:mortgaged?)) },
+          actions: proc { group_menu.open(inspected_player.properties.select(&:mortgaged?)) },
           color: nil,
           game: self,
           hover_color: colors[:tile_button],
@@ -1623,7 +1400,7 @@ module Monopoly
           z: ZOrder::POP_UP_MENU_UI
         ),
         railroad_group: CircularButton.new(
-          actions: proc { toggle_group_menu(player_inspector_railroad_groups.items.first.tiles) },
+          actions: proc { group_menu.open(player_inspector_railroad_groups.items.first.tiles) },
           color: colors[:tile_button],
           font: fonts[:default][:type],
           font_color: colors[:clickable_text],
@@ -1854,7 +1631,7 @@ module Monopoly
           z: ZOrder::POP_UP_MENU_UI
         ),
         utility_group: CircularButton.new(
-          actions: proc { toggle_group_menu(player_inspector_utility_groups.items.first.tiles) },
+          actions: proc { group_menu.open(player_inspector_utility_groups.items.first.tiles) },
           color: colors[:tile_button],
           font: fonts[:default][:type],
           font_color: colors[:clickable_text],
@@ -1924,7 +1701,7 @@ module Monopoly
       next_players_y_offset = DEFAULT_TILE_BUTTON_HEIGHT + TILE_BUTTON_GAP
       self.player_menu_buttons = {
         all_properties: CircularButton.new(
-          actions: proc { toggle_group_menu(current_player.properties) },
+          actions: proc { group_menu.open(current_player.properties) },
           color: colors[:tile_button],
           game: self,
           hover_color: colors[:tile_button_hover],
@@ -1952,7 +1729,7 @@ module Monopoly
               z: ZOrder::MENU_UI
             ),
             count: CircularButton.new(
-              actions: proc { toggle_group_menu(player_menu_color_groups.items[number].tiles) },
+              actions: proc { group_menu.open(player_menu_color_groups.items[number].tiles) },
               color: colors[:tile_button],
               font: fonts[:default][:type],
               font_color: colors[:clickable_text],
@@ -2040,7 +1817,7 @@ module Monopoly
           z: ZOrder::MENU_UI
         ),
         mortgaged_properties: CircularButton.new(
-          actions: proc { toggle_group_menu(current_player.properties.select(&:mortgaged?)) },
+          actions: proc { group_menu.open(current_player.properties.select(&:mortgaged?)) },
           color: nil,
           game: self,
           hover_color: colors[:tile_button],
@@ -2169,7 +1946,7 @@ module Monopoly
           z: ZOrder::MENU_UI
         ),
         railroad_group: CircularButton.new(
-          actions: proc { toggle_group_menu(player_menu_railroad_groups.items.first.tiles) },
+          actions: proc { group_menu.open(player_menu_railroad_groups.items.first.tiles) },
           color: colors[:tile_button],
           font: fonts[:default][:type],
           font_color: colors[:clickable_text],
@@ -2228,7 +2005,7 @@ module Monopoly
           z: ZOrder::MENU_UI
         ),
         utility_group: CircularButton.new(
-          actions: proc { toggle_group_menu(player_menu_utility_groups.items.first.tiles) },
+          actions: proc { group_menu.open(player_menu_utility_groups.items.first.tiles) },
           color: colors[:tile_button],
           font: fonts[:default][:type],
           font_color: colors[:clickable_text],
@@ -2619,8 +2396,6 @@ module Monopoly
 
       self.eliminated_players = []
 
-      self.group_menu_tiles = ScrollingList.new(items: [], view_size: 4)
-      self.group_menu_alt_button_positions = false
       self.player_menu_color_groups = ScrollingList.new(items: color_groups.values, view_size: 8)
       self.player_menu_railroad_groups =
         ScrollingList.new(items: railroad_groups.values, view_size: 1)
@@ -2639,13 +2414,13 @@ module Monopoly
       self.visible_card_menu_buttons = []
       self.visible_deed_menu_buttons = []
       self.visible_event_history_menu_buttons = []
-      self.visible_group_menu_buttons = []
       self.visible_player_inspector_buttons = []
       set_visible_compass_menu_buttons
       set_visible_player_menu_buttons
 
       self.action_menu = ActionMenu.new(self)
       self.dialogue_box_menu = DialogueBoxMenu.new(self)
+      self.group_menu = GroupMenu.new(self)
       self.map_menu = MapMenu.new(self)
       self.options_menu = OptionsMenu.new(self)
       self.player_list_menu = PlayerListMenu.new(self)
@@ -2686,7 +2461,6 @@ module Monopoly
       deed_menu
       event_history_menu
       game_menu
-      group_menu
       player_inspector
       player_menu
     ].each do |value|
@@ -2714,8 +2488,8 @@ module Monopoly
 
         if drawing_event_history_menu?
           temp_buttons += visible_event_history_menu_buttons.reverse
-        elsif drawing_group_menu?
-          temp_buttons += visible_group_menu_buttons.reverse
+        elsif group_menu.drawing?
+          temp_buttons += group_menu.visible_buttons.reverse
         elsif drawing_deed_menu?
           temp_buttons += visible_deed_menu_buttons.reverse
         elsif player_list_menu.drawing?
@@ -2755,7 +2529,7 @@ module Monopoly
     end
 
     def drawing_pop_up_menu?
-      drawing_deed_menu? || drawing_event_history_menu? || drawing_group_menu? ||
+      drawing_deed_menu? || drawing_event_history_menu? || group_menu.drawing? ||
         drawing_player_inspector? || player_list_menu.drawing?
     end
 

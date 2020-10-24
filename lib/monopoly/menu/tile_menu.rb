@@ -174,7 +174,7 @@ module Monopoly
           z: ZOrder::MAIN_UI
         ),
         show_group: CircularButton.new(
-          actions: :toggle_group_menu,
+          actions: proc { game.group_menu.open },
           color: game.colors[:tile_button],
           game: game,
           hover_color: game.colors[:positive_green],
