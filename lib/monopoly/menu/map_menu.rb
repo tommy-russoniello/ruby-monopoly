@@ -154,7 +154,7 @@ module Monopoly
         open_in_tile_menu: Button.new(
           actions: proc do
             game.focused_tile = current_tile
-            game.set_visible_tile_menu_buttons
+            game.tile_menu.update
             close
           end,
           color: nil,
@@ -815,7 +815,7 @@ module Monopoly
       game.set_visible_card_menu_buttons
       game.set_visible_compass_menu_buttons
       game.set_visible_player_menu_buttons
-      game.set_visible_tile_menu_buttons
+      game.tile_menu.update
 
       super
     end

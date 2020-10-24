@@ -104,7 +104,7 @@ module Monopoly
 
         close_error_dialogue
         set_visible_compass_menu_buttons
-        set_visible_tile_menu_buttons
+        tile_menu.update
         set_visible_player_menu_buttons(refresh: true)
       end
 
@@ -113,7 +113,7 @@ module Monopoly
           current_player_landed
         self.current_player_landed = true
         set_visible_compass_menu_buttons
-        set_visible_tile_menu_buttons
+        tile_menu.update
         case current_tile
         when CardTile
           set_next_action(:draw_card)
@@ -180,7 +180,7 @@ module Monopoly
         execute_actions(format_actions(actions)) if actions
         return unless next_action
 
-        set_visible_tile_menu_buttons
+        tile_menu.update
         set_visible_player_menu_buttons
         set_next_action(*next_action)
       end

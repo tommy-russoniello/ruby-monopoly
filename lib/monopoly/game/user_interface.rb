@@ -53,7 +53,7 @@ module Monopoly
           map_menu.update
         else
           self.focused_tile = tile
-          set_visible_tile_menu_buttons
+          tile_menu.update
           toggle_card_menu if drawing_card_menu?
         end
 
@@ -90,7 +90,7 @@ module Monopoly
           draw_game_menu
           draw_player_menu
           draw_card_menu
-          draw_tile_menu
+          tile_menu.draw
           action_menu.draw
         end
 
@@ -331,34 +331,6 @@ module Monopoly
           .each { |number| Gosu.draw_rect(player_menu_data[:jail_bars][number]) }
 
         visible_player_menu_buttons.each { |button| button.draw(*coordinates) }
-      end
-
-      def draw_tile_menu
-        return if map_menu.drawing? || drawing_card_menu? || drawing_pop_up_menu?
-
-        coordinates = [draw_mouse_x, draw_mouse_y] unless dialogue_box_menu.drawing?
-
-        if focused_tile.is_a?(PropertyTile)
-          focused_tile.tile_image.draw(
-            draw_height: Coordinates::TILE_HEIGHT,
-            draw_width: Coordinates::TILE_WIDTH,
-            from_center: true,
-            x: Coordinates::CENTER_X,
-            y: Coordinates::CENTER_Y,
-            z: ZOrder::MAIN_UI
-          )
-        else
-          focused_tile.tile_image.draw(
-            draw_height: Coordinates::TILE_HEIGHT,
-            draw_width: tile_width(focused_tile),
-            from_center: true,
-            x: Coordinates::CENTER_X,
-            y: Coordinates::CENTER_Y,
-            z: ZOrder::MAIN_UI
-          )
-        end
-
-        visible_tile_menu_buttons.each { |button| button.draw(*coordinates) }
       end
 
       def set_visible_card_menu_buttons
@@ -786,99 +758,6 @@ module Monopoly
           button.maximize_images_in_square(TOKEN_HEIGHT)
 
           visible_player_menu_buttons << button
-        end
-      end
-
-      def set_visible_tile_menu_buttons
-        self.visible_tile_menu_buttons = []
-
-        tile_type = focused_tile.corner? ? :corner : :middle
-        if focused_tile != current_tile
-          x, y = tile_menu_data[:back][tile_type].values_at(:x, :y)
-          tile_menu_buttons[:back].update_coordinates(x: x, y: y) unless
-            tile_menu_buttons[:back].x == x && tile_menu_buttons[:back].y == y
-          visible_tile_menu_buttons << tile_menu_buttons[:back]
-        end
-
-        if players.count { |player| player.tile == focused_tile }.positive?
-          data = tile_menu_data[:show_players][tile_type]
-          data = data[focused_tile.is_a?(PropertyTile) ? :property : :non_property] if
-            tile_type == :middle
-          x, y = data.values_at(:x, :y)
-          tile_menu_buttons[:show_players].update_coordinates(x: x, y: y) unless
-            tile_menu_buttons[:show_players].x == x && tile_menu_buttons[:show_players].y == y
-          visible_tile_menu_buttons << tile_menu_buttons[:show_players]
-        end
-
-        return unless focused_tile.is_a?(PropertyTile)
-
-        visible_tile_menu_buttons << tile_menu_buttons[:show_deed]
-
-        tile_menu_buttons[:show_group].hover_image = focused_tile.group.image.clone
-        tile_menu_buttons[:show_group].image = focused_tile.group.image.clone
-
-        tile_menu_buttons[:show_group].maximize_images_in_square(TOKEN_HEIGHT)
-        visible_tile_menu_buttons << tile_menu_buttons[:show_group]
-
-        if focused_tile.owner
-          tile_menu_buttons[:owner].hover_image = focused_tile.owner.token_image.clone
-          tile_menu_buttons[:owner].image = focused_tile.owner.token_image.clone
-          tile_menu_buttons[:owner].color, tile_menu_buttons[:owner].hover_color =
-            if focused_tile.group.monopolized?
-              colors.values_at(:monopoly_button_background, :monopoly_button_background_hover)
-            else
-              colors.values_at(:tile_button, :tile_button_hover)
-            end
-
-          tile_menu_buttons[:owner].maximize_images_in_square(TOKEN_HEIGHT)
-
-          visible_tile_menu_buttons << tile_menu_buttons[:owner]
-
-          if focused_tile.owner == current_player
-            mortgage_button = focused_tile.mortgaged? ? :unmortgage : :mortgage
-            visible_tile_menu_buttons << tile_menu_buttons[mortgage_button]
-          elsif focused_tile.mortgaged?
-            visible_tile_menu_buttons << tile_menu_buttons[:mortgage_lock]
-          end
-        elsif focused_tile == current_tile && current_player_cache.nil? && current_player_landed
-          visible_tile_menu_buttons << tile_menu_buttons[:buy]
-        end
-
-        if focused_tile.is_a?(StreetTile)
-          tile_menu_buttons[:show_group].image_background_color =
-            tile_menu_buttons[:show_group].image_background_hover_color =
-              focused_tile.group.color
-          color = focused_tile.group.color
-          tile_menu_buttons[:show_group].hover_color =
-            Gosu::Color.new(100, color.red, color.green, color.blue)
-
-          if focused_tile.owner == current_player
-            if focused_tile.group.monopolized?
-              if max_house_count <= DEFAULT_MAX_HOUSE_COUNT
-                visible_tile_menu_buttons.concat(
-                  tile_menu_buttons[:sell_house][0...focused_tile.house_count]
-                )
-
-                if focused_tile.house_count < max_house_count
-                  visible_tile_menu_buttons <<
-                    tile_menu_buttons[:build_house][focused_tile.house_count]
-                end
-              else
-                visible_tile_menu_buttons << tile_menu_buttons[:build_house_arrow]
-                tile_menu_buttons[:house_with_number].text = focused_tile.house_count
-                visible_tile_menu_buttons << tile_menu_buttons[:house_with_number]
-                visible_tile_menu_buttons << tile_menu_buttons[:sell_house_arrow]
-              end
-            end
-          else
-            visible_tile_menu_buttons.concat(
-              tile_menu_buttons[:house][0...focused_tile.house_count]
-            )
-          end
-        else
-          tile_menu_buttons[:show_group].hover_color = colors[:tile_button_hover]
-          tile_menu_buttons[:show_group].image_background_color =
-            tile_menu_buttons[:show_group].image_background_hover_color = nil
         end
       end
 

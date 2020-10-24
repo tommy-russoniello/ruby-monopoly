@@ -4,7 +4,7 @@ module Monopoly
       def back_to_current_tile
         self.focused_tile = current_tile
         toggle_card_menu if drawing_card_menu?
-        set_visible_tile_menu_buttons
+        tile_menu.update
       end
 
       def build_house(tile = focused_tile)
@@ -55,7 +55,7 @@ module Monopoly
         if map_menu.drawing?
           map_menu.update
         else
-          set_visible_tile_menu_buttons
+          tile_menu.update
           set_visible_player_menu_buttons
         end
 
@@ -79,7 +79,7 @@ module Monopoly
           "#{format_money(current_tile.purchase_price)}."
         )
 
-        set_visible_tile_menu_buttons
+        tile_menu.update
         set_visible_player_menu_buttons
         set_next_action(:end_turn)
       end
@@ -110,7 +110,7 @@ module Monopoly
           current_player.jail_turns -= 1
           log_event("#{current_player.name} got out of jail.") unless current_player.in_jail?
 
-          set_visible_tile_menu_buttons
+          tile_menu.update
           set_visible_player_menu_buttons
           set_next_action(:end_turn)
         else
@@ -135,7 +135,7 @@ module Monopoly
         send_player_to_jail(current_player)
         self.current_tile = self.focused_tile = tiles[:jail]
         set_visible_compass_menu_buttons
-        set_visible_tile_menu_buttons
+        tile_menu.update
         set_visible_player_menu_buttons
         set_next_action(:end_turn)
       end
@@ -161,7 +161,7 @@ module Monopoly
         if map_menu.drawing?
           map_menu.update
         else
-          set_visible_tile_menu_buttons
+          tile_menu.update
           set_visible_player_menu_buttons
         end
       end
@@ -236,7 +236,7 @@ module Monopoly
         if map_menu.drawing?
           map_menu.update
         else
-          set_visible_tile_menu_buttons
+          tile_menu.update
           set_visible_player_menu_buttons
         end
 
@@ -318,7 +318,7 @@ module Monopoly
         if map_menu.drawing?
           map_menu.update
         else
-          set_visible_tile_menu_buttons
+          tile_menu.update
           set_visible_player_menu_buttons
         end
       end
@@ -342,7 +342,7 @@ module Monopoly
           current_player.cards << current_card
           self.current_card = nil
           toggle_card_menu
-          set_visible_tile_menu_buttons
+          tile_menu.update
           set_visible_player_menu_buttons
           set_next_action(:end_turn)
         else
