@@ -812,7 +812,7 @@ module Monopoly
       self.tiles = nil
 
       game.action_menu.update
-      game.set_visible_card_menu_buttons
+      game.card_menu.update
       game.set_visible_compass_menu_buttons
       game.set_visible_player_menu_buttons
       game.tile_menu.update

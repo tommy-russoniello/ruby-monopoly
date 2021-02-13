@@ -3,7 +3,7 @@ module Monopoly
     module PlayerActions
       def back_to_current_tile
         self.focused_tile = current_tile
-        toggle_card_menu if drawing_card_menu?
+        card_menu.close if card_menu.drawing?
         tile_menu.update
       end
 
@@ -91,8 +91,8 @@ module Monopoly
       def draw_card
         self.current_card = cards[current_tile.card_type].shift
         current_card.player = current_player
-        card_menu_buttons[:continue].text = current_card.continue_button_text
-        toggle_card_menu
+        card_menu.buttons[:continue].text = current_card.continue_button_text
+        card_menu.open
         set_next_action(nil)
       end
 
@@ -246,14 +246,6 @@ module Monopoly
         )
       end
 
-      def toggle_card_menu
-        set_visible_card_menu_buttons unless drawing_card_menu?
-
-        self.drawing_card_menu = !drawing_card_menu
-
-        action_menu.update
-      end
-
       def toggle_event_history_menu
         if drawing_event_history_menu?
           self.event_history_view = nil
@@ -318,13 +310,13 @@ module Monopoly
         if current_card.keepable?
           current_player.cards << current_card
           self.current_card = nil
-          toggle_card_menu
+          card_menu.close
           tile_menu.update
           set_visible_player_menu_buttons
           set_next_action(:end_turn)
         else
           current_card.triggered = true
-          set_visible_card_menu_buttons
+          card_menu.update
           current_card.perform_action
         end
       end

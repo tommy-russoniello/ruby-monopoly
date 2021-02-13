@@ -51,7 +51,7 @@ module Monopoly
         else
           self.focused_tile = tile
           tile_menu.update
-          toggle_card_menu if drawing_card_menu?
+          card_menu.close if card_menu.drawing?
         end
 
         close_pop_up_menus
@@ -86,7 +86,7 @@ module Monopoly
           draw_compass_menu
           draw_game_menu
           draw_player_menu
-          draw_card_menu
+          card_menu.draw
           tile_menu.draw
           action_menu.draw
         end
@@ -125,22 +125,6 @@ module Monopoly
           y: Coordinates::TOP_Y,
           z: ZOrder::POP_UP_MENU_UI
         )
-      end
-
-      def draw_card_menu
-        return unless drawing_card_menu?
-
-        current_card.image.draw(
-          draw_height: Coordinates::CARD_HEIGHT,
-          draw_width: Coordinates::CARD_WIDTH,
-          from_center: true,
-          x: Coordinates::CENTER_X,
-          y: Coordinates::CENTER_Y,
-          z: ZOrder::MENU_UI
-        )
-
-        coordinates = [draw_mouse_x, draw_mouse_y] unless dialogue_box_menu.drawing?
-        visible_card_menu_buttons.each { |button| button.draw(*coordinates) }
       end
 
       def draw_clock
@@ -256,14 +240,6 @@ module Monopoly
           .each { |number| Gosu.draw_rect(player_menu_data[:jail_bars][number]) }
 
         visible_player_menu_buttons.each { |button| button.draw(*coordinates) }
-      end
-
-      def set_visible_card_menu_buttons
-        self.visible_card_menu_buttons = []
-        if current_card
-          visible_card_menu_buttons << card_menu_buttons[:back]
-          visible_card_menu_buttons << card_menu_buttons[:continue] if !current_card.triggered
-        end
       end
 
       def set_visible_compass_menu_buttons

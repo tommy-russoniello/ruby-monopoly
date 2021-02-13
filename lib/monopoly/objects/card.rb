@@ -89,7 +89,7 @@ module Monopoly
             on_bankrupt: [[:return_new_card, actions: :end_turn, next_action: nil]],
             on_failure: proc do
               game.current_card.triggered = false
-              game.set_visible_card_menu_buttons
+              game.card_menu.update
             end,
             on_success: :return_new_card,
             player: player,
@@ -219,7 +219,7 @@ module Monopoly
         on_bankrupt: [[:return_new_card, actions: :end_turn, next_action: nil]],
         on_failure: proc do
           game.current_card.triggered = false
-          game.set_visible_card_menu_buttons
+          game.card_menu.update
         end,
         on_success: :return_new_card,
         player: player,

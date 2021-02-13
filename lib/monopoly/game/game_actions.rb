@@ -173,7 +173,7 @@ module Monopoly
       end
 
       def return_new_card(actions: nil, next_action: :end_turn)
-        toggle_card_menu if drawing_card_menu?
+        card_menu.close if card_menu.drawing?
         current_card.clear_transient_attributes
         cards[current_card.type] << current_card
         self.current_card = nil

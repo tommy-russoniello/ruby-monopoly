@@ -250,7 +250,7 @@ module Monopoly
           z: ZOrder::MENU_UI
         ),
         show_card: Button.new(
-          actions: :toggle_card_menu,
+          actions: proc { game.card_menu.open },
           font: game.fonts[:default][:type],
           game: game,
           text: 'Show Card',
@@ -347,7 +347,7 @@ module Monopoly
         visible_buttons << buttons[:minimap]
       end
 
-      visible_buttons << buttons[:show_card] if game.current_card && !game.drawing_card_menu?
+      visible_buttons << buttons[:show_card] if game.current_card && !game.card_menu.drawing?
       visible_buttons << buttons[game.next_action] if game.next_action
       visible_buttons << buttons[:no_action] if
         [nil, :draw_card, :go_to_jail].include?(game.next_action)

@@ -13,7 +13,7 @@ module Monopoly
     RESOLUTION_WIDTH = ENV['RESOLUTION_WIDTH'].to_i
 
     attr_accessor :action_menu
-    attr_accessor :card_menu_buttons
+    attr_accessor :card_menu
     attr_accessor :cards
     attr_accessor :clock_data
     attr_accessor :color_groups
@@ -32,7 +32,6 @@ module Monopoly
     attr_accessor :dialogue_box_menu
     attr_accessor :die_a
     attr_accessor :die_b
-    attr_accessor :drawing_card_menu
     attr_accessor :drawing_compass_menu
     attr_accessor :drawing_event_history_menu
     attr_accessor :drawing_game_menu
@@ -83,7 +82,6 @@ module Monopoly
     attr_accessor :tiles
     attr_accessor :turn
     attr_accessor :utility_groups
-    attr_accessor :visible_card_menu_buttons
     attr_accessor :visible_compass_menu_buttons
     attr_accessor :visible_event_history_menu_buttons
     attr_accessor :visible_player_inspector_buttons
@@ -638,31 +636,6 @@ module Monopoly
       self.current_player_index = 0
       self.previous_player_number = -1
       self.current_player = players.first
-
-      self.card_menu_buttons = {
-        back: CircularButton.new(
-          actions: :back_to_current_tile,
-          color: colors[:tile_button],
-          game: self,
-          hover_color: colors[:neutral_blue],
-          hover_image: Image.new(images[:back]),
-          image: Image.new(images[:back]),
-          image_height: 42,
-          radius: 30,
-          x: Coordinates::CENTER_X + (Coordinates::CARD_WIDTH / 2) - 30,
-          y: Coordinates::CENTER_Y + (Coordinates::CARD_HEIGHT / 2) + 35,
-          z: ZOrder::MAIN_UI
-        ),
-        continue: Button.new(
-          actions: :use_new_card,
-          font: fonts[:default][:type],
-          game: self,
-          text: 'Continue',
-          width: 300,
-          x: Coordinates::CENTER_X - 150,
-          y: Coordinates::CENTER_Y + (Coordinates::CARD_HEIGHT / 2) + 10
-        )
-      }
 
       error_dialogue_close_button_height = DEFAULT_TILE_BUTTON_HEIGHT * 0.2
       error_dialogue_button_gap = error_dialogue_close_button_height * 0.25
@@ -2347,7 +2320,6 @@ module Monopoly
       self.drawing_game_menu = true
       self.drawing_player_menu = true
       self.next_players = ScrollingList.new(items: players[1..-1], view_size: 4)
-      self.visible_card_menu_buttons = []
       self.visible_event_history_menu_buttons = []
       self.visible_player_inspector_buttons = []
       set_visible_compass_menu_buttons
@@ -2356,6 +2328,7 @@ module Monopoly
       self.action_menu = ActionMenu.new(self)
       self.deed_menu = DeedMenu.new(self)
       self.dialogue_box_menu = DialogueBoxMenu.new(self)
+      self.card_menu = CardMenu.new(self)
       self.group_menu = GroupMenu.new(self)
       self.map_menu = MapMenu.new(self)
       self.options_menu = OptionsMenu.new(self)
@@ -2392,7 +2365,6 @@ module Monopoly
     end
 
     %i[
-      card_menu
       compass_menu
       event_history_menu
       game_menu
@@ -2435,7 +2407,7 @@ module Monopoly
           temp_buttons += map_menu.visible_buttons.reverse
         else
           temp_buttons +=
-            (drawing_card_menu? ? visible_card_menu_buttons : tile_menu.visible_buttons).reverse
+            (card_menu.drawing? ? card_menu.visible_buttons : tile_menu.visible_buttons).reverse
 
           if action_menu.drawing?
             temp_buttons << action_menu.buttons[:minimap] if standard_board?

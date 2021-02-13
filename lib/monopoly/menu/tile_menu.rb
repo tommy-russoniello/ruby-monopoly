@@ -247,7 +247,7 @@ module Monopoly
     end
 
     def draw
-      return if game.map_menu.drawing? || game.drawing_card_menu? || game.drawing_pop_up_menu?
+      return if game.map_menu.drawing? || game.card_menu.drawing? || game.drawing_pop_up_menu?
 
       game.focused_tile.tile_image.draw(
         draw_height: Coordinates::TILE_HEIGHT,
