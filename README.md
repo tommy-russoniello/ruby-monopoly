@@ -4,4 +4,4 @@ Customizable 2-D graphical Monopoly game written in Ruby 💰🎩💎
 This is just for fun and learning and is a work in progress.
 
 ## Dependencies
-* Ruby 2.5.3
+* Ruby 2.7.2
