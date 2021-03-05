@@ -187,91 +187,91 @@ module Monopoly
     private
 
     def draw_railroad_tile_deed(tile)
-      (tile.icon || tile.group.image).draw(deed_data[:image_params])
+      (tile.icon || tile.group.image).draw(**deed_data[:image_params])
 
       font = game.fonts[:deed][:type]
       deed_data[:name_lines_params].each do |params|
-        game.fonts[:deed_name][:type].draw_text(*params)
+        game.fonts[:deed_name][:type].draw_text(params[:text], **params[:options])
       end
 
       if deed_data[:rent_params]
-        font.draw_text(*deed_data[:rent_params][:left])
-        font.draw_text(*deed_data[:rent_params][:right])
+        font.draw_text(deed_data[:rent_params][:left][:text], **deed_data[:rent_params][:left][:options])
+        font.draw_text(deed_data[:rent_params][:right][:text], **deed_data[:rent_params][:right][:options])
       end
 
       deed_data[:rent_with_railroads_params]&.each do |data|
-        font.draw_text(*data[:left])
-        font.draw_text(*data[:right])
+        font.draw_text(data[:left][:text], **data[:left][:options])
+        font.draw_text(data[:right][:text], **data[:right][:options])
       end
 
-      Gosu.draw_rect(deed_data[:divider_params])
+      Gosu.draw_rect(**deed_data[:divider_params])
 
-      font.draw_text(*deed_data[:mortgage_value_params][:left])
-      font.draw_text(*deed_data[:mortgage_value_params][:right])
+      font.draw_text(deed_data[:mortgage_value_params][:left][:text], **deed_data[:mortgage_value_params][:left][:options])
+      font.draw_text(deed_data[:mortgage_value_params][:right][:text], **deed_data[:mortgage_value_params][:right][:options])
 
-      font.draw_text(*deed_data[:unmortgage_cost_params][:left])
-      font.draw_text(*deed_data[:unmortgage_cost_params][:right])
+      font.draw_text(deed_data[:unmortgage_cost_params][:left][:text], **deed_data[:unmortgage_cost_params][:left][:options])
+      font.draw_text(deed_data[:unmortgage_cost_params][:right][:text], **deed_data[:unmortgage_cost_params][:right][:options])
     end
 
     def draw_street_tile_deed
-      Gosu.draw_rect(deed_data[:color_box_border_params])
-      Gosu.draw_rect(deed_data[:color_box_params])
+      Gosu.draw_rect(**deed_data[:color_box_border_params])
+      Gosu.draw_rect(**deed_data[:color_box_params])
       font = game.fonts[:deed][:type]
-      font.draw_text(*deed_data[:title_deed_text_params])
+      font.draw_text(deed_data[:title_deed_text_params][:text], **deed_data[:title_deed_text_params][:options])
 
       deed_data[:name_lines_params].each do |params|
-        game.fonts[:deed_name][:type].draw_text(*params)
+        game.fonts[:deed_name][:type].draw_text(params[:text], **params[:options])
       end
 
-      font.draw_text(*deed_data[:rent_line_params][:left])
-      font.draw_text(*deed_data[:rent_line_params][:right])
+      font.draw_text(deed_data[:rent_line_params][:left][:text], **deed_data[:rent_line_params][:left][:options])
+      font.draw_text(deed_data[:rent_line_params][:right][:text], **deed_data[:rent_line_params][:right][:options])
 
-      font.draw_text(*deed_data[:rent_with_color_group_line_params][:left])
-      font.draw_text(*deed_data[:rent_with_color_group_line_params][:right])
+      font.draw_text(deed_data[:rent_with_color_group_line_params][:left][:text], **deed_data[:rent_with_color_group_line_params][:left][:options])
+      font.draw_text(deed_data[:rent_with_color_group_line_params][:right][:text], **deed_data[:rent_with_color_group_line_params][:right][:options])
 
       deed_data[:rent_with_houses_lines_params]&.each do |data|
-        font.draw_text(*data[:left])
-        font.draw_text(*data[:right])
+        font.draw_text(data[:left][:text], **data[:left][:options])
+        font.draw_text(data[:right][:text], **data[:right][:options])
       end
 
-      Gosu.draw_rect(deed_data[:divider_params])
+      Gosu.draw_rect(**deed_data[:divider_params])
 
-      font.draw_text(*deed_data[:house_cost_params][:left])
-      font.draw_text(*deed_data[:house_cost_params][:right])
+      font.draw_text(deed_data[:house_cost_params][:left][:text], **deed_data[:house_cost_params][:left][:options])
+      font.draw_text(deed_data[:house_cost_params][:right][:text], **deed_data[:house_cost_params][:right][:options])
 
-      font.draw_text(*deed_data[:house_sell_price_params][:left])
-      font.draw_text(*deed_data[:house_sell_price_params][:right])
+      font.draw_text(deed_data[:house_sell_price_params][:left][:text], **deed_data[:house_sell_price_params][:left][:options])
+      font.draw_text(deed_data[:house_sell_price_params][:right][:text], **deed_data[:house_sell_price_params][:right][:options])
 
-      font.draw_text(*deed_data[:mortgage_value_params][:left])
-      font.draw_text(*deed_data[:mortgage_value_params][:right])
+      font.draw_text(deed_data[:mortgage_value_params][:left][:text], **deed_data[:mortgage_value_params][:left][:options])
+      font.draw_text(deed_data[:mortgage_value_params][:right][:text], **deed_data[:mortgage_value_params][:right][:options])
 
-      font.draw_text(*deed_data[:unmortgage_cost_params][:left])
-      font.draw_text(*deed_data[:unmortgage_cost_params][:right])
+      font.draw_text(deed_data[:unmortgage_cost_params][:left][:text], **deed_data[:unmortgage_cost_params][:left][:options])
+      font.draw_text(deed_data[:unmortgage_cost_params][:right][:text], **deed_data[:unmortgage_cost_params][:right][:options])
     end
 
     def draw_utility_tile_deed(tile)
       (tile.icon || tile.group.image).draw(deed_data[:image_params])
       deed_data[:name_lines_params].each do |params|
-        game.fonts[:deed_name][:type].draw_text(*params)
+        game.fonts[:deed_name][:type].draw_text(params[:text], **params[:options])
       end
 
       deed_data[:rent_lines_params].each do |params|
-        deed_data[:rent_font].draw_text(*params)
+        deed_data[:rent_font].draw_text(params[:text], **params[:options])
       end
 
       if deed_data[:rent_line_params]
-        deed_data[:rent_font].draw_text(*deed_data[:rent_line_params][:left])
-        deed_data[:rent_font].draw_text(*deed_data[:rent_line_params][:right])
+        deed_data[:rent_font].draw_text(deed_data[:rent_line_params][:left][:text], **deed_data[:rent_line_params][:left][:options])
+        deed_data[:rent_font].draw_text(deed_data[:rent_line_params][:right][:text], **deed_data[:rent_line_params][:right][:options])
       end
 
-      Gosu.draw_rect(deed_data[:divider_params])
+      Gosu.draw_rect(**deed_data[:divider_params])
 
       font = game.fonts[:deed][:type]
-      font.draw_text(*deed_data[:mortgage_value_params][:left])
-      font.draw_text(*deed_data[:mortgage_value_params][:right])
+      font.draw_text(deed_data[:mortgage_value_params][:left][:text], **deed_data[:mortgage_value_params][:left][:options])
+      font.draw_text(deed_data[:mortgage_value_params][:right][:text], **deed_data[:mortgage_value_params][:right][:options])
 
-      font.draw_text(*deed_data[:unmortgage_cost_params][:left])
-      font.draw_text(*deed_data[:unmortgage_cost_params][:right])
+      font.draw_text(deed_data[:unmortgage_cost_params][:left][:text], **deed_data[:unmortgage_cost_params][:left][:options])
+      font.draw_text(deed_data[:unmortgage_cost_params][:right][:text], **deed_data[:unmortgage_cost_params][:right][:options])
     end
 
     def set_railroad_tile_deed_data(tile)
@@ -294,16 +294,18 @@ module Monopoly
       initial_offset =
         ((deed_data[:name].size - deed_data[:name].compact.size) / 2.0) * game.fonts[:deed][:offset]
       deed_data[:name_lines_params] = deed_data[:name].map.with_index do |text, index|
-        [
-          text,
-          color: game.colors[:deed_accent],
-          rel_x: 0.5,
-          rel_y: 0.5,
-          x: Coordinates::CENTER_X,
-          y: Coordinates::CENTER_Y - (DEED_HEIGHT * 0.17) + initial_offset +
-            (game.fonts[:deed][:offset] * (index + 1)),
-          z: ZOrder::POP_UP_MENU_BACKGROUND
-        ]
+        {
+          text: text,
+          options: {
+            color: game.colors[:deed_accent],
+            rel_x: 0.5,
+            rel_y: 0.5,
+            x: Coordinates::CENTER_X,
+            y: Coordinates::CENTER_Y - (DEED_HEIGHT * 0.17) + initial_offset +
+              (game.fonts[:deed][:offset] * (index + 1)),
+            z: ZOrder::POP_UP_MENU_BACKGROUND
+          }
+        }
       end
 
       left_x = Coordinates::CENTER_X - (DEED_WIDTH * 0.4)
@@ -322,23 +324,27 @@ module Monopoly
           end
 
         deed_data[:rent_params] = {
-          left: [
-            'Rent',
-            color: text_color,
-            rel_y: 0.5,
-            x: left_x,
-            y: y,
-            z: ZOrder::POP_UP_MENU_BACKGROUND
-          ],
-          right: [
-            game.format_money(tile.rent_with_railroads(1)),
-            color: text_color,
-            rel_x: 1,
-            rel_y: 0.5,
-            x: right_x,
-            y: y,
-            z: ZOrder::POP_UP_MENU_BACKGROUND
-          ]
+          left: {
+            text: 'Rent',
+            options: {
+              color: text_color,
+              rel_y: 0.5,
+              x: left_x,
+              y: y,
+              z: ZOrder::POP_UP_MENU_BACKGROUND
+            }
+          },
+          right: {
+            text: game.format_money(tile.rent_with_railroads(1)),
+            options: {
+              color: text_color,
+              rel_x: 1,
+              rel_y: 0.5,
+              x: right_x,
+              y: y,
+              z: ZOrder::POP_UP_MENU_BACKGROUND
+            }
+          }
         }
 
         deed_data[:rent_with_railroads_params] =
@@ -351,23 +357,27 @@ module Monopoly
               end
 
             {
-              left: [
-                "Rent with #{railroad_count} #{tile.group.plural_name}",
-                color: text_color,
-                rel_y: 0.5,
-                x: left_x,
-                y: y + (y_offset * (railroad_count - 1)),
-                z: ZOrder::POP_UP_MENU_BACKGROUND
-              ],
-              right: [
-                game.format_money(tile.rent_with_railroads(railroad_count)),
-                color: text_color,
-                rel_x: 1,
-                rel_y: 0.5,
-                x: right_x,
-                y: y + (y_offset * (railroad_count - 1)),
-                z: ZOrder::POP_UP_MENU_BACKGROUND
-              ]
+              left: {
+                text: "Rent with #{railroad_count} #{tile.group.plural_name}",
+                options: {
+                  color: text_color,
+                  rel_y: 0.5,
+                  x: left_x,
+                  y: y + (y_offset * (railroad_count - 1)),
+                  z: ZOrder::POP_UP_MENU_BACKGROUND
+                }
+              },
+              right: {
+                text: game.format_money(tile.rent_with_railroads(railroad_count)),
+                options: {
+                  color: text_color,
+                  rel_x: 1,
+                  rel_y: 0.5,
+                  x: right_x,
+                  y: y + (y_offset * (railroad_count - 1)),
+                  z: ZOrder::POP_UP_MENU_BACKGROUND
+                }
+              }
             }
           end
       else
@@ -387,23 +397,27 @@ module Monopoly
 
         deed_data[:rent_with_railroads_params] = [
           {
-            left: [
-              "Rent with #{railroad_count} #{group_name}",
-              color: text_color,
-              rel_y: 0.5,
-              x: left_x,
-              y: y + y_offset,
-              z: ZOrder::POP_UP_MENU_BACKGROUND
-            ],
-            right: [
-              game.format_money(tile.rent_with_railroads(railroad_count)),
-              color: text_color,
-              rel_x: 1,
-              rel_y: 0.5,
-              x: right_x,
-              y: y + y_offset,
-              z: ZOrder::POP_UP_MENU_BACKGROUND
-            ]
+            left: {
+              text: "Rent with #{railroad_count} #{group_name}",
+              options: {
+                color: text_color,
+                rel_y: 0.5,
+                x: left_x,
+                y: y + y_offset,
+                z: ZOrder::POP_UP_MENU_BACKGROUND
+              }
+            },
+            right: {
+              text: game.format_money(tile.rent_with_railroads(railroad_count)),
+              options: {
+                color: text_color,
+                rel_x: 1,
+                rel_y: 0.5,
+                x: right_x,
+                y: y + y_offset,
+                z: ZOrder::POP_UP_MENU_BACKGROUND
+              }
+            }
           }
         ]
       end
@@ -419,43 +433,51 @@ module Monopoly
       }
 
       deed_data[:mortgage_value_params] = {
-        left: [
-          'Mortgage value',
-          color: game.colors[:deed_accent],
-          rel_y: 0.5,
-          x: left_x,
-          y: y + (y_offset * 7),
-          z: ZOrder::POP_UP_MENU_BACKGROUND
-        ],
-        right: [
-          game.format_money(tile.mortgage_cost),
-          color: game.colors[:deed_accent],
-          rel_x: 1,
-          rel_y: 0.5,
-          x: right_x,
-          y: y + (y_offset * 7),
-          z: ZOrder::POP_UP_MENU_BACKGROUND
-        ]
+        left: {
+          text: 'Mortgage value',
+          options: {
+            color: game.colors[:deed_accent],
+            rel_y: 0.5,
+            x: left_x,
+            y: y + (y_offset * 7),
+            z: ZOrder::POP_UP_MENU_BACKGROUND
+          }
+        },
+        right: {
+          text: game.format_money(tile.mortgage_cost),
+          options: {
+            color: game.colors[:deed_accent],
+            rel_x: 1,
+            rel_y: 0.5,
+            x: right_x,
+            y: y + (y_offset * 7),
+            z: ZOrder::POP_UP_MENU_BACKGROUND
+          }
+        }
       }
 
       deed_data[:unmortgage_cost_params] = {
-        left: [
-          'Unmortgage cost',
-          color: game.colors[:deed_accent],
-          rel_y: 0.5,
-          x: left_x,
-          y: y + (y_offset * 8),
-          z: ZOrder::POP_UP_MENU_BACKGROUND
-        ],
-        right: [
-          game.format_money(tile.unmortgage_cost),
-          color: game.colors[:deed_accent],
-          rel_x: 1,
-          rel_y: 0.5,
-          x: right_x,
-          y: y + (y_offset * 8),
-          z: ZOrder::POP_UP_MENU_BACKGROUND
-        ]
+        left: {
+          text: 'Unmortgage cost',
+          options: {
+            color: game.colors[:deed_accent],
+            rel_y: 0.5,
+            x: left_x,
+            y: y + (y_offset * 8),
+            z: ZOrder::POP_UP_MENU_BACKGROUND
+          }
+        },
+        right: {
+          text: game.format_money(tile.unmortgage_cost),
+          options: {
+            color: game.colors[:deed_accent],
+            rel_x: 1,
+            rel_y: 0.5,
+            x: right_x,
+            y: y + (y_offset * 8),
+            z: ZOrder::POP_UP_MENU_BACKGROUND
+          }
+        }
       }
     end
 
@@ -478,31 +500,35 @@ module Monopoly
         y: Coordinates::CENTER_Y - (DEED_HEIGHT * 0.3),
         z: ZOrder::POP_UP_MENU_BACKGROUND
       }
-      deed_data[:title_deed_text_params] = [
-        'TITLE DEED',
-        color: game.colors[:deed_accent],
-        rel_x: 0.5,
-        rel_y: 0.5,
-        scale_x: 0.5,
-        scale_y: 0.5,
-        x: Coordinates::CENTER_X,
-        y: Coordinates::CENTER_Y - (DEED_HEIGHT * 0.38),
-        z: ZOrder::POP_UP_MENU_BACKGROUND
-      ]
+      deed_data[:title_deed_text_params] = {
+        text: 'TITLE DEED',
+        options: {
+          color: game.colors[:deed_accent],
+          rel_x: 0.5,
+          rel_y: 0.5,
+          scale_x: 0.5,
+          scale_y: 0.5,
+          x: Coordinates::CENTER_X,
+          y: Coordinates::CENTER_Y - (DEED_HEIGHT * 0.38),
+          z: ZOrder::POP_UP_MENU_BACKGROUND
+        }
+      }
 
       initial_offset =
         ((deed_data[:name].size - deed_data[:name].compact.size) / 2.0) * game.fonts[:deed][:offset]
       deed_data[:name_lines_params] = deed_data[:name].map.with_index do |text, index|
-        [
-          text,
-          color: game.colors[:deed_accent],
-          rel_x: 0.5,
-          rel_y: 0.5,
-          x: Coordinates::CENTER_X,
-          y: Coordinates::CENTER_Y - (DEED_HEIGHT * 0.38) + initial_offset +
-            (game.fonts[:deed][:offset] * (index + 1)),
-          z: ZOrder::POP_UP_MENU_BACKGROUND
-        ]
+        {
+          text: text,
+          options: {
+            color: game.colors[:deed_accent],
+            rel_x: 0.5,
+            rel_y: 0.5,
+            x: Coordinates::CENTER_X,
+            y: Coordinates::CENTER_Y - (DEED_HEIGHT * 0.38) + initial_offset +
+              (game.fonts[:deed][:offset] * (index + 1)),
+            z: ZOrder::POP_UP_MENU_BACKGROUND
+          }
+        }
       end
 
       left_x = Coordinates::CENTER_X - (DEED_WIDTH * 0.4)
@@ -518,23 +544,27 @@ module Monopoly
         end
 
       deed_data[:rent_line_params] = {
-        left: [
-          'Rent',
-          color: text_color,
-          rel_y: 0.5,
-          x: left_x,
-          y: y,
-          z: ZOrder::POP_UP_MENU_BACKGROUND
-        ],
-        right: [
-          game.format_money(tile.rent_with_houses(0)),
-          color: text_color,
-          rel_x: 1,
-          rel_y: 0.5,
-          x: right_x,
-          y: y,
-          z: ZOrder::POP_UP_MENU_BACKGROUND
-        ]
+        left: {
+          text: 'Rent',
+          options: {
+            color: text_color,
+            rel_y: 0.5,
+            x: left_x,
+            y: y,
+            z: ZOrder::POP_UP_MENU_BACKGROUND
+          }
+        },
+        right: {
+          text: game.format_money(tile.rent_with_houses(0)),
+          options: {
+            color: text_color,
+            rel_x: 1,
+            rel_y: 0.5,
+            x: right_x,
+            y: y,
+            z: ZOrder::POP_UP_MENU_BACKGROUND
+          }
+        }
       }
 
       text_color =
@@ -545,23 +575,27 @@ module Monopoly
         end
 
       deed_data[:rent_with_color_group_line_params] = {
-        left: [
-          'Rent with color group',
-          color: text_color,
-          rel_y: 0.5,
-          x: left_x,
-          y: y + y_offset,
-          z: ZOrder::POP_UP_MENU_BACKGROUND
-        ],
-        right: [
-          game.format_money(tile.base_rent_with_color_group),
-          color: text_color,
-          rel_x: 1,
-          rel_y: 0.5,
-          x: right_x,
-          y: y + y_offset,
-          z: ZOrder::POP_UP_MENU_BACKGROUND
-        ]
+        left: {
+          text: 'Rent with color group',
+          options: {
+            color: text_color,
+            rel_y: 0.5,
+            x: left_x,
+            y: y + y_offset,
+            z: ZOrder::POP_UP_MENU_BACKGROUND
+          }
+        },
+        right: {
+          text: game.format_money(tile.base_rent_with_color_group),
+          options: {
+            color: text_color,
+            rel_x: 1,
+            rel_y: 0.5,
+            x: right_x,
+            y: y + y_offset,
+            z: ZOrder::POP_UP_MENU_BACKGROUND
+          }
+        }
       }
 
       deed_data[:rent_with_houses_lines_params] =
@@ -575,23 +609,27 @@ module Monopoly
               end
 
             {
-              left: [
-                "Rent with #{house_count} house#{'s' if house_count > 1}",
-                color: text_color,
-                rel_y: 0.5,
-                x: left_x,
-                y: y + (y_offset * (house_count + 1)),
-                z: ZOrder::POP_UP_MENU_BACKGROUND
-              ],
-              right: [
-                game.format_money(tile.rent_with_houses(house_count)),
-                color: text_color,
-                rel_x: 1,
-                rel_y: 0.5,
-                x: right_x,
-                y: y + (y_offset * (house_count + 1)),
-                z: ZOrder::POP_UP_MENU_BACKGROUND
-              ]
+              left: {
+                text: "Rent with #{house_count} house#{'s' if house_count > 1}",
+                options: {
+                  color: text_color,
+                  rel_y: 0.5,
+                  x: left_x,
+                  y: y + (y_offset * (house_count + 1)),
+                  z: ZOrder::POP_UP_MENU_BACKGROUND
+                }
+              },
+              right: {
+                text: game.format_money(tile.rent_with_houses(house_count)),
+                options: {
+                  color: text_color,
+                  rel_x: 1,
+                  rel_y: 0.5,
+                  x: right_x,
+                  y: y + (y_offset * (house_count + 1)),
+                  z: ZOrder::POP_UP_MENU_BACKGROUND
+                }
+              }
             }
           end
         else
@@ -641,83 +679,99 @@ module Monopoly
       }
 
       deed_data[:house_cost_params] = {
-        left: [
-          'Houses cost',
-          color: game.colors[:deed_accent],
-          rel_y: 0.5,
-          x: left_x,
-          y: y + (y_offset * 8),
-          z: ZOrder::POP_UP_MENU_BACKGROUND
-        ],
-        right: [
-          "#{game.format_money(tile.group.house_cost)} each",
-          color: game.colors[:deed_accent],
-          rel_x: 1,
-          rel_y: 0.5,
-          x: right_x,
-          y: y + (y_offset * 8),
-          z: ZOrder::POP_UP_MENU_BACKGROUND
-        ]
+        left: {
+          text: 'Houses cost',
+          options: {
+            color: game.colors[:deed_accent],
+            rel_y: 0.5,
+            x: left_x,
+            y: y + (y_offset * 8),
+            z: ZOrder::POP_UP_MENU_BACKGROUND
+          }
+        },
+        right: {
+          text: "#{game.format_money(tile.group.house_cost)} each",
+          options: {
+            color: game.colors[:deed_accent],
+            rel_x: 1,
+            rel_y: 0.5,
+            x: right_x,
+            y: y + (y_offset * 8),
+            z: ZOrder::POP_UP_MENU_BACKGROUND
+          }
+        }
       }
 
       deed_data[:house_sell_price_params] = {
-        left: [
-          'Houses sell for',
-          color: game.colors[:deed_accent],
-          rel_y: 0.5,
-          x: left_x,
-          y: y + (y_offset * 9),
-          z: ZOrder::POP_UP_MENU_BACKGROUND
-        ],
-        right: [
-          "#{game.format_money(tile.group.house_cost * game.building_sell_percentage)} each",
-          color: game.colors[:deed_accent],
-          rel_x: 1,
-          rel_y: 0.5,
-          x: right_x,
-          y: y + (y_offset * 9),
-          z: ZOrder::POP_UP_MENU_BACKGROUND
-        ]
+        left: {
+          text: 'Houses sell for',
+          options: {
+            color: game.colors[:deed_accent],
+            rel_y: 0.5,
+            x: left_x,
+            y: y + (y_offset * 9),
+            z: ZOrder::POP_UP_MENU_BACKGROUND
+          }
+        },
+        right: {
+          text: "#{game.format_money(tile.group.house_cost * game.building_sell_percentage)} each",
+          options: {
+            color: game.colors[:deed_accent],
+            rel_x: 1,
+            rel_y: 0.5,
+            x: right_x,
+            y: y + (y_offset * 9),
+            z: ZOrder::POP_UP_MENU_BACKGROUND
+          }
+        }
       }
 
       deed_data[:mortgage_value_params] = {
-        left: [
-          'Mortgage value',
-          color: game.colors[:deed_accent],
-          rel_y: 0.5,
-          x: left_x,
-          y: y + (y_offset * 10),
-          z: ZOrder::POP_UP_MENU_BACKGROUND
-        ],
-        right: [
-          game.format_money(tile.mortgage_cost),
-          color: game.colors[:deed_accent],
-          rel_x: 1,
-          rel_y: 0.5,
-          x: right_x,
-          y: y + (y_offset * 10),
-          z: ZOrder::POP_UP_MENU_BACKGROUND
-        ]
+        left: {
+          text: 'Mortgage value',
+          options: {
+            color: game.colors[:deed_accent],
+            rel_y: 0.5,
+            x: left_x,
+            y: y + (y_offset * 10),
+            z: ZOrder::POP_UP_MENU_BACKGROUND
+          }
+        },
+        right: {
+          text: game.format_money(tile.mortgage_cost),
+          options: {
+            color: game.colors[:deed_accent],
+            rel_x: 1,
+            rel_y: 0.5,
+            x: right_x,
+            y: y + (y_offset * 10),
+            z: ZOrder::POP_UP_MENU_BACKGROUND
+          }
+        }
       }
 
       deed_data[:unmortgage_cost_params] = {
-        left: [
-          'Unmortgage cost',
-          color: game.colors[:deed_accent],
-          rel_y: 0.5,
-          x: left_x,
-          y: y + (y_offset * 11),
-          z: ZOrder::POP_UP_MENU_BACKGROUND
-        ],
-        right: [
-          game.format_money(tile.unmortgage_cost),
-          color: game.colors[:deed_accent],
-          rel_x: 1,
-          rel_y: 0.5,
-          x: right_x,
-          y: y + (y_offset * 11),
-          z: ZOrder::POP_UP_MENU_BACKGROUND
-        ]
+        left: {
+          text: 'Unmortgage cost',
+          options: {
+            color: game.colors[:deed_accent],
+            rel_y: 0.5,
+            x: left_x,
+            y: y + (y_offset * 11),
+            z: ZOrder::POP_UP_MENU_BACKGROUND
+          }
+        },
+        right: {
+          text: game.format_money(tile.unmortgage_cost),
+          options: {
+            color: game.colors[:deed_accent],
+            rel_x: 1,
+            rel_y: 0.5,
+            x: right_x,
+            y: y + (y_offset * 11),
+            z: ZOrder::POP_UP_MENU_BACKGROUND
+          }
+        }
       }
     end
 
@@ -741,16 +795,18 @@ module Monopoly
       initial_offset =
         ((deed_data[:name].size - deed_data[:name].compact.size) / 2.0) * game.fonts[:deed][:offset]
       deed_data[:name_lines_params] = deed_data[:name].map.with_index do |text, index|
-        [
-          text,
-          color: game.colors[:deed_accent],
-          rel_x: 0.5,
-          rel_y: 0.5,
-          x: Coordinates::CENTER_X,
-          y: Coordinates::CENTER_Y - (DEED_HEIGHT * 0.15) + initial_offset +
-            (game.fonts[:deed][:offset] * (index + 1)),
-          z: ZOrder::POP_UP_MENU_BACKGROUND
-        ]
+        {
+          text: text,
+          options: {
+            color: game.colors[:deed_accent],
+            rel_x: 0.5,
+            rel_y: 0.5,
+            x: Coordinates::CENTER_X,
+            y: Coordinates::CENTER_Y - (DEED_HEIGHT * 0.15) + initial_offset +
+              (game.fonts[:deed][:offset] * (index + 1)),
+            z: ZOrder::POP_UP_MENU_BACKGROUND
+          }
+        }
       end
 
       left_x = Coordinates::CENTER_X - (DEED_WIDTH * 0.4)
@@ -781,15 +837,17 @@ module Monopoly
         deed_data[:rent_font] = wrapped_text_data[:font]
         first_paragraph_offset = wrapped_text_data[:lines].count
         deed_data[:rent_lines_params] = wrapped_text_data[:lines].map.with_index do |text, index|
-          [
-            text,
-            color: text_color,
-            rel_x: 0.5,
-            rel_y: 0.5,
-            x: Coordinates::CENTER_X,
-            y: Coordinates::CENTER_Y + (game.fonts[:deed][:offset] * (index + 0.75)),
-            z: ZOrder::POP_UP_MENU_BACKGROUND
-          ]
+          {
+            text: text,
+            options: {
+              color: text_color,
+              rel_x: 0.5,
+              rel_y: 0.5,
+              x: Coordinates::CENTER_X,
+              y: Coordinates::CENTER_Y + (game.fonts[:deed][:offset] * (index + 0.75)),
+              z: ZOrder::POP_UP_MENU_BACKGROUND
+            }
+          }
         end
 
         text_color =
@@ -810,16 +868,18 @@ module Monopoly
         )
         deed_data[:rent_font] = [wrapped_text_data[:font], deed_data[:rent_font]].min_by(&:height)
         deed_data[:rent_lines_params] += wrapped_text_data[:lines].map.with_index do |text, index|
-          [
-            text,
-            color: text_color,
-            rel_x: 0.5,
-            rel_y: 0.5,
-            x: Coordinates::CENTER_X,
-            y: Coordinates::CENTER_Y +
-              (game.fonts[:deed][:offset] * (index + 1 + first_paragraph_offset)),
-            z: ZOrder::POP_UP_MENU_BACKGROUND
-          ]
+          {
+            text: text,
+            options: {
+              color: text_color,
+              rel_x: 0.5,
+              rel_y: 0.5,
+              x: Coordinates::CENTER_X,
+              y: Coordinates::CENTER_Y +
+                (game.fonts[:deed][:offset] * (index + 1 + first_paragraph_offset)),
+              z: ZOrder::POP_UP_MENU_BACKGROUND
+            }
+          }
         end
       else
         utility_count = deed_rent_line_index
@@ -839,23 +899,27 @@ module Monopoly
         y_offset = game.fonts[:deed][:offset]
 
         deed_data[:rent_line_params] = {
-          left: [
-            "Multiplier with #{utility_count} #{group_name}",
-            color: text_color,
-            rel_y: 0.5,
-            x: left_x,
-            y: y + y_offset,
-            z: ZOrder::POP_UP_MENU_BACKGROUND
-          ],
-          right: [
-            game.format_number(tile.rent_multiplier_scale[utility_count - 1]),
-            color: text_color,
-            rel_x: 1,
-            rel_y: 0.5,
-            x: right_x,
-            y: y + y_offset,
-            z: ZOrder::POP_UP_MENU_BACKGROUND
-          ]
+          left: {
+            text: "Multiplier with #{utility_count} #{group_name}",
+            options: {
+              color: text_color,
+              rel_y: 0.5,
+              x: left_x,
+              y: y + y_offset,
+              z: ZOrder::POP_UP_MENU_BACKGROUND
+            }
+          },
+          right: {
+            text: game.format_number(tile.rent_multiplier_scale[utility_count - 1]),
+            options: {
+              color: text_color,
+              rel_x: 1,
+              rel_y: 0.5,
+              x: right_x,
+              y: y + y_offset,
+              z: ZOrder::POP_UP_MENU_BACKGROUND
+            }
+          }
         }
         deed_data[:rent_font] = game.fonts[:deed][:type]
 
@@ -869,15 +933,17 @@ module Monopoly
         )
         deed_data[:rent_font] = [wrapped_text_data[:font], deed_data[:rent_font]].min_by(&:height)
         deed_data[:rent_lines_params] = wrapped_text_data[:lines].map.with_index do |text, index|
-          [
-            text,
-            color: text_color,
-            rel_x: 0.5,
-            rel_y: 0.5,
-            x: Coordinates::CENTER_X,
-            y: y + (y_offset * (3.5 + index)),
-            z: ZOrder::POP_UP_MENU_BACKGROUND
-          ]
+          {
+            text: text,
+            options: {
+              color: text_color,
+              rel_x: 0.5,
+              rel_y: 0.5,
+              x: Coordinates::CENTER_X,
+              y: y + (y_offset * (3.5 + index)),
+              z: ZOrder::POP_UP_MENU_BACKGROUND
+            }
+          }
         end
       end
 
@@ -892,43 +958,51 @@ module Monopoly
       }
 
       deed_data[:mortgage_value_params] = {
-        left: [
-          'Mortgage value',
-          color: game.colors[:deed_accent],
-          rel_y: 0.5,
-          x: left_x,
-          y: y + (y_offset * 7),
-          z: ZOrder::POP_UP_MENU_BACKGROUND
-        ],
-        right: [
-          game.format_money(tile.mortgage_cost),
-          color: game.colors[:deed_accent],
-          rel_x: 1,
-          rel_y: 0.5,
-          x: right_x,
-          y: y + (y_offset * 7),
-          z: ZOrder::POP_UP_MENU_BACKGROUND
-        ]
+        left: {
+          text: 'Mortgage value',
+          options: {
+            color: game.colors[:deed_accent],
+            rel_y: 0.5,
+            x: left_x,
+            y: y + (y_offset * 7),
+            z: ZOrder::POP_UP_MENU_BACKGROUND
+          }
+        },
+        right: {
+          text: game.format_money(tile.mortgage_cost),
+          options: {
+            color: game.colors[:deed_accent],
+            rel_x: 1,
+            rel_y: 0.5,
+            x: right_x,
+            y: y + (y_offset * 7),
+            z: ZOrder::POP_UP_MENU_BACKGROUND
+          }
+        }
       }
 
       deed_data[:unmortgage_cost_params] = {
-        left: [
-          'Unmortgage cost',
-          color: game.colors[:deed_accent],
-          rel_y: 0.5,
-          x: left_x,
-          y: y + (y_offset * 8),
-          z: ZOrder::POP_UP_MENU_BACKGROUND
-        ],
-        right: [
-          game.format_money(tile.unmortgage_cost),
-          color: game.colors[:deed_accent],
-          rel_x: 1,
-          rel_y: 0.5,
-          x: right_x,
-          y: y + (y_offset * 8),
-          z: ZOrder::POP_UP_MENU_BACKGROUND
-        ]
+        left: {
+          text: 'Unmortgage cost',
+          options: {
+            color: game.colors[:deed_accent],
+            rel_y: 0.5,
+            x: left_x,
+            y: y + (y_offset * 8),
+            z: ZOrder::POP_UP_MENU_BACKGROUND
+          }
+        },
+        right: {
+          text: game.format_money(tile.unmortgage_cost),
+          options: {
+            color: game.colors[:deed_accent],
+            rel_x: 1,
+            rel_y: 0.5,
+            x: right_x,
+            y: y + (y_offset * 8),
+            z: ZOrder::POP_UP_MENU_BACKGROUND
+          }
+        }
       }
     end
   end

@@ -135,34 +135,34 @@ module Monopoly
         return unless drawing_compass_menu?
 
         compass_menu_data[:outer_circle].draw(
-          compass_menu_data[:left_circle_params]
+          **compass_menu_data[:left_circle_params]
         )
         compass_menu_data[:outer_circle].draw(
-          compass_menu_data[:right_circle_params]
+          **compass_menu_data[:right_circle_params]
         )
         compass_menu_data[:inner_circle].draw(
-          compass_menu_data[:left_circle_params]
+          **compass_menu_data[:left_circle_params]
         )
         compass_menu_data[:inner_circle].draw(
-          compass_menu_data[:right_circle_params]
+          **compass_menu_data[:right_circle_params]
         )
-        Gosu.draw_rect(compass_menu_data[:tile_background])
+        Gosu.draw_rect(**compass_menu_data[:tile_background])
 
         coordinates = [draw_mouse_x, draw_mouse_y] unless drawing_pop_up_menu? ||
           dialogue_box_menu.drawing?
         visible_compass_menu_buttons.each { |button| button.draw(*coordinates) }
 
-        Gosu.draw_rect(compass_menu_data[:bottom_border])
-        Gosu.draw_triangle(compass_menu_data[:point])
-        Gosu.draw_rect(compass_menu_data[:top_border])
+        Gosu.draw_rect(**compass_menu_data[:bottom_border])
+        Gosu.draw_triangle(**compass_menu_data[:point])
+        Gosu.draw_rect(**compass_menu_data[:top_border])
       end
 
       def draw_error_dialogue
         return unless drawing_error_dialogue?
 
-        error_dialogue_data[:rectangles].each { |data| Gosu.draw_rect(data) }
+        error_dialogue_data[:rectangles].each { |data| Gosu.draw_rect(**data) }
         error_dialogue_data[:exclamation_point][:image].draw(
-          error_dialogue_data[:exclamation_point][:params]
+          **error_dialogue_data[:exclamation_point][:params]
         )
 
         error_dialogue_data[:lines].each do |line|
@@ -220,7 +220,7 @@ module Monopoly
         coordinates = [draw_mouse_x, draw_mouse_y] unless dialogue_box_menu.drawing?
 
         player_inspector_data[:rectangles].each do |data|
-          Gosu.draw_rect(data.except(:stats)) unless !data[:stats] && player_inspector_show_stats
+          Gosu.draw_rect(**data.except(:stats)) unless !data[:stats] && player_inspector_show_stats
         end
 
         visible_player_inspector_buttons.each { |button| button.draw(*coordinates) }
@@ -230,14 +230,14 @@ module Monopoly
         coordinates = [draw_mouse_x, draw_mouse_y] unless drawing_pop_up_menu? ||
           dialogue_box_menu.drawing?
 
-        Gosu.draw_rect(player_menu_data[:right_border_params])
-        Gosu.draw_rect(player_menu_data[:background_params])
+        Gosu.draw_rect(**player_menu_data[:right_border_params])
+        Gosu.draw_rect(**player_menu_data[:background_params])
         player_menu_data[:rounded_corner_circle].draw(
-          player_menu_data[:rounded_corner_circle_params]
+          **player_menu_data[:rounded_corner_circle_params]
         )
-        Gosu.draw_rect(player_menu_data[:top_border_params])
+        Gosu.draw_rect(**player_menu_data[:top_border_params])
         (0...player_menu_data[:jail_bar_count])
-          .each { |number| Gosu.draw_rect(player_menu_data[:jail_bars][number]) }
+          .each { |number| Gosu.draw_rect(**player_menu_data[:jail_bars][number]) }
 
         visible_player_menu_buttons.each { |button| button.draw(*coordinates) }
       end

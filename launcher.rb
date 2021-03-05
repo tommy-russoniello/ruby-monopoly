@@ -1,4 +1,5 @@
 require 'active_support'
+require 'active_support/core_ext/module/delegation'
 require 'active_support/core_ext/numeric/conversions'
 require 'active_support/core_ext/string/inflections'
 require 'active_support/number_helper/number_to_currency_converter'

@@ -37,9 +37,9 @@ module Monopoly
       (0..game.max_house_count).map do |offset_multiplier|
         house_button_options[:y] =
           Coordinates::FIRST_HOUSE_BUTTON_Y + (house_button_offset * offset_multiplier)
-        house_buttons << Button.new(house_button_options)
-        build_house_buttons << Button.new(house_button_options.merge(build_house_button_options))
-        sell_house_buttons << Button.new(house_button_options.merge(sell_house_button_options))
+        house_buttons << Button.new(**house_button_options)
+        build_house_buttons << Button.new(**house_button_options.merge(build_house_button_options))
+        sell_house_buttons << Button.new(**house_button_options.merge(sell_house_button_options))
       end
 
       mortgage_lock_button_options = {
@@ -117,14 +117,14 @@ module Monopoly
           z: ZOrder::MAIN_UI
         ),
         mortgage: Button.new(
-          mortgage_lock_button_options.merge(
+          **mortgage_lock_button_options.merge(
             actions: :mortgage,
             hover_image: Image.new(game.images[:mortgage_hover]),
             image: Image.new(game.images[:mortgage])
           )
         ),
         mortgage_lock: Button.new(
-          mortgage_lock_button_options.merge(
+          **mortgage_lock_button_options.merge(
             actions: nil,
             hover_image: Image.new(game.images[:mortgage_lock]),
             image: Image.new(game.images[:mortgage_lock])
@@ -203,7 +203,7 @@ module Monopoly
           z: ZOrder::MAIN_UI
         ),
         unmortgage: Button.new(
-          mortgage_lock_button_options.merge(
+          **mortgage_lock_button_options.merge(
             actions: :unmortgage,
             hover_image: Image.new(game.images[:unmortgage_hover]),
             image: Image.new(game.images[:unmortgage])

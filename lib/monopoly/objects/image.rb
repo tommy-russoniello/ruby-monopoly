@@ -10,12 +10,12 @@ module Monopoly
       self.image = source.is_a?(Gosu::Image) ? source : Gosu::Image.new(source, options)
     end
 
-    def draw(*args)
-      animation ? draw_from_animation : image.draw(*args)
+    def draw(*args, **kwargs)
+      animation ? draw_from_animation : image.draw(*args, **kwargs)
     end
 
-    def draw_rot(*args)
-      animation ? draw_from_animation : image.draw_rot(*args)
+    def draw_rot(**args)
+      animation ? draw_from_animation : image.draw_rot(**args)
     end
 
     def perform_animation(animation_type, **args)
@@ -34,7 +34,7 @@ module Monopoly
       args[:scale_x] = 1 unless args.key?(:scale_x)
       args[:scale_y] = 1 unless args.key?(:scale_y)
 
-      self.animation = animation_class.new(args)
+      self.animation = animation_class.new(**args)
     end
 
     def tick

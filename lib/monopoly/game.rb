@@ -1479,9 +1479,9 @@ module Monopoly
           x += player_inspector_stats_indent if data.delete(:indent)
           y = player_inspector_close_button_y_offset + (fonts[:default][:offset] * number)
           data[:name] = Button.new(
-            player_inspector_stats_button_args.merge(text: "#{data[:name]}:", x: x, y: y)
+            **player_inspector_stats_button_args.merge(text: "#{data[:name]}:", x: x, y: y)
           )
-          data[:value] = Button.new(player_inspector_stats_button_args.merge(y: y))
+          data[:value] = Button.new(**player_inspector_stats_button_args.merge(y: y))
 
           data[:name].width = data[:name].font.text_width(data[:name].text) + 5
           new_x = data[:name].x + data[:name].width + player_inspector_button_gap
@@ -2001,7 +2001,7 @@ module Monopoly
         )
       end
 
-      player_menu_buttons[:jail_turns] = CircularButton.new(jail_turns_button_params)
+      player_menu_buttons[:jail_turns] = CircularButton.new(**jail_turns_button_params)
 
       jail_bar_gap = player_menu_button_gap * 0.4
       jail_bar_params = {

@@ -138,14 +138,14 @@ module Monopoly
           z: ZOrder::MAIN_UI
         ),
         mortgage: Button.new(
-          mortgage_lock_button_options.merge(
+          **mortgage_lock_button_options.merge(
             actions: proc { game.mortgage(current_tile) },
             hover_image: Image.new(game.images[:mortgage_hover]),
             image: Image.new(game.images[:mortgage])
           )
         ),
         mortgage_lock: Button.new(
-          mortgage_lock_button_options.merge(
+          **mortgage_lock_button_options.merge(
             actions: nil,
             hover_image: Image.new(game.images[:mortgage_lock]),
             image: Image.new(game.images[:mortgage_lock])
@@ -203,7 +203,7 @@ module Monopoly
           z: ZOrder::MAIN_UI
         ),
         player_tokens_hide: Button.new(
-          toggle_player_tokens_params.merge(
+          **toggle_player_tokens_params.merge(
             actions: proc do
               show_player_tokens[game.current_player] = false
               update
@@ -213,7 +213,7 @@ module Monopoly
           )
         ),
         player_tokens_show: Button.new(
-          toggle_player_tokens_params.merge(
+          **toggle_player_tokens_params.merge(
             actions: proc do
               show_player_tokens[game.current_player] = true
               update
@@ -315,7 +315,7 @@ module Monopoly
           [player, button]
         end.to_h,
         unmortgage: Button.new(
-          mortgage_lock_button_options.merge(
+          **mortgage_lock_button_options.merge(
             actions: proc { game.unmortgage(current_tile) },
             hover_image: Image.new(game.images[:unmortgage_hover]),
             image: Image.new(game.images[:unmortgage])
@@ -604,7 +604,7 @@ module Monopoly
 
           hash = {
             houses: Button.new(
-              houses_button_params.merge(
+              **houses_button_params.merge(
                 actions: action,
                 height: houses_height,
                 image_angle: angle,
@@ -615,7 +615,7 @@ module Monopoly
               )
             ),
             mortgage_lock: CircularButton.new(
-              mortgage_lock_button_params.merge(
+              **mortgage_lock_button_params.merge(
                 actions: action,
                 image_angle: angle,
                 x: x + offsets[:mortgage_lock][angle][:x],
@@ -623,7 +623,7 @@ module Monopoly
               )
             ),
             owner: CircularButton.new(
-              owner_button_params
+              **owner_button_params
                 .merge(offsets[:owner][angle][:data])
                 .merge(
                   actions: action,
@@ -633,13 +633,13 @@ module Monopoly
                 )
             ),
             player_plus: CircularButton.new(
-              player_plus_button_params.merge(actions: action)
+              **player_plus_button_params.merge(actions: action)
             ),
             player_plus_visiting_jail: CircularButton.new(
-              player_plus_button_params.merge(actions: action)
+              **player_plus_button_params.merge(actions: action)
             ),
             tile: Button.new(
-              tile_button_params.merge(
+              **tile_button_params.merge(
                 actions: action,
                 height: tile_button_height,
                 hover_image: tile.tile_image.clone,
@@ -756,7 +756,7 @@ module Monopoly
 
           {
             houses: Button.new(
-              houses_button_params.merge(
+              **houses_button_params.merge(
                 actions: action,
                 y:
                   # TODO: Update this check once hotels are implemented
@@ -768,33 +768,33 @@ module Monopoly
               )
             ),
             mortgage_lock: CircularButton.new(
-              mortgage_lock_button_params.merge(
+              **mortgage_lock_button_params.merge(
                 actions: action,
                 y: Coordinates::MAP_MENU_CENTER_Y + (tile_height / 2) -
                   BUTTON_GAP - mortgage_lock_button_params[:radius]
               )
             ),
             owner: CircularButton.new(
-              owner_button_params.merge(
+              **owner_button_params.merge(
                 actions: action,
                 image_position_y: 0.275,
                 y: Coordinates::MAP_MENU_CENTER_Y - (tile_height / 2)
               )
             ),
             player_plus: CircularButton.new(
-              player_plus_button_params.merge(
+              **player_plus_button_params.merge(
                 actions: action,
                 y: Coordinates::MAP_MENU_CENTER_Y + (BUTTON_HEIGHT) + BUTTON_GAP
               )
             ),
             player_plus_visiting_jail: CircularButton.new(
-              player_plus_button_params.merge(
+              **player_plus_button_params.merge(
                 actions: action,
                 y: Coordinates::MAP_MENU_CENTER_Y
               )
             ),
             tile: Button.new(
-              tile_button_params.merge(
+              **tile_button_params.merge(
                 actions: action,
                 y: Coordinates::MAP_MENU_CENTER_Y - (tile_height / 2),
               )
@@ -1211,7 +1211,7 @@ module Monopoly
         buttons[:tokens].values_at(*players_to_show) + buttons_to_align
       buttons_to_align.each.with_index do |button, index|
         button.update_coordinates(
-          token_coordinates(
+          **token_coordinates(
             jail: jail,
             count: total_players,
             number: index + 1,

@@ -196,7 +196,7 @@ module Monopoly
               z: tile_button_options[:z]
             ),
             tile: Button.new(
-              tile_button_options.merge(
+              **tile_button_options.merge(
                 image_height: TILE_BUTTON_HEIGHT * 0.9,
                 x: x,
                 y: FIRST_TILE_Y
