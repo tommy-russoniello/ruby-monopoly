@@ -155,8 +155,8 @@ module Monopoly
         end
 
       game.log_event(event)
-      multiply_rent = rent_multiplier && player.tile.owner && player.tile.owner != player &&
-        !player.tile.mortgaged? && player.tile.is_a?(PropertyTile)
+      multiply_rent = rent_multiplier && player.tile.is_a?(PropertyTile) && player.tile.owner &&
+        player.tile.owner != player && !player.tile.mortgaged?
       if multiply_rent
         game.temporary_rent_multiplier = rent_multiplier
         if player.tile.is_a?(UtilityTile)
@@ -228,9 +228,8 @@ module Monopoly
     end
 
     def total_cost
-      @total_cost ||= player.properties.inject(0) do |sum, property|
-        cost = property.is_a?(StreetTile) ? property.house_count * cost_per_house : 0
-        sum + cost
+      @total_cost ||= player.properties.sum do |property|
+        property.is_a?(StreetTile) ? property.house_count * cost_per_house : 0
       end
     end
   end
